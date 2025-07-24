@@ -35,3 +35,9 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Environment
+.env
