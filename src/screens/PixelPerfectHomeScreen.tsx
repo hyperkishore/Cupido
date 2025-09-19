@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useAppState } from '../contexts/AppStateContext';
 import { FeedbackWrapper } from '../components/FeedbackWrapper';
+import { YouTubeConnectModal } from '../components/YouTubeConnectModal';
 import { communityService, CommunityReflection } from '../services/communityService';
 import { habitTrackingService } from '../services/habitTrackingService';
 
@@ -16,6 +17,8 @@ export const PixelPerfectHomeScreen = () => {
   const { state, dispatch } = useAppState();
   const [showLinkedInPrompt, setShowLinkedInPrompt] = useState(true);
   const [showCommunityPrompt, setShowCommunityPrompt] = useState(true);
+  const [showYouTubePrompt, setShowYouTubePrompt] = useState(true);
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
   const [communityFeed, setCommunityFeed] = useState<CommunityReflection[]>([]);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -83,6 +86,19 @@ export const PixelPerfectHomeScreen = () => {
           }
         },
       ]
+    );
+  };
+
+  const handleConnectYouTube = () => {
+    setShowYouTubeModal(true);
+  };
+
+  const handleYouTubeConnect = () => {
+    setShowYouTubeModal(false);
+    setShowYouTubePrompt(false);
+    Alert.alert(
+      'YouTube Connected!', 
+      'We\'re analyzing your YouTube activity to enhance your personality profile. New insights will appear within 24-48 hours.'
     );
   };
 
@@ -212,6 +228,29 @@ export const PixelPerfectHomeScreen = () => {
           </View>
         )}
 
+        {/* YouTube Connect Prompt after second card */}
+        {index === 1 && showYouTubePrompt && (
+          <View style={styles.promptCard}>
+            <View style={styles.promptContent}>
+              <View style={styles.youtubeIconContainer}>
+                <Text style={styles.youtubeIcon}>▶</Text>
+              </View>
+              <View style={styles.promptTextContainer}>
+                <Text style={styles.promptTitle}>Connect YouTube</Text>
+                <Text style={styles.promptSubtitle}>
+                  Enhance your profile with viewing insights
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.youtubeConnectButton}
+                onPress={handleConnectYouTube}
+              >
+                <Text style={styles.youtubeConnectButtonText}>Connect</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Community Prompt after fourth card */}
         {index === 3 && showCommunityPrompt && (
           <View style={styles.promptCard}>
@@ -259,6 +298,12 @@ export const PixelPerfectHomeScreen = () => {
       )}
       {communityFeed.map((reflection, index) => renderQuestionCard(reflection, index))}
       <View style={styles.bottomSpacer} />
+      
+      <YouTubeConnectModal
+        visible={showYouTubeModal}
+        onClose={() => setShowYouTubeModal(false)}
+        onConnect={handleYouTubeConnect}
+      />
     </ScrollView>
   );
 };
@@ -501,5 +546,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+  },
+  youtubeIconContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#FF0000',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  youtubeIcon: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  youtubeConnectButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
+  youtubeConnectButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
 });
