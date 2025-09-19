@@ -20,6 +20,7 @@ import { PixelPerfectReflectScreen } from './src/screens/PixelPerfectReflectScre
 import { PixelPerfectMatchesScreen } from './src/screens/PixelPerfectMatchesScreen';
 import { PixelPerfectProfileScreen } from './src/screens/PixelPerfectProfileScreen';
 import { PixelPerfectMessagesScreen } from './src/screens/PixelPerfectMessagesScreen';
+import { VersionDisplay } from './src/components/VersionDisplay';
 
 const Tab = createBottomTabNavigator();
 
@@ -37,6 +38,7 @@ const AppContent = () => {
 
   const HeaderRight = () => (
     <View style={styles.headerRight}>
+      <VersionDisplay />
       <TouchableOpacity 
         style={styles.headerIcon}
         onPress={() => setShowMessages(true)}
