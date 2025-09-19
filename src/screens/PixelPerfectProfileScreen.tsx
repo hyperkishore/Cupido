@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#C6C6C8',
   },
   authenticityScore: {
-    fontSize: 80,
-    fontWeight: '300',
+    fontSize: 64,
+    fontWeight: '700',
     color: '#000000',
-    lineHeight: 80,
+    lineHeight: 64,
   },
   authenticityLabel: {
     fontSize: 17,
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#000000',
     marginBottom: 4,
   },
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   traitPercentage: {
-    fontSize: 48,
-    fontWeight: '300',
+    fontSize: 36,
+    fontWeight: '600',
     color: '#000000',
     marginBottom: 4,
   },

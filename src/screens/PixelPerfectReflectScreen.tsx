@@ -12,6 +12,9 @@ import {
 import { questionsService, CategoryQuestion } from '../services/questionsLoader';
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { VoiceTextInput } from '../components/VoiceTextInput';
+import { habitTrackingService } from '../services/habitTrackingService';
+import { communityService } from '../services/communityService';
+import { notificationService } from '../services/notificationService';
 
 export const PixelPerfectReflectScreen = () => {
   const { dispatch } = useAppState();
