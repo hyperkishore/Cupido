@@ -6,9 +6,7 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   StatusBar,
-  Platform,
-  TextInput,
-  ScrollView
+  Platform
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -16,17 +14,16 @@ import { AppStateProvider } from './src/contexts/AppStateContext';
 import { FeedbackProvider, useFeedback } from './src/contexts/FeedbackContext';
 import { withSimpleFeedback } from './src/components/withSimpleFeedback';
 import { PixelPerfectHomeScreen } from './src/screens/PixelPerfectHomeScreen';
-import { PixelPerfectReflectScreen } from './src/screens/PixelPerfectReflectScreen';
+import { EnhancedReflectScreen } from './src/screens/EnhancedReflectScreen';
 import { PixelPerfectMatchesScreen } from './src/screens/PixelPerfectMatchesScreen';
 import { PixelPerfectProfileScreen } from './src/screens/PixelPerfectProfileScreen';
 import { PixelPerfectMessagesScreen } from './src/screens/PixelPerfectMessagesScreen';
 
 const Tab = createBottomTabNavigator();
 
-
 // Wrap screens with simple feedback capability
 const HomeScreenWithFeedback = withSimpleFeedback(PixelPerfectHomeScreen, 'HomeScreen');
-const ReflectScreenWithFeedback = withSimpleFeedback(PixelPerfectReflectScreen, 'ReflectScreen');
+const ReflectScreenWithFeedback = withSimpleFeedback(EnhancedReflectScreen, 'ReflectScreen');
 const MatchesScreenWithFeedback = withSimpleFeedback(PixelPerfectMatchesScreen, 'MatchesScreen');
 const ProfileScreenWithFeedback = withSimpleFeedback(PixelPerfectProfileScreen, 'ProfileScreen');
 
@@ -50,6 +47,7 @@ const AppContent = () => {
   if (showMessages) {
     return <PixelPerfectMessagesScreen onClose={() => setShowMessages(false)} />;
   }
+
 
   try {
     return (
@@ -197,11 +195,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#8E8E93',
     marginBottom: 16,
-    textAlign: 'center',
   },
   errorDetails: {
     fontSize: 14,
     color: '#FF3B30',
     textAlign: 'center',
+  },
+  feedbackModeActive: {
+    backgroundColor: '#007AFF',
+    borderRadius: 22,
+  },
+  feedbackModeText: {
+    color: '#FFFFFF',
   },
 });

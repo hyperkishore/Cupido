@@ -5,209 +5,212 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { useAppState } from '../contexts/AppStateContext';
+import { FeedbackWrapper } from '../components/FeedbackWrapper';
 
 export const PixelPerfectHomeScreen = () => {
+  const { state, dispatch } = useAppState();
   const [showLinkedInPrompt, setShowLinkedInPrompt] = useState(true);
   const [showCommunityPrompt, setShowCommunityPrompt] = useState(true);
 
+  const handleLikeAnswer = (answerId: string) => {
+    dispatch({ type: 'LIKE_ANSWER', payload: answerId });
+  };
+
+  const handleConnectLinkedIn = () => {
+    Alert.alert(
+      'Connect LinkedIn',
+      'Connect your LinkedIn profile to find people with similar professional interests.',
+      [
+        { text: 'Maybe Later', style: 'cancel' },
+        { 
+          text: 'Connect', 
+          onPress: () => {
+            setShowLinkedInPrompt(false);
+            Alert.alert('Connected!', 'LinkedIn integration enabled.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleAskCommunity = () => {
+    Alert.alert(
+      'Ask the Community',
+      'Share a thoughtful question with the Cupido community.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Create Question', 
+          onPress: () => {
+            setShowCommunityPrompt(false);
+            Alert.alert('Question Posted!', 'Your question has been shared.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleAnswerQuestion = (questionId: string) => {
+    Alert.alert(
+      'Share Your Thoughts',
+      'This will open the reflection screen to answer this question.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Answer', onPress: () => console.log('Navigate to Reflect screen') },
+      ]
+    );
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - past.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const renderQuestionCard = (answer: any, index: number) => {
+    const isLiked = answer.isLiked || false;
+    
+    return (
+      <View key={answer.id}>
+        <FeedbackWrapper
+          componentId={`question-card-${answer.id}`}
+          componentType="QuestionCard"
+          screenName="HomeScreen"
+        >
+          <View style={styles.questionCard}>
+            <View style={styles.questionHeader}>
+              <FeedbackWrapper
+                componentId={`question-text-${answer.id}`}
+                componentType="QuestionText"
+                screenName="HomeScreen"
+              >
+                <Text style={styles.questionText}>{answer.questionText}</Text>
+              </FeedbackWrapper>
+              <Text style={styles.timestamp}>{formatTimeAgo(answer.timestamp)}</Text>
+            </View>
+            
+            <FeedbackWrapper
+              componentId={`answer-text-${answer.id}`}
+              componentType="AnswerText"
+              screenName="HomeScreen"
+            >
+              <Text style={styles.answerText}>{answer.text}</Text>
+            </FeedbackWrapper>
+            
+            <View style={styles.questionFooter}>
+              <View style={styles.categoryTag}>
+                <Text style={styles.categoryText}>{answer.category}</Text>
+              </View>
+              <FeedbackWrapper
+                componentId={`heart-button-${answer.id}`}
+                componentType="HeartButton"
+                screenName="HomeScreen"
+              >
+                <TouchableOpacity 
+                  style={styles.heartContainer}
+                  onPress={() => handleLikeAnswer(answer.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
+                    {isLiked ? '♥' : '♡'}
+                  </Text>
+                  <Text style={[styles.heartCount, isLiked && styles.heartCountLiked]}>
+                    {answer.hearts}
+                  </Text>
+                </TouchableOpacity>
+              </FeedbackWrapper>
+              {index === 1 && (
+                <FeedbackWrapper
+                  componentId={`answer-button-${answer.id}`}
+                  componentType="AnswerButton"
+                  screenName="HomeScreen"
+                >
+                  <TouchableOpacity 
+                    style={styles.answerButton}
+                    onPress={() => handleAnswerQuestion(answer.questionId)}
+                  >
+                    <Text style={styles.answerButtonText}>Answer</Text>
+                  </TouchableOpacity>
+                </FeedbackWrapper>
+              )}
+            </View>
+          </View>
+        </FeedbackWrapper>
+
+        {/* LinkedIn Connect Prompt after first card */}
+        {index === 0 && showLinkedInPrompt && (
+          <View style={styles.promptCard}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowLinkedInPrompt(false)}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+            <View style={styles.promptContent}>
+              <View style={styles.linkedinIconContainer}>
+                <Text style={styles.linkedinIcon}>in</Text>
+              </View>
+              <View style={styles.promptTextContainer}>
+                <Text style={styles.promptTitle}>Connect LinkedIn</Text>
+                <Text style={styles.promptSubtitle}>
+                  Find people similar to your professional network
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.connectButton}
+                onPress={handleConnectLinkedIn}
+              >
+                <Text style={styles.connectButtonText}>Connect</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Community Prompt after fourth card */}
+        {index === 3 && showCommunityPrompt && (
+          <View style={styles.promptCard}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowCommunityPrompt(false)}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+            <View style={styles.promptContent}>
+              <View style={styles.communityIconContainer}>
+                <Text style={styles.communityIcon}>✓</Text>
+              </View>
+              <View style={styles.promptTextContainer}>
+                <Text style={styles.promptTitle}>Ask the Community</Text>
+                <Text style={styles.promptSubtitle}>
+                  Share a question that sparks meaningful conversations
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.askButton}
+                onPress={handleAskCommunity}
+              >
+                <Text style={styles.askButtonText}>Ask</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Question 1 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            What made you smile today, and why did it resonate with you?
-          </Text>
-          <Text style={styles.timestamp}>2h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          A stranger helped an elderly person with groceries. It reminded me that small acts of kindness create ripples of goodness in the world.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>PERSONAL GROWTH</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>12</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* LinkedIn Connect Prompt */}
-      {showLinkedInPrompt && (
-        <View style={styles.promptCard}>
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={() => setShowLinkedInPrompt(false)}
-          >
-            <Text style={styles.closeButtonText}>×</Text>
-          </TouchableOpacity>
-          <View style={styles.promptContent}>
-            <View style={styles.linkedinIconContainer}>
-              <Text style={styles.linkedinIcon}>🔒</Text>
-            </View>
-            <View style={styles.promptTextContainer}>
-              <Text style={styles.promptTitle}>Connect LinkedIn</Text>
-              <Text style={styles.promptSubtitle}>
-                Find people similar to your professional network
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.connectButton}>
-              <Text style={styles.connectButtonText}>Connect</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Question 2 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            What does intimacy mean to you beyond physical connection?
-          </Text>
-          <Text style={styles.timestamp}>4h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          Being able to share my weird thoughts at 3am and having someone not just listen, but add their own weird thoughts to the mix.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>RELATIONSHIPS</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>8</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Question 3 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            What's a belief you held strongly that has evolved over time?
-          </Text>
-          <Text style={styles.timestamp}>6h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          I used to think vulnerability was weakness. Now I see it as the bravest thing you can do - it's how we truly connect with others.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>VALUES</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>15</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Question 4 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            What's something you're curious about that others might find unusual?
-          </Text>
-          <Text style={styles.timestamp}>12h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          Why do we say 'after dark' when it's actually 'during dark'? Language fascinates me in the weirdest ways.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>DREAMS</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>3</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Question 5 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            How do you show care for someone you love?
-          </Text>
-          <Text style={styles.timestamp}>14h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          I remember the little things - their coffee order, the song that makes them happy, the story they told me months ago. Love is in the details.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>RELATIONSHIPS</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>18</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Community Prompt */}
-      {showCommunityPrompt && (
-        <View style={styles.promptCard}>
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={() => setShowCommunityPrompt(false)}
-          >
-            <Text style={styles.closeButtonText}>×</Text>
-          </TouchableOpacity>
-          <View style={styles.promptContent}>
-            <Text style={styles.checkIcon}>✓</Text>
-            <View style={styles.promptTextContainer}>
-              <Text style={styles.promptTitle}>Ask the Community</Text>
-              <Text style={styles.promptSubtitle}>
-                Share a question that sparks meaningful conversations
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.askButton}>
-              <Text style={styles.askButtonText}>Ask</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Question 6 */}
-      <View style={styles.questionCard}>
-        <View style={styles.questionHeader}>
-          <Text style={styles.questionText}>
-            What's a fear you've overcome, and how did you do it?
-          </Text>
-          <Text style={styles.timestamp}>16h ago</Text>
-        </View>
-        
-        <Text style={styles.answerText}>
-          Public speaking terrified me. I started by reading to my plants, then my pets, then finally joined a local poetry slam. Baby steps matter.
-        </Text>
-        
-        <View style={styles.questionFooter}>
-          <View style={styles.categoryTag}>
-            <Text style={styles.categoryText}>PERSONAL GROWTH</Text>
-          </View>
-          <View style={styles.heartContainer}>
-            <Text style={styles.heartIcon}>♥</Text>
-            <Text style={styles.heartCount}>14</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.bottomPadding} />
+      {state.answers.map((answer, index) => renderQuestionCard(answer, index))}
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 };
@@ -219,110 +222,141 @@ const styles = StyleSheet.create({
   },
   questionCard: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    padding: 20,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E5E5E7',
   },
   questionHeader: {
     marginBottom: 12,
-    position: 'relative',
   },
   questionText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
     lineHeight: 24,
-    paddingRight: 60,
+    marginBottom: 4,
   },
   timestamp: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    fontSize: 15,
+    fontSize: 13,
     color: '#8E8E93',
+    marginTop: 4,
   },
   answerText: {
-    fontSize: 17,
+    fontSize: 15,
     color: '#000000',
-    lineHeight: 24,
+    lineHeight: 22,
     marginBottom: 16,
   },
   questionFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   categoryTag: {
     backgroundColor: '#F2F2F7',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 12,
   },
   categoryText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
     color: '#8E8E93',
     letterSpacing: 0.5,
   },
   heartContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginLeft: 'auto',
   },
   heartIcon: {
     fontSize: 16,
+    color: '#8E8E93',
+    marginRight: 4,
+  },
+  heartIconLiked: {
     color: '#FF3B30',
   },
   heartCount: {
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: '600',
     color: '#8E8E93',
-    fontWeight: '400',
+  },
+  heartCountLiked: {
+    color: '#FF3B30',
+  },
+  answerButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 18,
+    marginLeft: 12,
+  },
+  answerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
   promptCard: {
-    backgroundColor: '#FFF9E6',
+    backgroundColor: '#F8F8F8',
     marginHorizontal: 20,
-    marginVertical: 16,
+    marginVertical: 12,
     padding: 16,
     borderRadius: 12,
-    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
   },
   closeButton: {
     position: 'absolute',
     top: 8,
-    right: 12,
-    zIndex: 1,
-    width: 32,
-    height: 32,
+    right: 8,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   closeButtonText: {
-    fontSize: 22,
+    fontSize: 20,
     color: '#8E8E93',
     fontWeight: '300',
   },
   promptContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   linkedinIconContainer: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     backgroundColor: '#0A66C2',
-    borderRadius: 4,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   linkedinIcon: {
-    fontSize: 16,
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  checkIcon: {
+  communityIconContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#34C759',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  communityIcon: {
+    color: '#FFFFFF',
     fontSize: 20,
-    color: '#34C759',
     fontWeight: 'bold',
   },
   promptTextContainer: {
@@ -335,37 +369,36 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   promptSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E93',
-    lineHeight: 18,
   },
   connectButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
-  },
-  connectButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000000',
-  },
-  askButton: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#D1D1D6',
+    borderColor: '#E5E5E7',
+  },
+  connectButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  askButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
   },
   askButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#8E8E93',
+    fontWeight: '600',
+    color: '#000000',
   },
-  bottomPadding: {
-    height: 100,
+  bottomSpacer: {
+    height: 40,
   },
 });

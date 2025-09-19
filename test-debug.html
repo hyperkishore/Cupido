@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Testing Cupido App</h1>
+    <iframe src="http://localhost:8081" width="100%" height="600" style="border: 1px solid #ccc;"></iframe>
+    
+    <script>
+        // Check if the app loads
+        setTimeout(() => {
+            fetch('http://localhost:8081')
+                .then(response => response.text())
+                .then(html => {
+                    console.log('HTML loaded successfully');
+                    console.log('HTML length:', html.length);
+                })
+                .catch(error => console.error('Error loading app:', error));
+        }, 1000);
+    </script>
+</body>
+</html>
