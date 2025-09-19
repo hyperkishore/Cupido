@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,71 +7,132 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+import { questionsService, CategoryQuestion } from '../services/questionsLoader';
+import { useAppState, generateId } from '../contexts/AppStateContext';
+import { VoiceTextInput } from '../components/VoiceTextInput';
 
 export const PixelPerfectReflectScreen = () => {
+  const { dispatch } = useAppState();
   const [answer, setAnswer] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState<CategoryQuestion | null>(null);
+  const [questionNumber, setQuestionNumber] = useState(1);
+
+  useEffect(() => {
+    // Load a random daily reflection question
+    const question = questionsService.getDailyReflectionQuestion();
+    setCurrentQuestion(question);
+  }, []);
+
+  const handleSubmitAnswer = () => {
+    if (!currentQuestion || !answer.trim()) return;
+
+    const newAnswer = {
+      id: generateId(),
+      questionId: currentQuestion.id,
+      questionText: currentQuestion.question,
+      text: answer.trim(),
+      category: currentQuestion.category,
+      timestamp: new Date().toISOString(),
+      hearts: 0,
+      isLiked: false,
+    };
+
+    dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
+    
+    Alert.alert(
+      'Reflection Shared!',
+      'Your thoughtful response has been added to the community feed.',
+      [
+        { text: 'Continue Reflecting', onPress: loadNextQuestion },
+        { text: 'View Community', onPress: () => console.log('Navigate to Home') },
+      ]
+    );
+  };
+
+  const loadNextQuestion = () => {
+    const newQuestion = questionsService.getRandomQuestion();
+    setCurrentQuestion(newQuestion);
+    setAnswer('');
+    setQuestionNumber(prev => prev + 1);
+  };
+
+  const handleCompleteSession = () => {
+    Alert.alert(
+      'Complete Reflection Session',
+      'Are you ready to finish your reflection session?',
+      [
+        { text: 'Continue', style: 'cancel' },
+        { text: 'Complete', onPress: () => console.log('Navigate to Home') },
+      ]
+    );
+  };
+
+  const handleSkip = () => {
+    Alert.alert(
+      'Skip Question',
+      'Would you like to skip this question and try another?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Skip', onPress: loadNextQuestion },
+      ]
+    );
+  };
+
+  if (!currentQuestion) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Loading reflection...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Header */}
+      {/* Minimal Header - just skip option */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.questionInfo}>
-          <Text style={styles.questionNumber}>Question 1</Text>
-          <Text style={styles.category}>Relationships</Text>
-        </View>
-        
-        <TouchableOpacity>
+        <View style={styles.headerSpacer} />
+        <TouchableOpacity onPress={handleSkip}>
           <Text style={styles.skipButton}>Skip</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Clean Content - Focus on Question and Answer */}
       <View style={styles.content}>
-        <Text style={styles.title}>Daily Reflection</Text>
         <Text style={styles.question}>
-          How have your relationships evolved recently?
+          {currentQuestion.question}
         </Text>
         
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Share your thoughts..."
-            placeholderTextColor="#C7C7CC"
-            multiline
-            value={answer}
-            onChangeText={setAnswer}
-            textAlignVertical="top"
-          />
-          <TouchableOpacity style={styles.editIcon}>
-            <Text style={styles.editIconText}>✏️</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <Text style={styles.charCount}>{answer.length}/500</Text>
+        <VoiceTextInput
+          value={answer}
+          onChangeText={setAnswer}
+          placeholder="Speak naturally or type your thoughts..."
+          maxLength={500}
+          style={styles.inputContainer}
+          autoFocus={true}
+        />
       </View>
 
-      {/* Footer */}
+      {/* Simple Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.completeButton}>
-          <Text style={styles.completeButtonText}>Complete Session</Text>
-        </TouchableOpacity>
-        
         <TouchableOpacity 
           style={[
-            styles.nextButton,
-            answer.trim().length === 0 && styles.nextButtonDisabled
+            styles.submitButton,
+            answer.trim().length === 0 && styles.submitButtonDisabled
           ]}
           disabled={answer.trim().length === 0}
+          onPress={handleSubmitAnswer}
         >
-          <Text style={styles.nextButtonText}>Next Question</Text>
+          <Text style={[
+            styles.submitButtonText,
+            answer.trim().length === 0 && styles.submitButtonTextDisabled
+          ]}>
+            Share Reflection
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -89,114 +150,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#C6C6C8',
+    paddingTop: Platform.OS === 'ios' ? 60 : 16,
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backIcon: {
-    fontSize: 24,
-    color: '#000000',
-  },
-  questionInfo: {
-    alignItems: 'center',
-  },
-  questionNumber: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  category: {
-    fontSize: 13,
-    color: '#8E8E93',
-    textTransform: 'capitalize',
-    marginTop: 2,
+  headerSpacer: {
+    flex: 1,
   },
   skipButton: {
-    fontSize: 17,
-    color: '#FF3B30',
+    fontSize: 16,
+    color: '#8E8E93',
     fontWeight: '400',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 32,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    justifyContent: 'center',
   },
   question: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '400',
     color: '#000000',
-    lineHeight: 28,
-    marginBottom: 40,
+    lineHeight: 36,
+    marginBottom: 48,
+    textAlign: 'center',
   },
   inputContainer: {
-    position: 'relative',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    minHeight: 200,
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingLeft: 16,
-    paddingRight: 50,
-  },
-  textInput: {
-    fontSize: 17,
-    color: '#000000',
-    lineHeight: 22,
-    minHeight: 168,
-    textAlignVertical: 'top',
-  },
-  editIcon: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-  },
-  editIconText: {
-    fontSize: 18,
-  },
-  charCount: {
-    fontSize: 15,
-    color: '#8E8E93',
-    textAlign: 'right',
-    marginTop: 8,
+    marginBottom: 32,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 34,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     paddingTop: 16,
   },
-  completeButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  completeButtonText: {
-    fontSize: 17,
-    fontWeight: '400',
-    color: '#8E8E93',
-  },
-  nextButton: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 25,
-    paddingVertical: 16,
+  submitButton: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 18,
     alignItems: 'center',
   },
-  nextButtonDisabled: {
-    backgroundColor: '#FFCCCB',
+  submitButtonDisabled: {
+    backgroundColor: '#F2F2F7',
   },
-  nextButtonText: {
+  submitButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  submitButtonTextDisabled: {
+    color: '#8E8E93',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 17,
+    color: '#8E8E93',
   },
 });

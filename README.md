@@ -7,39 +7,41 @@ Cupido is a privacy-first, habit-forming dating app that replaces swipe fatigue 
 ### Core Functionality
 - **Daily Introspective Prompts**: Text and voice responses to thoughtful questions
 - **AI Persona Generation**: Machine learning creates personality profiles from responses
-- **Graph-Based Matching**: Neo4j-powered compatibility matching using personality traits
+- **Compatibility Matching**: Smart matching using personality traits and reflection patterns
 - **Anonymous Q&A Rooms**: Get to know matches before revealing identities
-- **Real-time Messaging**: Stream Chat integration for private conversations
+- **Real-time Messaging**: Instant messaging between matched users
+- **Progressive Unlock System**: Earn access to features through consistent reflection
 
-### Gamification
-- **Streak System**: Maintain daily reflection habits
-- **Badges & Achievements**: Unlock rewards for consistent engagement
-- **Weekly Digest**: Personalized insights and progress summaries
-- **Personality Insights**: Understand your evolving traits and growth
+### Gamification & Growth
+- **Streak Tracking**: Maintain daily reflection habits with visual progress
+- **Authenticity Scoring**: Encourage genuine self-expression
+- **Reflection Analytics**: Personal insights and growth tracking
+- **Heart System**: Community engagement through reflection appreciation
+- **Achievement Unlocks**: Access new features by completing reflections
 
 ### Safety & Privacy
-- **AI Moderation**: Automated content filtering and safety measures
-- **Privacy-First**: Anonymous matching before identity reveal
-- **Secure Storage**: Encrypted data with Supabase
-- **Report System**: User reporting and moderation tools
+- **Privacy-First Design**: Anonymous matching before identity reveal
+- **Content Moderation**: AI-powered safety measures
+- **Secure Storage**: End-to-end encrypted data protection
+- **User Controls**: Comprehensive privacy and safety settings
 
 ## Tech Stack
 
-- **Frontend**: React Native with Expo
+- **Frontend**: React Native with Expo (TypeScript)
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **Graph Database**: Neo4j Aura for matching algorithms
-- **Real-time Chat**: Stream Chat SDK
-- **AI/ML**: Custom personality analysis engine
-- **Design**: Minimalist black-and-white UI theme
+- **Real-time Features**: Supabase real-time subscriptions
+- **Voice Processing**: React Native Voice integration
+- **Design System**: Apple/Airbnb-inspired minimalist UI (two-color palette)
+- **Build Tools**: Metro bundler, ESLint, TypeScript compiler
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- Expo CLI
-- Supabase account
-- Neo4j Aura account
-- Stream Chat account
+- Node.js (v18 or higher)
+- npm or yarn package manager
+- Expo CLI (`npm install -g @expo/cli`)
+- TypeScript knowledge (recommended)
+- iOS Simulator or Android Emulator (for mobile testing)
 
 ### Installation
 
@@ -55,14 +57,26 @@ npm install
 ```
 
 3. Set up environment variables
-Create a `.env` file with:
+Copy `.env.example` to `.env` and configure:
+```bash
+cp .env.example .env
 ```
+
+Required environment variables:
+```
+# Development Settings
+EXPO_PUBLIC_ENVIRONMENT=development
+EXPO_PUBLIC_DEBUG_MODE=true
+
+# Feature Flags
+EXPO_PUBLIC_ENABLE_VOICE_INPUT=true
+EXPO_PUBLIC_ENABLE_FEEDBACK_SYSTEM=true
+EXPO_PUBLIC_ENABLE_AI_MATCHING=true
+
+# Optional: Backend Integration
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-EXPO_PUBLIC_NEO4J_URI=your_neo4j_uri
-EXPO_PUBLIC_NEO4J_USERNAME=your_neo4j_username
-EXPO_PUBLIC_NEO4J_PASSWORD=your_neo4j_password
-EXPO_PUBLIC_STREAM_API_KEY=your_stream_api_key
+REACT_APP_ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
 4. Set up Supabase Database
@@ -164,24 +178,61 @@ CREATE TABLE user_reports (
 );
 ```
 
-5. Start the development server
+4. Start the development server
 ```bash
+# Start in development mode
 npm start
+
+# Or with debug logging
+EXPO_DEBUG=true npm start
+
+# For web development
+npm run web
+
+# For production build
+npm run build:production
 ```
+
+5. Open the app
+- Web: http://localhost:8081
+- Mobile: Scan QR code with Expo Go app
+- Simulator: Press 'i' for iOS or 'a' for Android
 
 ## Project Structure
 
 ```
 src/
 ├── components/          # Reusable UI components
+│   ├── CleanVoiceInput.tsx      # Voice input component
+│   ├── FeedbackSystem.tsx       # User feedback system
+│   └── withSimpleFeedback.tsx   # HOC for feedback integration
 ├── contexts/           # React contexts for state management
-├── hooks/              # Custom React hooks
-├── navigation/         # Navigation setup
+│   ├── AppStateContext.tsx      # Global app state
+│   └── FeedbackContext.tsx      # Feedback system state
 ├── screens/            # Main app screens
+│   ├── PixelPerfectHomeScreen.tsx       # Main home screen
+│   ├── PixelPerfectReflectScreen.tsx    # Daily reflection screen
+│   ├── PixelPerfectMatchesScreen.tsx    # Matches and compatibility
+│   ├── PixelPerfectProfileScreen.tsx    # User profile
+│   ├── AuthScreen.tsx                   # Authentication
+│   ├── ChatScreen.tsx                   # Real-time messaging
+│   └── [Other screen variants]          # Development/testing screens
 ├── services/           # API services and business logic
-├── types/              # TypeScript type definitions
-└── utils/              # Utility functions and theme
+│   ├── supabase.production.ts   # Backend service integration
+│   ├── questionsService.ts      # Question management
+│   └── feedbackDatabase.ts      # Feedback storage
+├── database/           # Database schemas and migrations
+│   └── production-schema.sql    # Complete PostgreSQL schema
+└── utils/              # Utility functions and helpers
 ```
+
+## Available Scripts
+
+- `npm start` - Start Expo development server
+- `npm run web` - Start web development server
+- `npm run build` - Build for web deployment
+- `npm run lint` - Run ESLint code analysis
+- `npm run type-check` - Run TypeScript type checking
 
 ## Key Services
 
@@ -201,8 +252,27 @@ Cupido emphasizes:
 - **Privacy First**: Users control when to reveal their identity
 - **Meaningful Connections**: Focus on personality over appearance
 - **Habit Formation**: Daily reflection builds self-awareness
-- **Minimalist Design**: Clean, distraction-free interface
+- **Minimalist Design**: Apple/Airbnb-inspired clean interface with two-color palette
+- **Progressive Disclosure**: Features unlock through consistent engagement
 - **Safe Environment**: Robust moderation and reporting systems
+
+## Design System
+
+The app follows a strict minimalist design philosophy:
+
+### Visual Design
+- **Two-color palette**: Primary black (#000000) and white (#FFFFFF)
+- **Accent colors**: Subtle grays for secondary elements
+- **No emojis**: Clean text-based interface throughout
+- **Flat icons**: Simple geometric shapes and symbols
+- **Typography**: System fonts with clean, readable hierarchy
+
+### UI Principles
+- **White space**: Generous spacing for clarity and focus
+- **Consistent patterns**: Reusable component design
+- **Touch-friendly**: Minimum 44px touch targets
+- **Accessibility**: High contrast and screen reader support
+- **Progressive enhancement**: Core functionality works without JavaScript
 
 ## Contributing
 

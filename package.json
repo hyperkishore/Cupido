@@ -6,7 +6,13 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build": "expo export --platform web",
+    "build:production": "NODE_ENV=production expo export --platform web",
+    "serve": "npx serve dist",
+    "deploy": "npm run build:production && npm run serve",
+    "lint": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -16,9 +22,11 @@
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
     "@supabase/supabase-js": "^2.52.0",
-    "expo": "53.0.20",
+    "expo": "53.0.22",
     "expo-av": "^15.1.7",
+    "expo-file-system": "^18.1.11",
     "expo-speech": "^13.1.7",
+    "expo-sqlite": "^15.2.14",
     "expo-status-bar": "~2.2.3",
     "neo4j-driver": "^5.28.1",
     "react": "19.0.0",
@@ -33,6 +41,12 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "serve": "^14.2.1",
     "typescript": "~5.8.3"
   },
   "private": true

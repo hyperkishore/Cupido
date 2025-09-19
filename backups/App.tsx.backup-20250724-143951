@@ -6,15 +6,10 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   StatusBar,
-  Platform,
-  TextInput,
-  ScrollView
+  Platform
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { AppStateProvider } from './src/contexts/AppStateContext';
-import { FeedbackProvider, useFeedback } from './src/contexts/FeedbackContext';
-import { withSimpleFeedback } from './src/components/withSimpleFeedback';
 import { PixelPerfectHomeScreen } from './src/screens/PixelPerfectHomeScreen';
 import { PixelPerfectReflectScreen } from './src/screens/PixelPerfectReflectScreen';
 import { PixelPerfectMatchesScreen } from './src/screens/PixelPerfectMatchesScreen';
@@ -23,17 +18,9 @@ import { PixelPerfectMessagesScreen } from './src/screens/PixelPerfectMessagesSc
 
 const Tab = createBottomTabNavigator();
 
-
-// Wrap screens with simple feedback capability
-const HomeScreenWithFeedback = withSimpleFeedback(PixelPerfectHomeScreen, 'HomeScreen');
-const ReflectScreenWithFeedback = withSimpleFeedback(PixelPerfectReflectScreen, 'ReflectScreen');
-const MatchesScreenWithFeedback = withSimpleFeedback(PixelPerfectMatchesScreen, 'MatchesScreen');
-const ProfileScreenWithFeedback = withSimpleFeedback(PixelPerfectProfileScreen, 'ProfileScreen');
-
-const AppContent = () => {
+export default function App() {
   const [showMessages, setShowMessages] = useState(false);
   const [hasNotification] = useState(true);
-  const { feedbackMode, toggleFeedbackMode } = useFeedback();
 
   const HeaderRight = () => (
     <View style={styles.headerRight}>
@@ -43,6 +30,9 @@ const AppContent = () => {
       >
         <Text style={styles.iconText}>♡</Text>
         {hasNotification && <View style={styles.notificationDot} />}
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.headerIcon}>
+        <Text style={styles.iconText}>☰</Text>
       </TouchableOpacity>
     </View>
   );
@@ -96,10 +86,10 @@ const AppContent = () => {
               },
             })}
           >
-            <Tab.Screen name="Home" component={HomeScreenWithFeedback} />
-            <Tab.Screen name="Reflect" component={ReflectScreenWithFeedback} />
-            <Tab.Screen name="Matches" component={MatchesScreenWithFeedback} />
-            <Tab.Screen name="Profile" component={ProfileScreenWithFeedback} />
+            <Tab.Screen name="Home" component={PixelPerfectHomeScreen} />
+            <Tab.Screen name="Reflect" component={PixelPerfectReflectScreen} />
+            <Tab.Screen name="Matches" component={PixelPerfectMatchesScreen} />
+            <Tab.Screen name="Profile" component={PixelPerfectProfileScreen} />
           </Tab.Navigator>
         </SafeAreaView>
       </NavigationContainer>
@@ -110,22 +100,9 @@ const AppContent = () => {
       <View style={styles.errorContainer}>
         <Text style={styles.errorTitle}>Cupido</Text>
         <Text style={styles.errorText}>Loading app...</Text>
-        <Text style={styles.errorDetails}>
-          {error?.toString() || 'Unknown error occurred'}
-        </Text>
       </View>
     );
   }
-};
-
-export default function App() {
-  return (
-    <AppStateProvider>
-      <FeedbackProvider>
-        <AppContent />
-      </FeedbackProvider>
-    </AppStateProvider>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -196,12 +173,5 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 17,
     color: '#8E8E93',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  errorDetails: {
-    fontSize: 14,
-    color: '#FF3B30',
-    textAlign: 'center',
   },
 });
