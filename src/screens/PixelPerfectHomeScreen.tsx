@@ -86,16 +86,6 @@ export const PixelPerfectHomeScreen = () => {
     );
   };
 
-  const handleAnswerQuestion = (questionId: string) => {
-    Alert.alert(
-      'Share Your Thoughts',
-      'This will open the reflection screen to answer this question.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Answer', onPress: () => console.log('Navigate to Reflect screen') },
-      ]
-    );
-  };
 
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
@@ -202,12 +192,6 @@ export const PixelPerfectHomeScreen = () => {
         {/* LinkedIn Connect Prompt after first card */}
         {index === 0 && showLinkedInPrompt && (
           <View style={styles.promptCard}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowLinkedInPrompt(false)}
-            >
-              <Text style={styles.closeButtonText}>×</Text>
-            </TouchableOpacity>
             <View style={styles.promptContent}>
               <View style={styles.linkedinIconContainer}>
                 <Text style={styles.linkedinIcon}>in</Text>
@@ -231,12 +215,6 @@ export const PixelPerfectHomeScreen = () => {
         {/* Community Prompt after fourth card */}
         {index === 3 && showCommunityPrompt && (
           <View style={styles.promptCard}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowCommunityPrompt(false)}
-            >
-              <Text style={styles.closeButtonText}>×</Text>
-            </TouchableOpacity>
             <View style={styles.promptContent}>
               <View style={styles.communityIconContainer}>
                 <Text style={styles.communityIcon}>✓</Text>
