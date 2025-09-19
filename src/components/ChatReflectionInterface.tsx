@@ -10,8 +10,12 @@ import {
   Alert,
   TextInput,
   Image,
+  Animated,
+  Vibration,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import { questionsService, CategoryQuestion } from '../services/questionsLoader';
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { habitTrackingService } from '../services/habitTrackingService';
@@ -35,10 +39,16 @@ export const ChatReflectionInterface = () => {
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
   const [conversationStage, setConversationStage] = useState<'greeting' | 'questioning' | 'followup'>('greeting');
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recordingAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Start conversation with greeting
     startConversation();
+    setupAudioMode();
   }, []);
 
   useEffect(() => {
@@ -48,10 +58,119 @@ export const ChatReflectionInterface = () => {
     }, 100);
   }, [messages]);
 
+  const setupAudioMode = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+    } catch (error) {
+      console.error('Failed to setup audio:', error);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      console.log('Starting recording...');
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant audio recording permission to use voice input.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const newRecording = new Audio.Recording();
+      await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await newRecording.startAsync();
+
+      setRecording(newRecording);
+      setIsRecording(true);
+
+      // Start pulsing animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(recordingAnimation, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(recordingAnimation, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+
+      // Haptic feedback
+      if (Platform.OS === 'ios') {
+        Vibration.vibrate(10);
+      }
+
+      console.log('Recording started');
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+
+    try {
+      console.log('Stopping recording...');
+      setIsRecording(false);
+      recordingAnimation.stopAnimation();
+      recordingAnimation.setValue(0);
+
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      console.log('Recording stopped and stored at:', uri);
+
+      // Here you would normally transcribe the audio
+      // For now, we'll simulate it with a placeholder
+      const transcribedText = await transcribeAudio(uri);
+      if (transcribedText) {
+        setCurrentInput(transcribedText);
+        // Optionally auto-send after transcription
+        // handleSendMessage();
+      }
+
+      setRecording(null);
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  const transcribeAudio = async (uri: string | null): Promise<string> => {
+    // This is a placeholder for transcription
+    // In production, you'd send this to a transcription service
+    // For now, return a simulated transcription
+    if (!uri) return '';
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // In a real app, this would be the actual transcription
+    return 'Voice message transcription will appear here';
+  };
+
   const startConversation = () => {
+    const greetings = [
+      "Hi there! ✨ I'm here to help you discover more about yourself through meaningful reflection. Ready to explore what makes you uniquely you?",
+      "Welcome! 🌟 I'm excited to be part of your self-discovery journey. Through our conversations, we'll uncover insights that help you connect authentically with others.",
+      "Hello! 💫 I'm here to guide you through thoughtful reflection. Each response you share helps build a genuine picture of who you are.",
+    ];
+
+    const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+    
     const greetingMessage: ChatMessage = {
       id: generateId(),
-      text: "Hi! I'm here to help you reflect on your thoughts and experiences. Let's start with a question that might spark some interesting insights.",
+      text: greeting,
       isBot: true,
       timestamp: new Date(),
     };
@@ -61,7 +180,7 @@ export const ChatReflectionInterface = () => {
     // After a short delay, ask the first question
     setTimeout(() => {
       askQuestion();
-    }, 1500);
+    }, 2000);
   };
 
   const askQuestion = () => {
@@ -84,10 +203,12 @@ export const ChatReflectionInterface = () => {
   const handleSendMessage = async () => {
     if (!currentInput.trim() || !currentQuestion) return;
 
+    const answerText = currentInput.trim();
+    
     // Add user's message
     const userMessage: ChatMessage = {
       id: generateId(),
-      text: currentInput.trim(),
+      text: answerText,
       isBot: false,
       timestamp: new Date(),
     };
@@ -100,7 +221,7 @@ export const ChatReflectionInterface = () => {
         id: generateId(),
         questionId: currentQuestion.id,
         questionText: currentQuestion.question,
-        text: currentInput.trim(),
+        text: answerText,
         category: currentQuestion.category,
         timestamp: new Date().toISOString(),
         hearts: 0,
@@ -111,22 +232,27 @@ export const ChatReflectionInterface = () => {
       
       await habitTrackingService.addReflection(
         currentQuestion.question,
-        currentInput.trim(),
+        answerText,
         false
       );
 
       // Analyze reflection for personality insights
       await personalityInsightsService.analyzeReflection(
         currentQuestion.question,
-        currentInput.trim(),
+        answerText,
         currentQuestion.category,
         false // voiceUsed - will be implemented later
       );
 
       // Bot response after user answers
       setTimeout(() => {
-        provideFeedbackAndContinue();
+        provideFeedbackAndContinue(answerText);
       }, 1000);
+
+      // Check for achievements
+      setTimeout(() => {
+        checkForAchievements(answerText);
+      }, 2500);
 
     } catch (error) {
       console.error('Error saving reflection:', error);
@@ -136,16 +262,37 @@ export const ChatReflectionInterface = () => {
     setIsWaitingForAnswer(false);
   };
 
-  const provideFeedbackAndContinue = () => {
-    const encouragements = [
-      "Thank you for sharing that! Your reflection has been added to help build your authentic profile.",
-      "That's a thoughtful response! I appreciate you taking the time to reflect deeply.",
-      "Great insight! These reflections help us understand what makes you uniquely you.",
-      "I love hearing your perspective on this. Your authentic voice really comes through.",
-      "Beautiful reflection! These moments of honesty help create meaningful connections.",
-    ];
-
-    const encouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
+  const provideFeedbackAndContinue = (answerText: string) => {
+    // Analyze the user's response for more authentic feedback
+    const userResponse = answerText.toLowerCase();
+    const responseLength = userResponse.split(' ').length;
+    
+    let encouragement = "";
+    
+    // More authentic responses based on content analysis
+    if (userResponse.includes('difficult') || userResponse.includes('hard') || userResponse.includes('struggle')) {
+      encouragement = "Thank you for being so vulnerable. It takes real courage to share something difficult. 💙";
+    } else if (userResponse.includes('happy') || userResponse.includes('joy') || userResponse.includes('love')) {
+      encouragement = "Your positivity is contagious! It's beautiful to see you embrace these joyful moments.";
+    } else if (userResponse.includes('learn') || userResponse.includes('grow') || userResponse.includes('change')) {
+      encouragement = "I can see you're someone who values growth. That self-awareness is really powerful.";
+    } else if (responseLength > 50) {
+      encouragement = "Wow, thank you for opening up so deeply. The detail in your reflection shows real introspection.";
+    } else if (responseLength < 10) {
+      encouragement = "Sometimes the most profound truths are the simplest. Would you like to explore this further?";
+    } else if (userResponse.includes('family') || userResponse.includes('friend') || userResponse.includes('relationship')) {
+      encouragement = "Relationships really shape who we are, don't they? Thank you for sharing this connection.";
+    } else if (userResponse.includes('work') || userResponse.includes('career') || userResponse.includes('job')) {
+      encouragement = "Our professional lives are such a big part of our identity. I appreciate you sharing this aspect.";
+    } else {
+      // Fallback to varied generic responses
+      const genericResponses = [
+        "Thank you for sharing that with me. Your authenticity really shines through.",
+        "I appreciate your honesty here. Every reflection helps paint a clearer picture of who you are.",
+        "That's really insightful. These moments of reflection are building something meaningful.",
+      ];
+      encouragement = genericResponses[Math.floor(Math.random() * genericResponses.length)];
+    }
 
     const feedbackMessage: ChatMessage = {
       id: generateId(),
@@ -303,6 +450,42 @@ export const ChatReflectionInterface = () => {
     setIsWaitingForAnswer(true);
   };
 
+  const checkForAchievements = async (answerText: string) => {
+    const messageCount = messages.filter(m => !m.isBot).length;
+    const wordCount = answerText.split(' ').length;
+    
+    let achievementMessage = null;
+
+    // First reflection achievement
+    if (messageCount === 1) {
+      achievementMessage = "🎉 Achievement Unlocked: First Steps! \n\nYou've taken your first step on this journey of self-discovery. Welcome to the community!";
+    }
+    // Deep thinker achievement
+    else if (wordCount > 40 && messageCount === 3) {
+      achievementMessage = "🧠 Achievement Unlocked: Deep Thinker! \n\nYour thoughtful reflections show real introspection. You're building an authentic profile!";
+    }
+    // Vulnerability achievement
+    else if ((answerText.toLowerCase().includes('difficult') || answerText.toLowerCase().includes('struggle') || answerText.toLowerCase().includes('vulnerable')) && messageCount >= 2) {
+      achievementMessage = "💙 Achievement Unlocked: Vulnerability Warrior! \n\nSharing something personal takes courage. Your authenticity is inspiring!";
+    }
+    // Consistency achievement
+    else if (messageCount === 5) {
+      achievementMessage = "⭐ Achievement Unlocked: Reflection Master! \n\nFive thoughtful responses! You're 25% of the way to unlocking 1-on-1 chats!";
+    }
+
+    if (achievementMessage) {
+      setTimeout(() => {
+        const achievement: ChatMessage = {
+          id: generateId(),
+          text: achievementMessage,
+          isBot: true,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, achievement]);
+      }, 1000);
+    }
+  };
+
   const renderMessage = (message: ChatMessage) => {
     return (
       <View key={message.id} style={[
@@ -386,23 +569,58 @@ export const ChatReflectionInterface = () => {
             >
               <Text style={styles.photoButtonIcon}>📷</Text>
             </TouchableOpacity>
-            <TextInput
-              style={styles.textInput}
-              value={currentInput}
-              onChangeText={setCurrentInput}
-              placeholder="Type your thoughts..."
-              placeholderTextColor="#8E8E93"
-              multiline
-              maxLength={500}
-              autoFocus={isWaitingForAnswer}
-            />
+            
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={[styles.textInput, isRecording && styles.textInputRecording]}
+                value={currentInput}
+                onChangeText={setCurrentInput}
+                placeholder={isRecording ? "Recording..." : "Type your thoughts or hold to record"}
+                placeholderTextColor="#8E8E93"
+                multiline
+                maxLength={500}
+                autoFocus={isWaitingForAnswer && !isRecording}
+                editable={!isRecording}
+              />
+              
+              {/* Voice recording overlay */}
+              <TouchableOpacity 
+                style={styles.voiceRecordingArea}
+                activeOpacity={1}
+                onPressIn={startRecording}
+                onPressOut={stopRecording}
+                onLongPress={() => {}} // Required for long press to work
+              >
+                {isRecording && (
+                  <Animated.View style={[
+                    styles.recordingIndicator,
+                    {
+                      opacity: recordingAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                      transform: [{
+                        scale: recordingAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [1, 1.1],
+                        }),
+                      }],
+                    }
+                  ]}>
+                    <View style={styles.recordingDot} />
+                    <Text style={styles.recordingText}>Recording... Release to send</Text>
+                  </Animated.View>
+                )}
+              </TouchableOpacity>
+            </View>
+            
             <TouchableOpacity 
               style={[
                 styles.sendButton,
                 currentInput.trim().length === 0 && styles.sendButtonDisabled
               ]}
               onPress={handleSendMessage}
-              disabled={currentInput.trim().length === 0}
+              disabled={currentInput.trim().length === 0 || isRecording}
             >
               <Text style={[
                 styles.sendButtonText,
@@ -441,13 +659,23 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   messageBubble: {
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   botBubble: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   userBubble: {
     backgroundColor: '#007AFF',
@@ -548,5 +776,44 @@ const styles = StyleSheet.create({
   },
   photoButtonIcon: {
     fontSize: 20,
+  },
+  textInputContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  textInputRecording: {
+    backgroundColor: '#FFF3F3',
+    borderColor: '#FF3B30',
+    borderWidth: 1,
+  },
+  voiceRecordingArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+  },
+  recordingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF3B30',
+  },
+  recordingText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: '600',
   },
 });
