@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#C6C6C8',
   },
   authenticityScore: {
-    fontSize: 64,
-    fontWeight: '700',
+    fontSize: 72,
+    fontWeight: '300',
     color: '#000000',
-    lineHeight: 64,
+    lineHeight: 72,
   },
   authenticityLabel: {
     fontSize: 17,
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#000000',
     marginBottom: 4,
   },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
     color: '#000000',
     marginBottom: 16,
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   traitPercentage: {
-    fontSize: 36,
-    fontWeight: '600',
+    fontSize: 32,
+    fontWeight: '300',
     color: '#000000',
     marginBottom: 4,
   },

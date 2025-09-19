@@ -21,6 +21,7 @@ export const PixelPerfectReflectScreen = () => {
   const [answer, setAnswer] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<CategoryQuestion | null>(null);
   const [questionNumber, setQuestionNumber] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Load a random daily reflection question
@@ -28,30 +29,50 @@ export const PixelPerfectReflectScreen = () => {
     setCurrentQuestion(question);
   }, []);
 
-  const handleSubmitAnswer = () => {
-    if (!currentQuestion || !answer.trim()) return;
+  const handleTextChange = (text: string) => {
+    setAnswer(text);
+  };
 
-    const newAnswer = {
-      id: generateId(),
-      questionId: currentQuestion.id,
-      questionText: currentQuestion.question,
-      text: answer.trim(),
-      category: currentQuestion.category,
-      timestamp: new Date().toISOString(),
-      hearts: 0,
-      isLiked: false,
-    };
+  const handleSubmitAnswer = async () => {
+    if (!currentQuestion || !answer.trim() || isSubmitting) return;
 
-    dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
+    setIsSubmitting(true);
     
-    Alert.alert(
-      'Reflection Shared!',
-      'Your thoughtful response has been added to the community feed.',
-      [
-        { text: 'Continue Reflecting', onPress: loadNextQuestion },
-        { text: 'View Community', onPress: () => console.log('Navigate to Home') },
-      ]
-    );
+    try {
+      const newAnswer = {
+        id: generateId(),
+        questionId: currentQuestion.id,
+        questionText: currentQuestion.question,
+        text: answer.trim(),
+        category: currentQuestion.category,
+        timestamp: new Date().toISOString(),
+        hearts: 0,
+        isLiked: false,
+      };
+
+      dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
+      
+      // Track the reflection with habit tracking service
+      await habitTrackingService.addReflection(
+        currentQuestion.question,
+        answer.trim(),
+        false // voiceUsed - we'll implement this later
+      );
+      
+      Alert.alert(
+        'Reflection Shared!',
+        'Your thoughtful response has been added to the community feed.',
+        [
+          { text: 'Continue Reflecting', onPress: loadNextQuestion },
+          { text: 'View Community', onPress: () => console.log('Navigate to Home') },
+        ]
+      );
+    } catch (error) {
+      console.error('Error submitting reflection:', error);
+      Alert.alert('Error', 'Failed to save your reflection. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const loadNextQuestion = () => {
