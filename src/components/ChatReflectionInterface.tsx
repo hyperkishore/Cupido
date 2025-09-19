@@ -31,13 +31,34 @@ interface ChatMessage {
   imageInsights?: string;
 }
 
+interface ConversationState {
+  questionsAsked: string[];
+  currentTopic?: string;
+  followUpCount: number;
+  personalityInsights: {
+    traits: string[];
+    interests: string[];
+    values: string[];
+  };
+}
+
 export const ChatReflectionInterface = () => {
   const { dispatch } = useAppState();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<CategoryQuestion | null>(null);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
-  const [conversationStage, setConversationStage] = useState<'greeting' | 'questioning' | 'followup'>('greeting');
+  const [conversationState, setConversationState] = useState<ConversationState>({
+    questionsAsked: [],
+    currentTopic: undefined,
+    followUpCount: 0,
+    personalityInsights: {
+      traits: [],
+      interests: [],
+      values: []
+    }
+  });
+  const [allQuestions, setAllQuestions] = useState<any[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Voice recording states
@@ -47,10 +68,23 @@ export const ChatReflectionInterface = () => {
   const recordingAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start conversation with greeting
-    startConversation();
+    // Load questions and start conversation
+    loadQuestionsAndStart();
     setupAudioMode();
   }, []);
+
+  const loadQuestionsAndStart = async () => {
+    try {
+      // Load all questions from the JSON file
+      const questionsData = await import('../data/questions.json');
+      setAllQuestions(questionsData.default || questionsData);
+      startConversation();
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      // Fallback to service questions
+      startConversation();
+    }
+  };
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages are added
@@ -214,9 +248,9 @@ export const ChatReflectionInterface = () => {
 
   const startConversation = () => {
     const greetings = [
-      "Hi there! ✨ I'm here to help you discover more about yourself through meaningful reflection. Ready to explore what makes you uniquely you?",
-      "Welcome! 🌟 I'm excited to be part of your self-discovery journey. Through our conversations, we'll uncover insights that help you connect authentically with others.",
-      "Hello! 💫 I'm here to guide you through thoughtful reflection. Each response you share helps build a genuine picture of who you are.",
+      "Hey! I'm genuinely excited to get to know you better. I love having deep conversations with people – there's something magical about really understanding what makes someone tick.",
+      "Hi there! I'm that friend who asks the questions everyone else is thinking but doesn't dare to ask. Ready to dive into what makes you... well, you?",
+      "Hello! Think of me as your most curious friend – the one who remembers what you said three conversations ago and actually wants to understand your perspective on life.",
     ];
 
     const greeting = greetings[Math.floor(Math.random() * greetings.length)];
@@ -230,19 +264,24 @@ export const ChatReflectionInterface = () => {
     
     setMessages([greetingMessage]);
     
-    // After a short delay, ask the first question
+    // After a short delay, start with a natural conversation opener
     setTimeout(() => {
-      askQuestion();
-    }, 2000);
+      askNaturalQuestion();
+    }, 2500);
   };
 
-  const askQuestion = () => {
-    const question = questionsService.getDailyReflectionQuestion();
+  const askNaturalQuestion = () => {
+    const question = selectNextQuestion();
+    if (!question) return;
+    
     setCurrentQuestion(question);
+    
+    // Add natural conversation lead-ins based on conversation flow
+    const conversationLeadIns = getConversationLeadIn(question);
     
     const questionMessage: ChatMessage = {
       id: generateId(),
-      text: question.question,
+      text: `${conversationLeadIns} ${question.question}`,
       isBot: true,
       timestamp: new Date(),
       questionId: question.id,
@@ -250,7 +289,91 @@ export const ChatReflectionInterface = () => {
     
     setMessages(prev => [...prev, questionMessage]);
     setIsWaitingForAnswer(true);
-    setConversationStage('questioning');
+    
+    // Track this question
+    setConversationState(prev => ({
+      ...prev,
+      questionsAsked: [...prev.questionsAsked, question.question],
+      currentTopic: question.theme
+    }));
+  };
+
+  const selectNextQuestion = () => {
+    let availableQuestions = [];
+    
+    if (allQuestions.length > 0) {
+      // Use questions from JSON file
+      availableQuestions = allQuestions.filter(q => 
+        !conversationState.questionsAsked.includes(q.question)
+      );
+    } else {
+      // Fallback to service questions
+      const serviceQuestion = questionsService.getDailyReflectionQuestion();
+      return serviceQuestion;
+    }
+    
+    if (availableQuestions.length === 0) {
+      // If we've asked all questions, reset and start over with different themes
+      availableQuestions = allQuestions;
+      setConversationState(prev => ({ ...prev, questionsAsked: [] }));
+    }
+    
+    // Intelligently select based on conversation flow
+    return selectQuestionBasedOnContext(availableQuestions);
+  };
+
+  const selectQuestionBasedOnContext = (questions: any[]) => {
+    const messageCount = messages.filter(m => !m.isBot).length;
+    
+    // Start with lighter questions, progress to deeper ones
+    if (messageCount === 0) {
+      // First question - something engaging but not too heavy
+      const starters = questions.filter(q => 
+        q.emotional_depth === 'low' || q.emotional_depth === 'medium'
+      );
+      return starters[Math.floor(Math.random() * starters.length)];
+    } else if (messageCount < 3) {
+      // Early questions - mixed depth
+      const early = questions.filter(q => q.emotional_depth !== 'high');
+      return early[Math.floor(Math.random() * early.length)];
+    } else {
+      // Later questions - can go deeper
+      return questions[Math.floor(Math.random() * questions.length)];
+    }
+  };
+
+  const getConversationLeadIn = (question: any) => {
+    const messageCount = messages.filter(m => !m.isBot).length;
+    const tone = question.tone;
+    
+    if (messageCount === 0) {
+      const firstQuestionLeadIns = [
+        "Let me start with something I'm genuinely curious about:",
+        "Here's what I'm wondering about you:",
+        "I'd love to know:"
+      ];
+      return firstQuestionLeadIns[Math.floor(Math.random() * firstQuestionLeadIns.length)];
+    }
+    
+    // Topic transitions based on previous responses
+    if (conversationState.currentTopic !== question.theme) {
+      const transitions = [
+        "Speaking of that, this makes me think of something else:",
+        "That's fascinating. On a slightly different note:",
+        "You know what else I'm curious about?",
+        "That reminds me of something I wanted to ask:"
+      ];
+      return transitions[Math.floor(Math.random() * transitions.length)];
+    }
+    
+    // Continuing same topic
+    const continuations = [
+      "Building on that:",
+      "That's interesting! Related to that:",
+      "I'm curious to explore this further:",
+      "That makes me wonder:"
+    ];
+    return continuations[Math.floor(Math.random() * continuations.length)];
   };
 
   const handleSendMessage = async () => {
@@ -317,130 +440,201 @@ export const ChatReflectionInterface = () => {
   };
 
   const provideFeedbackAndContinue = (answerText: string) => {
-    // Analyze the user's response for more authentic feedback
+    // Analyze the user's response for contextual, friend-like feedback
     const userResponse = answerText.toLowerCase();
     const responseLength = userResponse.split(' ').length;
     
-    let encouragement = "";
+    // Update personality insights based on response
+    updatePersonalityInsights(answerText);
     
-    // More authentic responses based on content analysis
-    if (userResponse.includes('difficult') || userResponse.includes('hard') || userResponse.includes('struggle')) {
-      encouragement = "Thank you for being so vulnerable. It takes real courage to share something difficult. 💙";
-    } else if (userResponse.includes('happy') || userResponse.includes('joy') || userResponse.includes('love')) {
-      encouragement = "Your positivity is contagious! It's beautiful to see you embrace these joyful moments.";
-    } else if (userResponse.includes('learn') || userResponse.includes('grow') || userResponse.includes('change')) {
-      encouragement = "I can see you're someone who values growth. That self-awareness is really powerful.";
-    } else if (responseLength > 50) {
-      encouragement = "Wow, thank you for opening up so deeply. The detail in your reflection shows real introspection.";
-    } else if (responseLength < 10) {
-      encouragement = "Sometimes the most profound truths are the simplest. Would you like to explore this further?";
-    } else if (userResponse.includes('family') || userResponse.includes('friend') || userResponse.includes('relationship')) {
-      encouragement = "Relationships really shape who we are, don't they? Thank you for sharing this connection.";
-    } else if (userResponse.includes('work') || userResponse.includes('career') || userResponse.includes('job')) {
-      encouragement = "Our professional lives are such a big part of our identity. I appreciate you sharing this aspect.";
-    } else {
-      // Fallback to varied generic responses
-      const genericResponses = [
-        "Thank you for sharing that with me. Your authenticity really shines through.",
-        "I appreciate your honesty here. Every reflection helps paint a clearer picture of who you are.",
-        "That's really insightful. These moments of reflection are building something meaningful.",
-      ];
-      encouragement = genericResponses[Math.floor(Math.random() * genericResponses.length)];
-    }
-
+    let response = generateAuthenticResponse(answerText, userResponse, responseLength);
+    
     const feedbackMessage: ChatMessage = {
       id: generateId(),
-      text: encouragement,
+      text: response,
       isBot: true,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, feedbackMessage]);
 
-    // Ask if they want to continue or explore further
+    // Continue conversation naturally after a pause
     setTimeout(() => {
-      offerContinueOptions();
-    }, 1500);
+      continueConversationNaturally(answerText);
+    }, 2000 + Math.random() * 1000); // Variable delay for natural feel
   };
 
-  const offerContinueOptions = () => {
-    const options = [
-      "Would you like to explore another question, or shall we dive deeper into what you just shared?",
-      "Want to continue with another question, share a photo from your day, or explore this topic further?",
-      "What would you like to do next - another reflection, share a moment from your day through a photo, or go deeper?",
+  const updatePersonalityInsights = (answer: string) => {
+    const words = answer.toLowerCase();
+    let newTraits: string[] = [];
+    let newInterests: string[] = [];
+    let newValues: string[] = [];
+    
+    // Extract traits
+    if (words.includes('creative') || words.includes('art') || words.includes('music')) {
+      newTraits.push('creative');
+    }
+    if (words.includes('family') || words.includes('friends') || words.includes('relationship')) {
+      newTraits.push('relationship-oriented');
+    }
+    if (words.includes('adventure') || words.includes('travel') || words.includes('explore')) {
+      newTraits.push('adventurous');
+    }
+    
+    // Extract interests
+    if (words.includes('reading') || words.includes('books')) newInterests.push('reading');
+    if (words.includes('nature') || words.includes('outdoors')) newInterests.push('nature');
+    if (words.includes('cooking') || words.includes('food')) newInterests.push('culinary');
+    
+    // Extract values
+    if (words.includes('honest') || words.includes('authentic')) newValues.push('authenticity');
+    if (words.includes('kind') || words.includes('compassion')) newValues.push('kindness');
+    if (words.includes('growth') || words.includes('learn')) newValues.push('growth');
+    
+    setConversationState(prev => ({
+      ...prev,
+      personalityInsights: {
+        traits: [...new Set([...prev.personalityInsights.traits, ...newTraits])],
+        interests: [...new Set([...prev.personalityInsights.interests, ...newInterests])],
+        values: [...new Set([...prev.personalityInsights.values, ...newValues])]
+      }
+    }));
+  };
+
+  const generateAuthenticResponse = (answerText: string, userResponse: string, responseLength: number) => {
+    // Context-aware responses that feel like a real friend
+    if (userResponse.includes('difficult') || userResponse.includes('hard') || userResponse.includes('struggle')) {
+      const vulnerableResponses = [
+        "Honestly, thank you for trusting me with that. It's not easy to share the hard stuff.",
+        "I really respect your openness here. That kind of vulnerability takes courage.",
+        "That sounds really challenging. I'm glad you felt comfortable sharing that with me."
+      ];
+      return vulnerableResponses[Math.floor(Math.random() * vulnerableResponses.length)];
+    }
+    
+    if (userResponse.includes('happy') || userResponse.includes('joy') || userResponse.includes('love') || userResponse.includes('excited')) {
+      const joyfulResponses = [
+        "I love how your face probably lights up when you talk about this! That joy is infectious.",
+        "There's something beautiful about hearing someone talk about what truly makes them happy.",
+        "Your enthusiasm about this is so genuine – it's one of those things that makes you uniquely you."
+      ];
+      return joyfulResponses[Math.floor(Math.random() * joyfulResponses.length)];
+    }
+    
+    if (responseLength > 50) {
+      const deepResponses = [
+        "Wow, I can tell you've really thought about this. The way you articulate your thoughts is fascinating.",
+        "I love how deeply you think about things. There are layers to your perspective that are really intriguing.",
+        "You have such a thoughtful way of seeing things. I find myself thinking about what you just shared."
+      ];
+      return deepResponses[Math.floor(Math.random() * deepResponses.length)];
+    }
+    
+    if (responseLength < 8) {
+      const conciseResponses = [
+        "Sometimes the best truths are simple ones. There's power in that clarity.",
+        "I appreciate the honesty in that. Not everything needs a long explanation.",
+        "That's beautifully direct. I respect people who can distill things to their essence."
+      ];
+      return conciseResponses[Math.floor(Math.random() * conciseResponses.length)];
+    }
+    
+    // Default authentic responses
+    const authenticResponses = [
+      "That's really interesting. I can see why that resonates with you.",
+      "There's something authentic about the way you express yourself that I really appreciate.",
+      "I love getting these glimpses into how your mind works.",
+      "That perspective is so uniquely yours. It's fascinating to hear."
     ];
+    return authenticResponses[Math.floor(Math.random() * authenticResponses.length)];
+  };
 
-    // 40% chance to offer photo sharing
-    const offerPhoto = Math.random() < 0.4;
-    const messageText = offerPhoto ? options[1] : options[0];
+  const continueConversationNaturally = (previousAnswer: string) => {
+    const shouldFollowUp = Math.random() < 0.3; // 30% chance of follow-up
+    const shouldAskNew = Math.random() < 0.7; // 70% chance of new question
+    
+    if (shouldFollowUp && conversationState.followUpCount < 2) {
+      // Ask a contextual follow-up
+      askContextualFollowUp(previousAnswer);
+      setConversationState(prev => ({ ...prev, followUpCount: prev.followUpCount + 1 }));
+    } else if (shouldAskNew) {
+      // Ask a new question with natural transition
+      setTimeout(() => {
+        askNaturalQuestion();
+      }, 1000);
+      setConversationState(prev => ({ ...prev, followUpCount: 0 }));
+    } else {
+      // Share a personal insight or observation
+      sharePersonalInsight();
+    }
+  };
 
-    const continueMessage: ChatMessage = {
+  const askContextualFollowUp = (previousAnswer: string) => {
+    const answer = previousAnswer.toLowerCase();
+    let followUp = "";
+    
+    if (answer.includes('family') || answer.includes('parent') || answer.includes('sibling')) {
+      const familyFollowUps = [
+        "Family dynamics are so complex, aren't they? How do you think your family has shaped your perspective on relationships?",
+        "It's interesting how family experiences stay with us. What's one thing you appreciate about your family dynamic that you didn't recognize when you were younger?"
+      ];
+      followUp = familyFollowUps[Math.floor(Math.random() * familyFollowUps.length)];
+    } else if (answer.includes('work') || answer.includes('career') || answer.includes('job')) {
+      const workFollowUps = [
+        "Work is such a big part of our identity. Do you feel like your work reflects who you are, or is it more separate from your 'real' self?",
+        "That's fascinating about your work life. What's something about your career path that would surprise people who know you now?"
+      ];
+      followUp = workFollowUps[Math.floor(Math.random() * workFollowUps.length)];
+    } else if (answer.includes('friend') || answer.includes('relationship')) {
+      const relationshipFollowUps = [
+        "Relationships are everything, really. What's something you've learned about yourself through your friendships?",
+        "It's beautiful how much our connections shape us. How do you think you show up differently in various relationships?"
+      ];
+      followUp = relationshipFollowUps[Math.floor(Math.random() * relationshipFollowUps.length)];
+    } else {
+      // Generic but thoughtful follow-ups
+      const genericFollowUps = [
+        "That makes me curious – what's the story behind how you developed that perspective?",
+        "I'm intrigued by that. What do you think someone close to you would say about that aspect of who you are?",
+        "That's really insightful. How do you think that shows up in your daily life?"
+      ];
+      followUp = genericFollowUps[Math.floor(Math.random() * genericFollowUps.length)];
+    }
+    
+    const followUpMessage: ChatMessage = {
       id: generateId(),
-      text: messageText,
+      text: followUp,
       isBot: true,
       timestamp: new Date(),
     };
-
-    setMessages(prev => [...prev, continueMessage]);
-    setConversationStage('followup');
+    
+    setMessages(prev => [...prev, followUpMessage]);
+    setIsWaitingForAnswer(true);
   };
 
-  const handleContinueReflecting = () => {
-    const continueMessage: ChatMessage = {
+  const sharePersonalInsight = () => {
+    const insights = [
+      "You know, talking with you makes me think about how we all have these hidden depths that only come out in the right conversations.",
+      "I love these kinds of conversations where you start to see the real person behind the everyday interactions.",
+      "There's something special about the way you think about things. It's like you see the world through your own unique lens.",
+      "I find it fascinating how much you can learn about someone just by paying attention to how they express themselves."
+    ];
+    
+    const insight = insights[Math.floor(Math.random() * insights.length)];
+    
+    const insightMessage: ChatMessage = {
       id: generateId(),
-      text: "Let's continue reflecting",
-      isBot: false,
+      text: insight,
+      isBot: true,
       timestamp: new Date(),
     };
-
-    setMessages(prev => [...prev, continueMessage]);
-
+    
+    setMessages(prev => [...prev, insightMessage]);
+    
+    // Continue with a new question after sharing insight
     setTimeout(() => {
-      const nextMessage: ChatMessage = {
-        id: generateId(),
-        text: "Perfect! Here's another question for you to explore:",
-        isBot: true,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, nextMessage]);
-      
-      setTimeout(() => {
-        askQuestion();
-      }, 1000);
-    }, 500);
-  };
-
-  const handleExploreDeeper = () => {
-    const exploreMessage: ChatMessage = {
-      id: generateId(),
-      text: "Tell me more about that",
-      isBot: false,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, exploreMessage]);
-
-    setTimeout(() => {
-      const followupPrompts = [
-        "What do you think influenced that perspective?",
-        "How does that make you feel when you think about it now?",
-        "What would you tell someone else in a similar situation?",
-        "How has this experience shaped who you are today?",
-        "What surprised you most about your own response?",
-      ];
-
-      const prompt = followupPrompts[Math.floor(Math.random() * followupPrompts.length)];
-
-      const followupMessage: ChatMessage = {
-        id: generateId(),
-        text: prompt,
-        isBot: true,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, followupMessage]);
-      setIsWaitingForAnswer(true);
-    }, 1000);
+      askNaturalQuestion();
+    }, 2500);
   };
 
   const handleSharePhoto = async () => {
@@ -587,34 +781,10 @@ export const ChatReflectionInterface = () => {
         contentContainerStyle={styles.messagesContent}
       >
         {messages.map(renderMessage)}
-        
-        {/* Continue/Explore buttons during followup stage */}
-        {conversationStage === 'followup' && !isWaitingForAnswer && (
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity 
-              style={styles.optionButton}
-              onPress={handleContinueReflecting}
-            >
-              <Text style={styles.optionButtonText}>New Question</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.optionButton}
-              onPress={handleSharePhoto}
-            >
-              <Text style={styles.optionButtonText}>Share Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.optionButton}
-              onPress={handleExploreDeeper}
-            >
-              <Text style={styles.optionButtonText}>Explore Deeper</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
 
-      {/* Input area */}
-      {(isWaitingForAnswer || conversationStage === 'questioning') && (
+      {/* Input area - only shows when waiting for answer */}
+      {isWaitingForAnswer && (
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
@@ -757,25 +927,6 @@ const styles = StyleSheet.create({
   },
   userTimestamp: {
     textAlign: 'right',
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginTop: 16,
-  },
-  optionButton: {
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  optionButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#007AFF',
   },
   inputContainer: {
     backgroundColor: '#FFFFFF',
