@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,58 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { personalityInsightsService, PersonalityProfile } from '../services/personalityInsightsService';
 
 export const PixelPerfectProfileScreen = () => {
+  const [profile, setProfile] = useState<PersonalityProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPersonalityProfile();
+  }, []);
+
+  const loadPersonalityProfile = async () => {
+    try {
+      await personalityInsightsService.initialize();
+      const personalityProfile = await personalityInsightsService.getPersonalityProfile();
+      setProfile(personalityProfile);
+    } catch (error) {
+      console.error('Error loading personality profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Loading personality insights...</Text>
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Start reflecting to build your personality profile</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Authenticity Score Section */}
       <View style={styles.authenticitySection}>
-        <Text style={styles.authenticityScore}>80%</Text>
+        <Text style={styles.authenticityScore}>{profile.authenticityScore}%</Text>
         <Text style={styles.authenticityLabel}>Authenticity Score</Text>
         
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>25</Text>
+            <Text style={styles.statNumber}>{profile.authenticityScore}</Text>
             <Text style={styles.statLabel}>Total Points</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statNumber}>{profile.totalReflections}</Text>
             <Text style={styles.statLabel}>Responses</Text>
           </View>
           <View style={styles.statItem}>
@@ -56,22 +92,20 @@ export const PixelPerfectProfileScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Personality Insights</Text>
         <View style={styles.personalityGrid}>
-          <View style={styles.traitItem}>
-            <Text style={styles.traitPercentage}>92%</Text>
-            <Text style={styles.traitName}>Authenticity</Text>
-          </View>
-          <View style={styles.traitItem}>
-            <Text style={styles.traitPercentage}>88%</Text>
-            <Text style={styles.traitName}>Empathy</Text>
-          </View>
-          <View style={styles.traitItem}>
-            <Text style={styles.traitPercentage}>85%</Text>
-            <Text style={styles.traitName}>Curiosity</Text>
-          </View>
-          <View style={styles.traitItem}>
-            <Text style={styles.traitPercentage}>79%</Text>
-            <Text style={styles.traitName}>Openness</Text>
-          </View>
+          {profile.traits.map((trait, index) => (
+            <View key={trait.name} style={styles.traitItem}>
+              <Text style={styles.traitPercentage}>{Math.round(trait.percentage)}%</Text>
+              <Text style={styles.traitName}>{trait.name}</Text>
+            </View>
+          ))}
+        </View>
+        
+        {/* Insights Summary */}
+        <View style={styles.insightsSummarySection}>
+          <Text style={styles.insightsSummaryText}>{profile.insightsSummary}</Text>
+          <Text style={styles.lastUpdatedText}>
+            Last updated: {profile.lastAnalyzed.toLocaleDateString()}
+          </Text>
         </View>
       </View>
 
@@ -251,5 +285,30 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 17,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  insightsSummarySection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 0.5,
+    borderTopColor: '#E5E5E7',
+  },
+  insightsSummaryText: {
+    fontSize: 15,
+    color: '#000000',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  lastUpdatedText: {
+    fontSize: 13,
+    color: '#8E8E93',
   },
 });

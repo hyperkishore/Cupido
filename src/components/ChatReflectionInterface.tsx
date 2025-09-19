@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { questionsService, CategoryQuestion } from '../services/questionsLoader';
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { habitTrackingService } from '../services/habitTrackingService';
+import { personalityInsightsService } from '../services/personalityInsightsService';
 
 interface ChatMessage {
   id: string;
@@ -112,6 +113,14 @@ export const ChatReflectionInterface = () => {
         currentQuestion.question,
         currentInput.trim(),
         false
+      );
+
+      // Analyze reflection for personality insights
+      await personalityInsightsService.analyzeReflection(
+        currentQuestion.question,
+        currentInput.trim(),
+        currentQuestion.category,
+        false // voiceUsed - will be implemented later
       );
 
       // Bot response after user answers
