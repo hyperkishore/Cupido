@@ -43,6 +43,7 @@ export const ChatReflectionInterface = () => {
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [wasVoiceUsed, setWasVoiceUsed] = useState(false);
   const recordingAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -73,6 +74,13 @@ export const ChatReflectionInterface = () => {
   const startRecording = async () => {
     try {
       console.log('Starting recording...');
+      
+      // Stop any existing recording first
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+      }
+
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant audio recording permission to use voice input.');
@@ -96,12 +104,12 @@ export const ChatReflectionInterface = () => {
         Animated.sequence([
           Animated.timing(recordingAnimation, {
             toValue: 1,
-            duration: 1000,
+            duration: 800,
             useNativeDriver: true,
           }),
           Animated.timing(recordingAnimation, {
             toValue: 0,
-            duration: 1000,
+            duration: 800,
             useNativeDriver: true,
           }),
         ])
@@ -115,48 +123,93 @@ export const ChatReflectionInterface = () => {
       console.log('Recording started');
     } catch (error) {
       console.error('Failed to start recording:', error);
+      setIsRecording(false);
+      setRecording(null);
     }
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
+    if (!recording || !isRecording) {
+      console.log('No recording to stop');
+      return;
+    }
 
     try {
       console.log('Stopping recording...');
-      setIsRecording(false);
+      
+      // Stop animation immediately
       recordingAnimation.stopAnimation();
       recordingAnimation.setValue(0);
+      
+      // Update state immediately
+      setIsRecording(false);
 
+      // Stop recording
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       console.log('Recording stopped and stored at:', uri);
 
-      // Here you would normally transcribe the audio
-      // For now, we'll simulate it with a placeholder
-      const transcribedText = await transcribeAudio(uri);
-      if (transcribedText) {
-        setCurrentInput(transcribedText);
-        // Optionally auto-send after transcription
-        // handleSendMessage();
+      // Clear recording reference
+      setRecording(null);
+
+      // Transcribe the audio
+      if (uri) {
+        const transcribedText = await transcribeAudio(uri);
+        if (transcribedText && transcribedText.trim()) {
+          setCurrentInput(transcribedText);
+          setWasVoiceUsed(true);
+        }
       }
 
-      setRecording(null);
     } catch (error) {
       console.error('Failed to stop recording:', error);
+      setIsRecording(false);
+      setRecording(null);
     }
   };
 
-  const transcribeAudio = async (uri: string | null): Promise<string> => {
-    // This is a placeholder for transcription
-    // In production, you'd send this to a transcription service
-    // For now, return a simulated transcription
-    if (!uri) return '';
-    
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // In a real app, this would be the actual transcription
-    return 'Voice message transcription will appear here';
+  const transcribeAudio = async (uri: string): Promise<string> => {
+    try {
+      console.log('Transcribing audio from:', uri);
+      
+      // Check if OpenAI API key is available
+      const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+      if (!apiKey || apiKey === 'your_openai_api_key_here') {
+        console.log('OpenAI API key not configured, using placeholder transcription');
+        return 'This is a placeholder transcription. Configure OpenAI API key for real transcription.';
+      }
+      
+      // Create FormData to send audio file
+      const formData = new FormData();
+      formData.append('file', {
+        uri: uri,
+        type: 'audio/m4a',
+        name: 'recording.m4a'
+      } as any);
+      formData.append('model', 'whisper-1');
+
+      // Use OpenAI Whisper API for transcription
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Transcription result:', result);
+        return result.text || '';
+      } else {
+        const errorText = await response.text();
+        console.error('Transcription failed:', response.status, response.statusText, errorText);
+        return 'Voice transcription failed. Please type your response.';
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      return 'Voice transcription error. Please type your response.';
+    }
   };
 
   const startConversation = () => {
@@ -233,7 +286,7 @@ export const ChatReflectionInterface = () => {
       await habitTrackingService.addReflection(
         currentQuestion.question,
         answerText,
-        false
+        wasVoiceUsed
       );
 
       // Analyze reflection for personality insights
@@ -241,7 +294,7 @@ export const ChatReflectionInterface = () => {
         currentQuestion.question,
         answerText,
         currentQuestion.category,
-        false // voiceUsed - will be implemented later
+        wasVoiceUsed
       );
 
       // Bot response after user answers
@@ -259,6 +312,7 @@ export const ChatReflectionInterface = () => {
     }
 
     setCurrentInput('');
+    setWasVoiceUsed(false);
     setIsWaitingForAnswer(false);
   };
 
@@ -583,34 +637,38 @@ export const ChatReflectionInterface = () => {
                 editable={!isRecording}
               />
               
-              {/* Voice recording overlay */}
+              {/* Voice recording button */}
               <TouchableOpacity 
-                style={styles.voiceRecordingArea}
-                activeOpacity={1}
+                style={styles.voiceButton}
+                activeOpacity={0.8}
                 onPressIn={startRecording}
                 onPressOut={stopRecording}
-                onLongPress={() => {}} // Required for long press to work
+                delayLongPress={100}
               >
-                {isRecording && (
-                  <Animated.View style={[
-                    styles.recordingIndicator,
-                    {
-                      opacity: recordingAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.3, 1],
-                      }),
-                      transform: [{
-                        scale: recordingAnimation.interpolate({
+                <View style={[styles.voiceButtonContent, isRecording && styles.voiceButtonContentRecording]}>
+                  {isRecording ? (
+                    <Animated.View style={[
+                      styles.recordingIndicator,
+                      {
+                        opacity: recordingAnimation.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [1, 1.1],
+                          outputRange: [0.3, 1],
                         }),
-                      }],
-                    }
-                  ]}>
-                    <View style={styles.recordingDot} />
-                    <Text style={styles.recordingText}>Recording... Release to send</Text>
-                  </Animated.View>
-                )}
+                        transform: [{
+                          scale: recordingAnimation.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.05],
+                          }),
+                        }],
+                      }
+                    ]}>
+                      <View style={styles.recordingDot} />
+                      <Text style={styles.recordingText}>Recording...</Text>
+                    </Animated.View>
+                  ) : (
+                    <Text style={styles.voiceButtonIcon}>🎤</Text>
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
             
@@ -736,13 +794,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 12,
   },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000000',
-    maxHeight: 100,
-    minHeight: 24,
-  },
   sendButton: {
     backgroundColor: '#007AFF',
     borderRadius: 16,
@@ -780,40 +831,61 @@ const styles = StyleSheet.create({
   textInputContainer: {
     flex: 1,
     position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000000',
+    maxHeight: 100,
+    minHeight: 24,
+    paddingRight: 50, // Make room for voice button
   },
   textInputRecording: {
     backgroundColor: '#FFF3F3',
     borderColor: '#FF3B30',
     borderWidth: 1,
   },
-  voiceRecordingArea: {
+  voiceButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    right: 8,
+    bottom: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: '#F2F2F7',
+  },
+  voiceButtonContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    borderRadius: 18,
+  },
+  voiceButtonContentRecording: {
+    backgroundColor: '#FF3B30',
+  },
+  voiceButtonIcon: {
+    fontSize: 18,
   },
   recordingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
+    justifyContent: 'center',
+    gap: 4,
   },
   recordingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF3B30',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
   },
   recordingText: {
-    fontSize: 14,
-    color: '#FF3B30',
+    fontSize: 10,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
 });
