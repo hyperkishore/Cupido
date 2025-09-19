@@ -52,11 +52,20 @@ class QuestionsService {
     return allQuestions[randomIndex];
   }
 
-  // Get daily reflection question
+  // Get daily reflection question (includes demographic questions occasionally)
   getDailyReflectionQuestion(): CategoryQuestion {
-    const weeklyReflectionQuestions = this.getQuestionsByTheme('Weekly Reflection');
-    const randomIndex = Math.floor(Math.random() * weeklyReflectionQuestions.length);
-    return weeklyReflectionQuestions[randomIndex];
+    // 30% chance to get a demographic question for data gathering
+    const useDemographic = Math.random() < 0.3;
+    
+    if (useDemographic) {
+      const demographicQuestions = this.getDemographicQuestions();
+      const randomIndex = Math.floor(Math.random() * demographicQuestions.length);
+      return demographicQuestions[randomIndex];
+    } else {
+      const weeklyReflectionQuestions = this.getQuestionsByTheme('Weekly Reflection');
+      const randomIndex = Math.floor(Math.random() * weeklyReflectionQuestions.length);
+      return weeklyReflectionQuestions[randomIndex];
+    }
   }
 
   // Get questions for dating/connection
@@ -168,6 +177,74 @@ class QuestionsService {
       default:
         return this.getRandomQuestions(6);
     }
+  }
+
+  // Get basic demographic questions for data gathering
+  getDemographicQuestions(): CategoryQuestion[] {
+    const demographicQuestions: Question[] = [
+      {
+        theme: 'Demographics',
+        question: 'How many siblings do you have?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics', 
+        question: 'Where were you born?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'Which year were you born in?',
+        tone: 'casual', 
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'What is your educational background?',
+        tone: 'casual',
+        intended_use_case: 'demographics', 
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'What field do you work in?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'What city do you currently live in?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'Do you have any pets?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      },
+      {
+        theme: 'Demographics',
+        question: 'What languages do you speak?',
+        tone: 'casual',
+        intended_use_case: 'demographics',
+        emotional_depth: 'low'
+      }
+    ];
+
+    return demographicQuestions.map((q, index) => ({
+      ...q,
+      id: `demo_${index + 1}`,
+      category: 'DEMOGRAPHICS',
+    }));
   }
 
   // Get questions statistics
