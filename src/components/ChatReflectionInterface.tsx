@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { questionsService, CategoryQuestion } from '../services/questionsLoader';
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { habitTrackingService } from '../services/habitTrackingService';
@@ -20,6 +22,8 @@ interface ChatMessage {
   isBot: boolean;
   timestamp: Date;
   questionId?: string;
+  imageUri?: string;
+  imageInsights?: string;
 }
 
 export const ChatReflectionInterface = () => {
@@ -150,9 +154,19 @@ export const ChatReflectionInterface = () => {
   };
 
   const offerContinueOptions = () => {
+    const options = [
+      "Would you like to explore another question, or shall we dive deeper into what you just shared?",
+      "Want to continue with another question, share a photo from your day, or explore this topic further?",
+      "What would you like to do next - another reflection, share a moment from your day through a photo, or go deeper?",
+    ];
+
+    // 40% chance to offer photo sharing
+    const offerPhoto = Math.random() < 0.4;
+    const messageText = offerPhoto ? options[1] : options[0];
+
     const continueMessage: ChatMessage = {
       id: generateId(),
-      text: "Would you like to explore another question, or shall we dive deeper into what you just shared?",
+      text: messageText,
       isBot: true,
       timestamp: new Date(),
     };
@@ -219,6 +233,67 @@ export const ChatReflectionInterface = () => {
     }, 1000);
   };
 
+  const handleSharePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'We need access to your photos to share them.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const userMessage: ChatMessage = {
+          id: generateId(),
+          text: "Here's a photo from my day",
+          isBot: false,
+          timestamp: new Date(),
+          imageUri: result.assets[0].uri,
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+
+        // Analyze the photo and provide insights
+        setTimeout(() => {
+          analyzePhoto(result.assets[0].uri);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
+  const analyzePhoto = (imageUri: string) => {
+    // Simulate AI analysis of the photo for personality insights
+    const photoInsights = [
+      "I can see this moment captures something meaningful to you. What drew you to this particular scene or moment?",
+      "There's something beautiful about everyday moments like this. How does sharing this photo make you feel?",
+      "Photos often tell stories beyond what we see. What story does this image tell about your day?",
+      "I notice you chose to capture this moment. What made it special enough to preserve?",
+      "This photo gives me insight into what you value. Can you tell me more about why this moment mattered?",
+    ];
+
+    const insight = photoInsights[Math.floor(Math.random() * photoInsights.length)];
+
+    const botResponse: ChatMessage = {
+      id: generateId(),
+      text: insight,
+      isBot: true,
+      timestamp: new Date(),
+      imageInsights: "Photo analyzed for personality insights",
+    };
+
+    setMessages(prev => [...prev, botResponse]);
+    setIsWaitingForAnswer(true);
+  };
+
   const renderMessage = (message: ChatMessage) => {
     return (
       <View key={message.id} style={[
@@ -229,9 +304,17 @@ export const ChatReflectionInterface = () => {
           styles.messageBubble,
           message.isBot ? styles.botBubble : styles.userBubble
         ]}>
+          {message.imageUri && (
+            <Image 
+              source={{ uri: message.imageUri }} 
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          )}
           <Text style={[
             styles.messageText,
-            message.isBot ? styles.botText : styles.userText
+            message.isBot ? styles.botText : styles.userText,
+            message.imageUri && styles.messageTextWithImage
           ]}>
             {message.text}
           </Text>
@@ -270,6 +353,12 @@ export const ChatReflectionInterface = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.optionButton}
+              onPress={handleSharePhoto}
+            >
+              <Text style={styles.optionButtonText}>Share Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.optionButton}
               onPress={handleExploreDeeper}
             >
               <Text style={styles.optionButtonText}>Explore Deeper</Text>
@@ -282,6 +371,12 @@ export const ChatReflectionInterface = () => {
       {(isWaitingForAnswer || conversationStage === 'questioning') && (
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
+            <TouchableOpacity 
+              style={styles.photoButton}
+              onPress={handleSharePhoto}
+            >
+              <Text style={styles.photoButtonIcon}>📷</Text>
+            </TouchableOpacity>
             <TextInput
               style={styles.textInput}
               value={currentInput}
@@ -427,5 +522,22 @@ const styles = StyleSheet.create({
   },
   sendButtonTextDisabled: {
     color: '#8E8E93',
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  messageTextWithImage: {
+    marginTop: 0,
+  },
+  photoButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoButtonIcon: {
+    fontSize: 20,
   },
 });
