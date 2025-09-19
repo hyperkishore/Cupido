@@ -1,0 +1,50 @@
+{
+  "title": "YouTube Connect Integration Guide",
+  "description": "This is a sample demonstration of how YouTube connect would work in the Cupido app",
+  "sections": [
+    {
+      "heading": "YouTube Integration Overview",
+      "content": "By connecting your YouTube account, Cupido can analyze your viewing patterns, subscribed channels, and engagement to better understand your interests and personality traits."
+    },
+    {
+      "heading": "What We Analyze",
+      "content": "• Video categories you watch most\n• Channels you're subscribed to\n• Comment patterns and engagement style\n• Time spent on different content types\n• Liked videos and playlists"
+    },
+    {
+      "heading": "Personality Insights Generated",
+      "content": "Based on your YouTube activity, we can infer:\n\n• Learning preferences (visual, auditory, hands-on)\n• Entertainment tastes and humor style\n• Interest in current events vs. evergreen content\n• Social vs. solo content consumption patterns\n• Depth vs. breadth of interests"
+    },
+    {
+      "heading": "Privacy & Data Usage",
+      "content": "Your YouTube data is processed securely and used only to enhance your Cupido profile. We never share your viewing history with other users - only the personality insights derived from it."
+    },
+    {
+      "heading": "How It Enhances Matching",
+      "content": "YouTube integration helps us understand:\n\n• Shared interests with potential matches\n• Compatible learning and communication styles\n• Similar values based on content preferences\n• Lifestyle compatibility indicators"
+    },
+    {
+      "heading": "Getting Started",
+      "content": "1. Tap 'Connect YouTube' in your profile\n2. Authorize Cupido to access your YouTube data\n3. We'll analyze your recent activity (last 6 months)\n4. New personality insights will appear in 24-48 hours\n5. Your matching algorithm will be updated automatically"
+    }
+  ],
+  "sample_insights": [
+    {
+      "trait": "Learning Style",
+      "value": "Visual Learner",
+      "confidence": 87,
+      "description": "Prefers tutorial videos and visual explanations over text-based content"
+    },
+    {
+      "trait": "Content Depth",
+      "value": "Deep Diver", 
+      "confidence": 92,
+      "description": "Watches long-form content and full series rather than short clips"
+    },
+    {
+      "trait": "Social Engagement",
+      "value": "Community Oriented",
+      "confidence": 78,
+      "description": "Actively comments and engages with creators and other viewers"
+    }
+  ]
+}
