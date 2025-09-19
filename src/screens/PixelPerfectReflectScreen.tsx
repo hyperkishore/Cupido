@@ -109,7 +109,7 @@ export const PixelPerfectReflectScreen = () => {
         
         <VoiceTextInput
           value={answer}
-          onChangeText={setAnswer}
+          onChangeText={handleTextChange}
           placeholder="Speak naturally or type your thoughts..."
           maxLength={500}
           style={styles.inputContainer}
@@ -122,16 +122,16 @@ export const PixelPerfectReflectScreen = () => {
         <TouchableOpacity 
           style={[
             styles.submitButton,
-            answer.trim().length === 0 && styles.submitButtonDisabled
+            (answer.trim().length === 0 || isSubmitting) && styles.submitButtonDisabled
           ]}
-          disabled={answer.trim().length === 0}
+          disabled={answer.trim().length === 0 || isSubmitting}
           onPress={handleSubmitAnswer}
         >
           <Text style={[
             styles.submitButtonText,
-            answer.trim().length === 0 && styles.submitButtonTextDisabled
+            (answer.trim().length === 0 || isSubmitting) && styles.submitButtonTextDisabled
           ]}>
-            Share Reflection
+            {isSubmitting ? 'Saving...' : 'Save Reflection'}
           </Text>
         </TouchableOpacity>
       </View>

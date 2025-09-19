@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,47 @@ import {
 } from 'react-native';
 import { useAppState } from '../contexts/AppStateContext';
 import { FeedbackWrapper } from '../components/FeedbackWrapper';
+import { communityService, CommunityReflection } from '../services/communityService';
+import { habitTrackingService } from '../services/habitTrackingService';
 
 export const PixelPerfectHomeScreen = () => {
   const { state, dispatch } = useAppState();
   const [showLinkedInPrompt, setShowLinkedInPrompt] = useState(true);
   const [showCommunityPrompt, setShowCommunityPrompt] = useState(true);
+  const [communityFeed, setCommunityFeed] = useState<CommunityReflection[]>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const handleLikeAnswer = (answerId: string) => {
-    dispatch({ type: 'LIKE_ANSWER', payload: answerId });
+  useEffect(() => {
+    loadCommunityData();
+  }, []);
+
+  const loadCommunityData = async () => {
+    try {
+      await communityService.initialize();
+      await habitTrackingService.initialize();
+      
+      const feed = await communityService.getCommunityFeed(10);
+      const streak = await habitTrackingService.getCurrentStreak();
+      
+      setCommunityFeed(feed);
+      setCurrentStreak(streak);
+    } catch (error) {
+      console.error('Error loading community data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLikeAnswer = async (reflectionId: string) => {
+    try {
+      await communityService.likeReflection(reflectionId);
+      // Refresh the feed to show updated heart count
+      const updatedFeed = await communityService.getCommunityFeed(10);
+      setCommunityFeed(updatedFeed);
+    } catch (error) {
+      console.error('Error liking reflection:', error);
+    }
   };
 
   const handleConnectLinkedIn = () => {
@@ -69,76 +102,96 @@ export const PixelPerfectHomeScreen = () => {
     const past = new Date(timestamp);
     const diffInMinutes = Math.floor((now.getTime() - past.getTime()) / (1000 * 60));
     
+    if (diffInMinutes < 1) return 'now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'yesterday';
     return `${diffInDays}d ago`;
   };
 
-  const renderQuestionCard = (answer: any, index: number) => {
-    const isLiked = answer.isLiked || false;
+  const handleAnswerQuestion = (question: string) => {
+    Alert.alert(
+      'Share Your Thoughts',
+      `Reflect on: "${question}"`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reflect', onPress: () => console.log('Navigate to Reflect screen with question:', question) },
+      ]
+    );
+  };
+
+  const renderQuestionCard = (reflection: CommunityReflection, index: number) => {
+    const isLiked = reflection.hasUserLiked;
     
     return (
-      <View key={answer.id}>
+      <View key={reflection.id}>
         <FeedbackWrapper
-          componentId={`question-card-${answer.id}`}
+          componentId={`question-card-${reflection.id}`}
           componentType="QuestionCard"
           screenName="HomeScreen"
         >
           <View style={styles.questionCard}>
             <View style={styles.questionHeader}>
+              <View style={styles.authorInfo}>
+                <Text style={styles.authorName}>{reflection.authorName}</Text>
+                <Text style={styles.timestamp}>{formatTimeAgo(reflection.createdAt.toISOString())}</Text>
+              </View>
               <FeedbackWrapper
-                componentId={`question-text-${answer.id}`}
+                componentId={`question-text-${reflection.id}`}
                 componentType="QuestionText"
                 screenName="HomeScreen"
               >
-                <Text style={styles.questionText}>{answer.questionText}</Text>
+                <Text style={styles.questionText}>{reflection.question}</Text>
               </FeedbackWrapper>
-              <Text style={styles.timestamp}>{formatTimeAgo(answer.timestamp)}</Text>
             </View>
             
             <FeedbackWrapper
-              componentId={`answer-text-${answer.id}`}
+              componentId={`answer-text-${reflection.id}`}
               componentType="AnswerText"
               screenName="HomeScreen"
             >
-              <Text style={styles.answerText}>{answer.text}</Text>
+              <Text style={styles.answerText}>{reflection.answer}</Text>
             </FeedbackWrapper>
             
             <View style={styles.questionFooter}>
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryText}>{answer.category}</Text>
+              <View style={styles.tagsContainer}>
+                {reflection.tags?.map((tag, tagIndex) => (
+                  <View key={tagIndex} style={styles.categoryTag}>
+                    <Text style={styles.categoryText}>{tag}</Text>
+                  </View>
+                ))}
               </View>
               <FeedbackWrapper
-                componentId={`heart-button-${answer.id}`}
+                componentId={`heart-button-${reflection.id}`}
                 componentType="HeartButton"
                 screenName="HomeScreen"
               >
                 <TouchableOpacity 
                   style={styles.heartContainer}
-                  onPress={() => handleLikeAnswer(answer.id)}
+                  onPress={() => handleLikeAnswer(reflection.id)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
                     {isLiked ? '♥' : '♡'}
                   </Text>
                   <Text style={[styles.heartCount, isLiked && styles.heartCountLiked]}>
-                    {answer.hearts}
+                    {reflection.communityHearts}
                   </Text>
                 </TouchableOpacity>
               </FeedbackWrapper>
               {index === 1 && (
                 <FeedbackWrapper
-                  componentId={`answer-button-${answer.id}`}
+                  componentId={`answer-button-${reflection.id}`}
                   componentType="AnswerButton"
                   screenName="HomeScreen"
                 >
                   <TouchableOpacity 
                     style={styles.answerButton}
-                    onPress={() => handleAnswerQuestion(answer.questionId)}
+                    onPress={() => handleAnswerQuestion(reflection.question)}
                   >
-                    <Text style={styles.answerButtonText}>Answer</Text>
+                    <Text style={styles.answerButtonText}>Reflect</Text>
                   </TouchableOpacity>
                 </FeedbackWrapper>
               )}
@@ -207,9 +260,26 @@ export const PixelPerfectHomeScreen = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading community reflections...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {state.answers.map((answer, index) => renderQuestionCard(answer, index))}
+      {currentStreak > 0 && (
+        <View style={styles.streakCard}>
+          <Text style={styles.streakEmoji}>🔥</Text>
+          <View style={styles.streakContent}>
+            <Text style={styles.streakTitle}>{currentStreak} Day Streak!</Text>
+            <Text style={styles.streakSubtitle}>Keep your authentic reflection going</Text>
+          </View>
+        </View>
+      )}
+      {communityFeed.map((reflection, index) => renderQuestionCard(reflection, index))}
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
@@ -400,5 +470,58 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B35',
+  },
+  streakEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  streakContent: {
+    flex: 1,
+  },
+  streakTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  streakSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  authorInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  authorName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
 });
