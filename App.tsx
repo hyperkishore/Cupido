@@ -85,18 +85,19 @@ const AppContent = () => {
               tabBarActiveTintColor: '#007AFF',
               tabBarInactiveTintColor: '#8E8E93',
               tabBarItemStyle: {
-                paddingTop: 6,
-                paddingBottom: 4,
+                paddingTop: 4,
+                paddingBottom: 2,
                 justifyContent: 'center',
                 alignItems: 'center',
+                height: 60,
               },
               tabBarStyle: {
                 backgroundColor: '#FFFFFF',
                 borderTopWidth: 0.5,
                 borderTopColor: '#C6C6C8',
-                paddingBottom: Platform.OS === 'ios' ? 25 : 8,
-                paddingTop: 8,
-                height: Platform.OS === 'ios' ? 90 : 70,
+                paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+                paddingTop: 6,
+                height: Platform.OS === 'ios' ? 85 : 70,
                 position: 'absolute',
                 bottom: 0,
                 left: 0,
@@ -110,10 +111,12 @@ const AppContent = () => {
               tabBarLabelStyle: {
                 fontSize: 11,
                 fontWeight: '500',
-                marginTop: 2,
-                marginBottom: 2,
-                paddingBottom: 0,
+                marginTop: 4,
+                marginBottom: 0,
+                paddingBottom: 2,
+                lineHeight: 13,
               },
+              tabBarShowLabel: true,
             })}
           >
             <Tab.Screen name="Home" component={HomeScreenWithFeedback} />
