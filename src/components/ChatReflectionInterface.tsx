@@ -55,7 +55,6 @@ export const ChatReflectionInterface = () => {
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
-  const [isInputVisible, setIsInputVisible] = useState(false);
   const [conversationState, setConversationState] = useState<ConversationState>({
     questionsAsked: [],
     currentTopic: undefined,
@@ -83,7 +82,6 @@ export const ChatReflectionInterface = () => {
     // Cleanup on unmount
     return () => {
       Keyboard.dismiss();
-      setIsInputVisible(false);
       setIsWaitingForAnswer(false);
     };
   }, []);
@@ -322,7 +320,6 @@ export const ChatReflectionInterface = () => {
       
       setMessages(prev => [...prev, questionMessage]);
       setIsWaitingForAnswer(true);
-      setIsInputVisible(true);
       
       // Track this question in local state for backwards compatibility
       setConversationState(prev => ({
@@ -516,7 +513,6 @@ export const ChatReflectionInterface = () => {
     setCurrentInput('');
     setWasVoiceUsed(false);
     setIsWaitingForAnswer(false);
-    setIsInputVisible(false);
   };
 
   const provideFeedbackAndContinue = (answerText: string) => {
@@ -863,7 +859,6 @@ export const ChatReflectionInterface = () => {
   return (
     <TouchableWithoutFeedback onPress={() => {
       Keyboard.dismiss();
-      setIsInputVisible(false);
     }}>
       <KeyboardAvoidingView 
         style={styles.container}
@@ -877,14 +872,13 @@ export const ChatReflectionInterface = () => {
           contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 100 : 80 }]}
           onScrollBeginDrag={() => {
             Keyboard.dismiss();
-            setIsInputVisible(false);
           }}
         >
           {messages.map(renderMessage)}
         </ScrollView>
 
-      {/* Input area - only shows when waiting for answer and input is visible */}
-      {isWaitingForAnswer && isInputVisible && (
+      {/* Input area - only shows when waiting for answer */}
+      {isWaitingForAnswer && (
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
@@ -906,12 +900,8 @@ export const ChatReflectionInterface = () => {
                 autoFocus={false}
                 editable={!isRecording}
                 blurOnSubmit={true}
-                onFocus={() => setIsInputVisible(true)}
-                onBlur={() => {
-                  if (currentInput.trim().length === 0) {
-                    setIsInputVisible(false);
-                  }
-                }}
+                onFocus={() => {}}
+                onBlur={() => {}}
               />
               
               {/* Voice recording button - WhatsApp style */}

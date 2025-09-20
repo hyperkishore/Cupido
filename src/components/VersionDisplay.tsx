@@ -15,8 +15,8 @@ const calculateVersion = (commitCount: number): string => {
 };
 
 export const VersionDisplay: React.FC = () => {
-  // We have 19 commits so far, this will be 20 after this commit
-  const CURRENT_COMMIT_COUNT = 20; // Will increment with each commit
+  // We have 20 commits so far, this will be 21 after this commit
+  const CURRENT_COMMIT_COUNT = 21; // Will increment with each commit
   
   return (
     <Text style={styles.versionText}>
