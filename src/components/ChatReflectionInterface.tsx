@@ -274,10 +274,10 @@ export const ChatReflectionInterface = () => {
     
     setMessages([greetingMessage]);
     
-    // After a short delay, start with a natural conversation opener
+    // Shorter delay for better mobile experience
     setTimeout(() => {
       askNaturalQuestion();
-    }, 2500);
+    }, 1500);
   };
 
   const askNaturalQuestion = async () => {
@@ -837,17 +837,28 @@ export const ChatReflectionInterface = () => {
     );
   };
 
+  // Add loading state display
+  if (messages.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Starting conversation...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 85 : 0}
     >
       <ScrollView 
         ref={scrollViewRef}
         style={styles.messagesContainer}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 90 : 70 }]}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 100 : 80 }]}
       >
         {messages.map(renderMessage)}
       </ScrollView>
@@ -925,6 +936,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    minHeight: '100vh',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
   },
   messagesContainer: {
     flex: 1,
@@ -993,6 +1016,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     minHeight: 70,
+    position: 'relative',
+    zIndex: 10,
   },
   inputWrapper: {
     flexDirection: 'row',

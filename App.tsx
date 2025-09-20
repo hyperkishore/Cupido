@@ -88,18 +88,16 @@ const AppContent = () => {
                 backgroundColor: '#FFFFFF',
                 borderTopWidth: 0.5,
                 borderTopColor: '#C6C6C8',
-                paddingBottom: Platform.OS === 'ios' ? 34 : 10,
-                paddingTop: 10,
-                height: Platform.OS === 'ios' ? 90 : 70,
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
+                paddingBottom: Platform.OS === 'ios' ? 25 : 8,
+                paddingTop: 8,
+                height: Platform.OS === 'ios' ? 85 : 65,
+                position: 'relative',
               },
               tabBarLabelStyle: {
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: '500',
-                marginTop: 4,
+                marginTop: 2,
+                marginBottom: Platform.OS === 'ios' ? 2 : 0,
               },
             })}
           >
@@ -181,8 +179,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
   tabIcon: {
-    fontSize: 24,
-    color: '#000000',
+    fontSize: 22,
+    color: '#8E8E93',
+    lineHeight: 24,
   },
   tabIconFocused: {
     color: '#007AFF',
