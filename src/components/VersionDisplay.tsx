@@ -1,13 +1,10 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 
-// Import package.json to get the version
-const packageJson = require('../../package.json');
-
 export const VersionDisplay: React.FC = () => {
   return (
     <Text style={styles.versionText}>
-      v{packageJson.version}
+      v1.0.0
     </Text>
   );
 };

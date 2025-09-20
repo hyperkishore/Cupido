@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover" />
     
     <!-- App Identity -->
     <title>Cupido - Reflection-Based Dating</title>
@@ -96,11 +96,24 @@
       #root {
         display: flex;
         height: 100vh;
+        height: 100dvh; /* Use dynamic viewport height for better mobile support */
         flex: 1;
         max-width: 500px; /* Mobile-first: max width constraint */
         margin: 0 auto; /* Center on larger screens */
         background: #ffffff;
         position: relative;
+        overflow: hidden;
+      }
+      
+      /* Mobile Safari specific fixes */
+      @supports (-webkit-touch-callout: none) {
+        #root {
+          height: -webkit-fill-available;
+        }
+        
+        body {
+          height: -webkit-fill-available;
+        }
       }
       
       /* Responsive breakpoints */
