@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppStateProvider } from './src/contexts/AppStateContext';
@@ -87,9 +88,13 @@ const AppContent = () => {
                 backgroundColor: '#FFFFFF',
                 borderTopWidth: 0.5,
                 borderTopColor: '#C6C6C8',
-                paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-                paddingTop: 8,
-                height: Platform.OS === 'ios' ? 83 : 60,
+                paddingBottom: Platform.OS === 'ios' ? 34 : 10,
+                paddingTop: 10,
+                height: Platform.OS === 'ios' ? 90 : 70,
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
               },
               tabBarLabelStyle: {
                 fontSize: 10,

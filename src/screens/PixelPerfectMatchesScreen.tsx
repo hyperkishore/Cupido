@@ -459,6 +459,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   bottomPadding: {
-    height: 100,
+    height: 120,
   },
 });
