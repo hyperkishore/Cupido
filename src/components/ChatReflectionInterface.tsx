@@ -12,7 +12,9 @@ import {
   Image,
   Animated,
   Vibration,
+  Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
@@ -46,6 +48,7 @@ interface ConversationState {
 
 export const ChatReflectionInterface = () => {
   const { dispatch } = useAppState();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
@@ -838,25 +841,26 @@ export const ChatReflectionInterface = () => {
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <ScrollView 
         ref={scrollViewRef}
         style={styles.messagesContainer}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 90 : 70 }]}
       >
         {messages.map(renderMessage)}
       </ScrollView>
 
       {/* Input area - only shows when waiting for answer */}
       {isWaitingForAnswer && (
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
-              style={styles.photoButton}
+              style={styles.attachButton}
               onPress={handleSharePhoto}
             >
-              <Text style={styles.photoButtonIcon}>📷</Text>
+              <Text style={styles.attachButtonIcon}>📎</Text>
             </TouchableOpacity>
             
             <View style={styles.textInputContainer}>
@@ -872,39 +876,27 @@ export const ChatReflectionInterface = () => {
                 editable={!isRecording}
               />
               
-              {/* Voice recording button */}
-              <TouchableOpacity 
-                style={styles.voiceButton}
-                activeOpacity={0.8}
+              {/* Voice recording button - WhatsApp style */}
+              <Pressable 
+                style={[styles.voiceButton, isRecording && styles.voiceButtonRecording]}
                 onPressIn={startRecording}
                 onPressOut={stopRecording}
-                delayLongPress={100}
               >
-                <View style={[styles.voiceButtonContent, isRecording && styles.voiceButtonContentRecording]}>
-                  {isRecording ? (
-                    <Animated.View style={[
-                      styles.recordingIndicator,
-                      {
-                        opacity: recordingAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.3, 1],
-                        }),
-                        transform: [{
-                          scale: recordingAnimation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 1.05],
-                          }),
-                        }],
-                      }
-                    ]}>
-                      <View style={styles.recordingDot} />
-                      <Text style={styles.recordingText}>Recording...</Text>
-                    </Animated.View>
-                  ) : (
-                    <Text style={styles.voiceButtonIcon}>🎤</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+                <Animated.View style={[
+                  styles.voiceButtonContent, 
+                  isRecording && styles.voiceButtonContentRecording,
+                  {
+                    transform: [{
+                      scale: recordingAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.1],
+                      }),
+                    }],
+                  }
+                ]}>
+                  <Text style={[styles.voiceButtonIcon, isRecording && styles.voiceButtonIconRecording]}>🎤</Text>
+                </Animated.View>
+              </Pressable>
             </View>
             
             <TouchableOpacity 
@@ -936,10 +928,11 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
   },
   messagesContent: {
-    paddingBottom: 20,
+    flexGrow: 1,
+    paddingTop: 16,
   },
   messageContainer: {
     marginBottom: 16,
@@ -996,33 +989,37 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 0.5,
-    borderTopColor: '#C6C6C8',
+    borderTopColor: '#E5E5EA',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+    minHeight: 70,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     backgroundColor: '#F2F2F7',
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 22,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 12,
+    gap: 8,
+    minHeight: 44,
   },
   sendButton: {
     backgroundColor: '#007AFF',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   sendButtonDisabled: {
     backgroundColor: '#C7C7CC',
   },
   sendButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   sendButtonTextDisabled: {
     color: '#8E8E93',
@@ -1036,13 +1033,16 @@ const styles = StyleSheet.create({
   messageTextWithImage: {
     marginTop: 0,
   },
-  photoButton: {
-    padding: 8,
+  attachButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
   },
-  photoButtonIcon: {
-    fontSize: 20,
+  attachButtonIcon: {
+    fontSize: 18,
+    color: '#8E8E93',
   },
   textInputContainer: {
     flex: 1,
@@ -1055,8 +1055,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
     maxHeight: 100,
-    minHeight: 24,
-    paddingRight: 50, // Make room for voice button
+    minHeight: 22,
+    paddingRight: 40,
+    paddingVertical: 8,
+    lineHeight: 20,
   },
   textInputRecording: {
     backgroundColor: '#FFF3F3',
@@ -1065,27 +1067,34 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     position: 'absolute',
-    right: 8,
-    bottom: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    right: 4,
+    bottom: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#007AFF',
+  },
+  voiceButtonRecording: {
+    backgroundColor: '#FF3B30',
   },
   voiceButtonContent: {
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     height: '100%',
-    borderRadius: 18,
+    borderRadius: 16,
   },
   voiceButtonContentRecording: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: 'transparent',
   },
   voiceButtonIcon: {
-    fontSize: 18,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  voiceButtonIconRecording: {
+    color: '#FFFFFF',
   },
   recordingIndicator: {
     flexDirection: 'row',
