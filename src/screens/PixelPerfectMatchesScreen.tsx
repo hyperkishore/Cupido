@@ -1,98 +1,248 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
+  RefreshControl,
 } from 'react-native';
+import { matchingService, Match, CompatibilityScore } from '../services/matchingService';
+import { conversationMemoryService } from '../services/conversationMemoryService';
 
 export const PixelPerfectMatchesScreen = () => {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [conversationMemory, setConversationMemory] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Initialize services
+      await matchingService.initialize();
+      await conversationMemoryService.initialize();
+      
+      // Get user data
+      const memory = await conversationMemoryService.getConversationMemory();
+      const profile = await matchingService.getCurrentUserProfile();
+      
+      setConversationMemory(memory);
+      setUserProfile(profile);
+      
+      // Get or generate matches
+      if (memory && memory.totalConversations >= 5) {
+        const existingMatches = await matchingService.getMatches();
+        if (existingMatches.length < 3) {
+          const newMatches = await matchingService.generateMatches(5);
+          setMatches(newMatches);
+        } else {
+          setMatches(existingMatches);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading matches data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const handleMatchInteraction = async (match: Match, action: 'like' | 'pass') => {
+    try {
+      await matchingService.interactWithMatch(match.id, {
+        type: action,
+        data: { action }
+      });
+
+      // Update local state
+      setMatches(prev => prev.map(m => 
+        m.id === match.id 
+          ? { ...m, status: action === 'like' ? 'liked' : 'passed' }
+          : m
+      ));
+
+      if (action === 'like') {
+        Alert.alert(
+          'Match Liked! 💙',
+          'Great choice! We\'ll let you know if they like you back.'
+        );
+      }
+    } catch (error) {
+      console.error('Error interacting with match:', error);
+    }
+  };
+
+  const getMatchTypeEmoji = (matchType: CompatibilityScore['matchType']): string => {
+    switch (matchType) {
+      case 'personality_twin': return '🪞';
+      case 'complementary_growth': return '🌱';
+      case 'deep_alignment': return '💫';
+      case 'balanced_connection': return '⚖️';
+      default: return '💙';
+    }
+  };
+
+  const getMatchTypeDescription = (matchType: CompatibilityScore['matchType']): string => {
+    switch (matchType) {
+      case 'personality_twin': return 'Personality Twin';
+      case 'complementary_growth': return 'Growth Partner';
+      case 'deep_alignment': return 'Deep Connection';
+      case 'balanced_connection': return 'Balanced Match';
+      default: return 'Great Match';
+    }
+  };
+
+  const renderMatch = (match: Match) => {
+    const { compatibilityScore } = match;
+    
+    return (
+      <View key={match.id} style={styles.matchCard}>
+        <View style={styles.matchHeader}>
+          <View style={styles.matchTitleContainer}>
+            <Text style={styles.matchEmoji}>
+              {getMatchTypeEmoji(compatibilityScore.matchType)}
+            </Text>
+            <View>
+              <Text style={styles.matchTitle}>
+                {getMatchTypeDescription(compatibilityScore.matchType)}
+              </Text>
+              <Text style={styles.compatibilityText}>
+                {compatibilityScore.overallScore}% Compatible
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statColumn}>
+            <Text style={styles.statLabel}>Personality Match</Text>
+            <Text style={[
+              styles.statValue,
+              compatibilityScore.breakdown.personalityMatch > 70 ? styles.statValueGreen : styles.statValueGray
+            ]}>
+              {Math.round(compatibilityScore.breakdown.personalityMatch)}%
+            </Text>
+          </View>
+          <View style={styles.statColumn}>
+            <Text style={styles.statLabel}>Values Alignment</Text>
+            <Text style={[
+              styles.statValue,
+              compatibilityScore.breakdown.valuesAlignment > 70 ? styles.statValueGreen : styles.statValueGray
+            ]}>
+              {Math.round(compatibilityScore.breakdown.valuesAlignment)}%
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.interestsSection}>
+          <Text style={styles.interestsTitle}>Why we think you'll connect:</Text>
+          {compatibilityScore.reasoning.slice(0, 2).map((reason, index) => (
+            <Text key={index} style={styles.interestsText}>
+              • {reason}
+            </Text>
+          ))}
+        </View>
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.passButton}
+            onPress={() => handleMatchInteraction(match, 'pass')}
+          >
+            <Text style={styles.passButtonText}>Pass</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.likeButton}
+            onPress={() => handleMatchInteraction(match, 'like')}
+          >
+            <Text style={styles.likeButtonText}>Like</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  // Check if user has enough data for matches
+  const hasEnoughData = conversationMemory && conversationMemory.totalConversations >= 5;
+  const totalPoints = userProfile?.personalityProfile?.authenticityScore || 0;
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
+        <View style={styles.spacer} />
         <Text style={styles.headerTitle}>Your Matches</Text>
         <View style={styles.spacer} />
       </View>
 
-      {/* Unlock Progress Card */}
+      {/* Progress Card */}
       <View style={styles.unlockCard}>
-        <Text style={styles.unlockTitle}>Unlock 1-1 Chats</Text>
+        <Text style={styles.unlockTitle}>
+          {hasEnoughData ? 'Finding Your Matches' : 'Unlock Matching'}
+        </Text>
         <Text style={styles.unlockDescription}>
-          Complete more reflections and receive hearts on your responses to unlock anonymous 1-1 chats.
+          {hasEnoughData 
+            ? 'Based on your authentic responses and personality insights'
+            : 'Complete more reflections to unlock personality-based matching'
+          }
         </Text>
         
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={styles.progressFill} />
+            <View style={[
+              styles.progressFill, 
+              { width: `${Math.min(100, (conversationMemory?.totalConversations || 0) * 20)}%` }
+            ]} />
           </View>
-          <Text style={styles.progressText}>25/50 points</Text>
-        </View>
-      </View>
-
-      {/* Match Card */}
-      <View style={styles.matchCard}>
-        <View style={styles.matchHeader}>
-          <Text style={styles.matchTitle}>Anonymous Match</Text>
-          <Text style={styles.compatibilityText}>44% Compatible</Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>Profile Match</Text>
-            <Text style={styles.statValueGreen}>87%</Text>
-          </View>
-          <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>Social Alignment</Text>
-            <Text style={styles.statValueGray}>0%</Text>
-          </View>
-        </View>
-
-        <View style={styles.interestsSection}>
-          <Text style={styles.interestsTitle}>Shared Interests From:</Text>
-          <Text style={styles.interestsText}>
-            Shares professional ambition and creative interests. Strong alignment in career goals and lifestyle preferences.
+          <Text style={styles.progressText}>
+            {conversationMemory?.totalConversations || 0}/5 reflections
           </Text>
         </View>
-
-        <View style={styles.lockedContainer}>
-          <Text style={styles.lockedText}>Locked - Need 50 points</Text>
-        </View>
       </View>
 
-      {/* Additional Match Cards would go here */}
-      <View style={styles.matchCard}>
-        <View style={styles.matchHeader}>
-          <Text style={styles.matchTitle}>Anonymous Match</Text>
-          <Text style={styles.compatibilityText}>84% Compatible</Text>
+      {/* Matches or Empty State */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Analyzing compatibility...</Text>
         </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>Profile Match</Text>
-            <Text style={styles.statValueGreen}>92%</Text>
-          </View>
-          <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>Social Alignment</Text>
-            <Text style={styles.statValueGreen}>76%</Text>
-          </View>
-        </View>
-
-        <View style={styles.interestsSection}>
-          <Text style={styles.interestsTitle}>Shared Interests From:</Text>
-          <Text style={styles.interestsText}>
-            Deep connection through shared values about authenticity and vulnerability. Similar communication styles.
+      ) : !hasEnoughData ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Complete More Reflections</Text>
+          <Text style={styles.emptyText}>
+            We need at least 5 meaningful conversations to understand your personality and find compatible matches.
           </Text>
         </View>
-
-        <View style={styles.lockedContainer}>
-          <Text style={styles.lockedText}>Locked - Need 50 points</Text>
+      ) : matches.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No Matches Yet</Text>
+          <Text style={styles.emptyText}>
+            Keep reflecting to help us find better matches for you. We're analyzing personality compatibility based on your authentic responses.
+          </Text>
         </View>
-      </View>
+      ) : (
+        matches
+          .filter(match => match.status === 'suggested')
+          .map(renderMatch)
+      )}
 
       <View style={styles.bottomPadding} />
     </ScrollView>
@@ -206,6 +356,10 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 4,
   },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '600',
+  },
   statValueGreen: {
     fontSize: 28,
     fontWeight: '600',
@@ -215,6 +369,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '600',
     color: '#8E8E93',
+  },
+  matchEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  matchTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   interestsSection: {
     marginBottom: 24,
@@ -229,6 +391,61 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8E8E93',
     lineHeight: 20,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  passButton: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  passButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  likeButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  likeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    lineHeight: 22,
+    textAlign: 'center',
   },
   lockedContainer: {
     backgroundColor: '#F2F2F7',
