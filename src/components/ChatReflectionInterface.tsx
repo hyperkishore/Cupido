@@ -13,6 +13,8 @@ import {
   Animated,
   Vibration,
   Pressable,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -53,6 +55,7 @@ export const ChatReflectionInterface = () => {
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
+  const [isInputVisible, setIsInputVisible] = useState(false);
   const [conversationState, setConversationState] = useState<ConversationState>({
     questionsAsked: [],
     currentTopic: undefined,
@@ -76,6 +79,13 @@ export const ChatReflectionInterface = () => {
     // Load questions and start conversation
     loadQuestionsAndStart();
     setupAudioMode();
+    
+    // Cleanup on unmount
+    return () => {
+      Keyboard.dismiss();
+      setIsInputVisible(false);
+      setIsWaitingForAnswer(false);
+    };
   }, []);
 
   const loadQuestionsAndStart = async () => {
@@ -312,6 +322,7 @@ export const ChatReflectionInterface = () => {
       
       setMessages(prev => [...prev, questionMessage]);
       setIsWaitingForAnswer(true);
+      setIsInputVisible(true);
       
       // Track this question in local state for backwards compatibility
       setConversationState(prev => ({
@@ -505,6 +516,7 @@ export const ChatReflectionInterface = () => {
     setCurrentInput('');
     setWasVoiceUsed(false);
     setIsWaitingForAnswer(false);
+    setIsInputVisible(false);
   };
 
   const provideFeedbackAndContinue = (answerText: string) => {
@@ -849,22 +861,30 @@ export const ChatReflectionInterface = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 85 : 0}
-    >
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 100 : 80 }]}
+    <TouchableWithoutFeedback onPress={() => {
+      Keyboard.dismiss();
+      setIsInputVisible(false);
+    }}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 85 : 0}
       >
-        {messages.map(renderMessage)}
-      </ScrollView>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 100 : 80 }]}
+          onScrollBeginDrag={() => {
+            Keyboard.dismiss();
+            setIsInputVisible(false);
+          }}
+        >
+          {messages.map(renderMessage)}
+        </ScrollView>
 
-      {/* Input area - only shows when waiting for answer */}
-      {isWaitingForAnswer && (
+      {/* Input area - only shows when waiting for answer and input is visible */}
+      {isWaitingForAnswer && isInputVisible && (
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
@@ -879,12 +899,19 @@ export const ChatReflectionInterface = () => {
                 style={[styles.textInput, isRecording && styles.textInputRecording]}
                 value={currentInput}
                 onChangeText={setCurrentInput}
-                placeholder={isRecording ? "Recording..." : "Type your thoughts or hold to record"}
+                placeholder={isRecording ? "Recording..." : "Type your thoughts..."}
                 placeholderTextColor="#8E8E93"
                 multiline
                 maxLength={500}
-                autoFocus={isWaitingForAnswer && !isRecording}
+                autoFocus={false}
                 editable={!isRecording}
+                blurOnSubmit={true}
+                onFocus={() => setIsInputVisible(true)}
+                onBlur={() => {
+                  if (currentInput.trim().length === 0) {
+                    setIsInputVisible(false);
+                  }
+                }}
               />
               
               {/* Voice recording button - WhatsApp style */}
@@ -928,7 +955,8 @@ export const ChatReflectionInterface = () => {
           </View>
         </View>
       )}
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
