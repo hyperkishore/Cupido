@@ -54,7 +54,7 @@ export const ChatReflectionInterface = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
-  const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
+  const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(true);
   const [conversationState, setConversationState] = useState<ConversationState>({
     questionsAsked: [],
     currentTopic: undefined,
@@ -857,19 +857,16 @@ export const ChatReflectionInterface = () => {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={() => {
-      Keyboard.dismiss();
-    }}>
-      <KeyboardAvoidingView 
+    <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 85 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 160 : 0}
       >
         <ScrollView 
           ref={scrollViewRef}
           style={styles.messagesContainer}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.messagesContent, { paddingBottom: Platform.OS === 'ios' ? 100 : 80 }]}
+          contentContainerStyle={[styles.messagesContent, { paddingBottom: isWaitingForAnswer ? 150 : 100 }]}
           onScrollBeginDrag={() => {
             Keyboard.dismiss();
           }}
@@ -885,7 +882,7 @@ export const ChatReflectionInterface = () => {
               style={styles.attachButton}
               onPress={handleSharePhoto}
             >
-              <Text style={styles.attachButtonIcon}>📎</Text>
+              <Text style={styles.attachButtonIcon}>+</Text>
             </TouchableOpacity>
             
             <View style={styles.textInputContainer}>
@@ -897,11 +894,10 @@ export const ChatReflectionInterface = () => {
                 placeholderTextColor="#8E8E93"
                 multiline
                 maxLength={500}
-                autoFocus={false}
                 editable={!isRecording}
-                blurOnSubmit={true}
-                onFocus={() => {}}
-                onBlur={() => {}}
+                blurOnSubmit={false}
+                returnKeyType="default"
+                keyboardType="default"
               />
               
               {/* Voice recording button - WhatsApp style */}
@@ -922,31 +918,27 @@ export const ChatReflectionInterface = () => {
                     }],
                   }
                 ]}>
-                  <Text style={[styles.voiceButtonIcon, isRecording && styles.voiceButtonIconRecording]}>🎤</Text>
+                  <View style={styles.micIconContainer}>
+                    <View style={[styles.micIconStem, isRecording && styles.micIconRecording]} />
+                    <View style={[styles.micIconHead, isRecording && styles.micIconRecording]} />
+                  </View>
                 </Animated.View>
               </Pressable>
             </View>
             
-            <TouchableOpacity 
-              style={[
-                styles.sendButton,
-                currentInput.trim().length === 0 && styles.sendButtonDisabled
-              ]}
-              onPress={handleSendMessage}
-              disabled={currentInput.trim().length === 0 || isRecording}
-            >
-              <Text style={[
-                styles.sendButtonText,
-                currentInput.trim().length === 0 && styles.sendButtonTextDisabled
-              ]}>
-                Send
-              </Text>
-            </TouchableOpacity>
+            {currentInput.trim().length > 0 && (
+              <TouchableOpacity 
+                style={styles.sendButton}
+                onPress={handleSendMessage}
+                disabled={isRecording}
+              >
+                <View style={styles.sendArrow} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
       </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
   );
 };
 
@@ -954,7 +946,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    minHeight: '100vh',
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
@@ -1031,41 +1023,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 0.5,
     borderTopColor: '#E5E5EA',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 70,
-    position: 'relative',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingBottom: 12,
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 85 : 70,
+    left: 0,
+    right: 0,
     zIndex: 10,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 22,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     gap: 8,
-    minHeight: 44,
   },
   sendButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#007AFF',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minHeight: 36,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: '#C7C7CC',
-  },
-  sendButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  sendButtonTextDisabled: {
-    color: '#8E8E93',
+  sendArrow: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#FFFFFF',
+    transform: [{ rotate: '90deg' }],
+    marginLeft: 2,
   },
   messageImage: {
     width: 200,
@@ -1077,30 +1068,34 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   attachButton: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
+    backgroundColor: '#8E8E93',
   },
   attachButtonIcon: {
-    fontSize: 18,
-    color: '#8E8E93',
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '400',
+    lineHeight: 20,
   },
   textInputContainer: {
     flex: 1,
     position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'flex-end',
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     color: '#000000',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    paddingRight: 44,
     maxHeight: 100,
-    minHeight: 22,
-    paddingRight: 40,
-    paddingVertical: 8,
+    minHeight: 32,
     lineHeight: 20,
   },
   textInputRecording: {
@@ -1110,14 +1105,14 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     position: 'absolute',
-    right: 4,
+    right: 6,
     bottom: 6,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: 'transparent',
   },
   voiceButtonRecording: {
     backgroundColor: '#FF3B30',
@@ -1138,6 +1133,31 @@ const styles = StyleSheet.create({
   },
   voiceButtonIconRecording: {
     color: '#FFFFFF',
+  },
+  micIconContainer: {
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  micIconHead: {
+    width: 8,
+    height: 10,
+    backgroundColor: '#8E8E93',
+    borderRadius: 4,
+    position: 'absolute',
+    top: 1,
+  },
+  micIconStem: {
+    width: 2,
+    height: 6,
+    backgroundColor: '#8E8E93',
+    position: 'absolute',
+    bottom: 1,
+  },
+  micIconRecording: {
+    backgroundColor: '#FF3B30',
   },
   recordingIndicator: {
     flexDirection: 'row',
