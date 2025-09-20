@@ -20,6 +20,8 @@ import { questionsService, CategoryQuestion } from '../services/questionsLoader'
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { habitTrackingService } from '../services/habitTrackingService';
 import { personalityInsightsService } from '../services/personalityInsightsService';
+import { conversationMemoryService } from '../services/conversationMemoryService';
+import { intelligentQuestionService, QuestionWithContext } from '../services/intelligentQuestionService';
 
 interface ChatMessage {
   id: string;
@@ -46,7 +48,7 @@ export const ChatReflectionInterface = () => {
   const { dispatch } = useAppState();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState<CategoryQuestion | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
   const [conversationState, setConversationState] = useState<ConversationState>({
     questionsAsked: [],
@@ -75,13 +77,18 @@ export const ChatReflectionInterface = () => {
 
   const loadQuestionsAndStart = async () => {
     try {
-      // Load all questions from the JSON file
+      // Initialize services
+      await conversationMemoryService.initialize();
+      await intelligentQuestionService.initialize();
+      
+      // Load all questions from the JSON file for backwards compatibility
       const questionsData = await import('../data/questions.json');
       setAllQuestions(questionsData.default || questionsData);
+      
       startConversation();
     } catch (error) {
-      console.error('Error loading questions:', error);
-      // Fallback to service questions
+      console.error('Error loading questions and services:', error);
+      // Fallback to basic conversation
       startConversation();
     }
   };
@@ -270,13 +277,68 @@ export const ChatReflectionInterface = () => {
     }, 2500);
   };
 
-  const askNaturalQuestion = () => {
+  const askNaturalQuestion = async () => {
+    try {
+      // Use intelligent question service with memory
+      const questionWithContext = await intelligentQuestionService.getQuestionWithMemoryContext('');
+      
+      if (!questionWithContext) {
+        console.error('No question available from intelligent service');
+        return;
+      }
+      
+      const { question, memoryReference, conversationLeadIn } = questionWithContext;
+      setCurrentQuestion(question);
+      
+      // Build the complete message with memory reference if available
+      let messageText = '';
+      
+      if (memoryReference) {
+        messageText = `${memoryReference} ${conversationLeadIn} ${question.question}`;
+      } else {
+        messageText = `${conversationLeadIn} ${question.question}`;
+      }
+      
+      const questionMessage: ChatMessage = {
+        id: generateId(),
+        text: messageText,
+        isBot: true,
+        timestamp: new Date(),
+        questionId: question.id,
+      };
+      
+      setMessages(prev => [...prev, questionMessage]);
+      setIsWaitingForAnswer(true);
+      
+      // Track this question in local state for backwards compatibility
+      setConversationState(prev => ({
+        ...prev,
+        questionsAsked: [...prev.questionsAsked, question.question],
+        currentTopic: question.theme
+      }));
+      
+    } catch (error) {
+      console.error('Error getting intelligent question:', error);
+      // Fallback to old method
+      fallbackToLegacyQuestion();
+    }
+  };
+
+  const fallbackToLegacyQuestion = () => {
     const question = selectNextQuestion();
     if (!question) return;
     
-    setCurrentQuestion(question);
+    setCurrentQuestion({
+      id: question.id || generateId(),
+      question: question.question,
+      theme: question.theme || 'Self-Discovery',
+      tone: question.tone || 'curious',
+      emotional_depth: question.emotional_depth || 'medium',
+      intended_use_case: question.intended_use_case || 'reflection',
+      contextScore: 50,
+      selectionReason: 'Fallback question selection'
+    });
     
-    // Add natural conversation lead-ins based on conversation flow
     const conversationLeadIns = getConversationLeadIn(question);
     
     const questionMessage: ChatMessage = {
@@ -284,18 +346,11 @@ export const ChatReflectionInterface = () => {
       text: `${conversationLeadIns} ${question.question}`,
       isBot: true,
       timestamp: new Date(),
-      questionId: question.id,
+      questionId: question.id || generateId(),
     };
     
     setMessages(prev => [...prev, questionMessage]);
     setIsWaitingForAnswer(true);
-    
-    // Track this question
-    setConversationState(prev => ({
-      ...prev,
-      questionsAsked: [...prev.questionsAsked, question.question],
-      currentTopic: question.theme
-    }));
   };
 
   const selectNextQuestion = () => {
@@ -398,13 +453,23 @@ export const ChatReflectionInterface = () => {
         questionId: currentQuestion.id,
         questionText: currentQuestion.question,
         text: answerText,
-        category: currentQuestion.category,
+        category: currentQuestion.theme || 'Self-Discovery',
         timestamp: new Date().toISOString(),
         hearts: 0,
         isLiked: false,
       };
 
       dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
+      
+      // Save to conversation memory service
+      await conversationMemoryService.addConversation(
+        currentQuestion.id,
+        currentQuestion.question,
+        answerText,
+        currentQuestion.theme || 'Self-Discovery',
+        currentQuestion.theme,
+        wasVoiceUsed
+      );
       
       await habitTrackingService.addReflection(
         currentQuestion.question,
@@ -416,7 +481,7 @@ export const ChatReflectionInterface = () => {
       await personalityInsightsService.analyzeReflection(
         currentQuestion.question,
         answerText,
-        currentQuestion.category,
+        currentQuestion.theme || 'Self-Discovery',
         wasVoiceUsed
       );
 
