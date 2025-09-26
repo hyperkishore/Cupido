@@ -7,10 +7,8 @@ import {
   SafeAreaView, 
   StatusBar,
   Platform,
-  TextInput,
-  ScrollView
+  ActivityIndicator
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppStateProvider } from './src/contexts/AppStateContext';
@@ -22,6 +20,9 @@ import { PixelPerfectMatchesScreen } from './src/screens/PixelPerfectMatchesScre
 import { PixelPerfectProfileScreen } from './src/screens/PixelPerfectProfileScreen';
 import { PixelPerfectMessagesScreen } from './src/screens/PixelPerfectMessagesScreen';
 import { VersionDisplay } from './src/components/VersionDisplay';
+import { ModeProvider, useAppMode } from './src/contexts/AppModeContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,13 +33,19 @@ const ReflectScreenWithFeedback = withSimpleFeedback(PixelPerfectReflectScreen, 
 const MatchesScreenWithFeedback = withSimpleFeedback(PixelPerfectMatchesScreen, 'MatchesScreen');
 const ProfileScreenWithFeedback = withSimpleFeedback(PixelPerfectProfileScreen, 'ProfileScreen');
 
-const AppContent = () => {
+const AppShell = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [hasNotification] = useState(true);
-  const { feedbackMode, toggleFeedbackMode } = useFeedback();
+  useFeedback();
+  const { mode } = useAppMode();
 
   const HeaderRight = () => (
     <View style={styles.headerRight}>
+      <View style={[styles.modeChip, mode === 'demo' ? styles.modeChipDemo : styles.modeChipLocal]}>
+        <Text style={styles.modeChipText}>
+          {mode === 'demo' ? 'Demo' : 'Local'}
+        </Text>
+      </View>
       <VersionDisplay />
       <TouchableOpacity 
         style={styles.headerIcon}
@@ -143,13 +150,35 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <AppStateProvider>
-      <FeedbackProvider>
-        <AppContent />
-      </FeedbackProvider>
-    </AppStateProvider>
+    <ModeProvider>
+      <AuthProvider>
+        <AppStateProvider>
+          <FeedbackProvider>
+            <Root />
+          </FeedbackProvider>
+        </AppStateProvider>
+      </AuthProvider>
+    </ModeProvider>
   );
 }
+
+const Root = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color="#000000" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  return <AppShell />;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -175,6 +204,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
+  },
+  modeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  modeChipDemo: {
+    backgroundColor: '#FEE4E2',
+  },
+  modeChipLocal: {
+    backgroundColor: '#E0F2FE',
+  },
+  modeChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0F172A',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   headerIcon: {
     position: 'relative',
@@ -227,5 +274,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FF3B30',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
 });

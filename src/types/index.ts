@@ -1,6 +1,7 @@
 export interface User {
   id: string;
-  email: string;
+  email?: string;
+  phoneNumber?: string;
   displayName?: string;
   createdAt: string;
   streak: number;

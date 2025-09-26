@@ -1,4 +1,8 @@
-export const DEMO_MODE = true; // Set to false to use real services
+export let DEMO_MODE = true; // Dynamic flag controlled by AppModeProvider
+
+export const setDemoMode = (value: boolean) => {
+  DEMO_MODE = value;
+};
 
 export const DEMO_USER = {
   id: 'demo-user-123',
