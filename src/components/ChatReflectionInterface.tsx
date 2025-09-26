@@ -688,6 +688,35 @@ export const ChatReflectionInterface = () => {
     setIsWaitingForAnswer(true);
   };
 
+  const promptForPhoto = () => {
+    const hour = new Date().getHours();
+    const photoPrompts = hour < 12 ? [
+      "🌅 How does your morning look today? Share a photo that captures this moment.",
+      "☕ Show me your morning view - what does your day look like from where you are?",
+      "📸 I'm curious about your morning scene. Can you share what's around you?"
+    ] : hour < 17 ? [
+      "🌞 What's your afternoon vibe? Share a photo of where you are right now.",
+      "📱 Show me your current view - I'd love to see your day unfold.",
+      "🌍 Where are you in the world right now? Share a snapshot of your surroundings."
+    ] : [
+      "🌙 How's your evening looking? Share a photo that captures this moment.",
+      "✨ Show me your night view - what does your world look like right now?",
+      "🌃 I'm curious about your evening scene. Can you share what's around you?"
+    ];
+    
+    const prompt = photoPrompts[Math.floor(Math.random() * photoPrompts.length)];
+    
+    const photoMessage: ChatMessage = {
+      id: generateId(),
+      text: prompt,
+      isBot: true,
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, photoMessage]);
+    setIsWaitingForAnswer(true);
+  };
+
   const sharePersonalInsight = () => {
     const insights = [
       "You know, talking with you makes me think about how we all have these hidden depths that only come out in the right conversations.",
@@ -706,6 +735,13 @@ export const ChatReflectionInterface = () => {
     };
     
     setMessages(prev => [...prev, insightMessage]);
+    
+    // Occasionally prompt for a photo
+    const shouldPromptPhoto = Math.random() < 0.3; // 30% chance
+    if (shouldPromptPhoto) {
+      setTimeout(() => promptForPhoto(), 2000);
+      return;
+    }
     
     // Continue with a new question after sharing insight
     setTimeout(() => {
@@ -879,10 +915,10 @@ export const ChatReflectionInterface = () => {
         <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
-              style={styles.attachButton}
+              style={styles.plusButton}
               onPress={handleSharePhoto}
             >
-              <Text style={styles.attachButtonIcon}>+</Text>
+              <Text style={styles.plusButtonIcon}>+</Text>
             </TouchableOpacity>
             
             <View style={styles.textInputContainer}>
@@ -890,21 +926,30 @@ export const ChatReflectionInterface = () => {
                 style={[styles.textInput, isRecording && styles.textInputRecording]}
                 value={currentInput}
                 onChangeText={setCurrentInput}
-                placeholder={isRecording ? "Recording..." : "Type your thoughts..."}
-                placeholderTextColor="#8E8E93"
-                multiline
+                placeholder={isRecording ? "Recording..." : "iMessage"}
+                placeholderTextColor="#C7C7CC"
+                multiline={false}
                 maxLength={500}
                 editable={!isRecording}
-                blurOnSubmit={false}
-                returnKeyType="default"
+                blurOnSubmit={true}
+                returnKeyType="send"
                 keyboardType="default"
+                numberOfLines={1}
+                autoCorrect={true}
+                autoCapitalize="sentences"
               />
               
               {/* Voice recording button - WhatsApp style */}
               <Pressable 
                 style={[styles.voiceButton, isRecording && styles.voiceButtonRecording]}
-                onPressIn={startRecording}
-                onPressOut={stopRecording}
+                onPressIn={() => {
+                  console.log('Mic button pressed');
+                  startRecording();
+                }}
+                onPressOut={() => {
+                  console.log('Mic button released');
+                  stopRecording();
+                }}
               >
                 <Animated.View style={[
                   styles.voiceButtonContent, 
@@ -918,7 +963,7 @@ export const ChatReflectionInterface = () => {
                     }],
                   }
                 ]}>
-                  <View style={styles.micIconContainer}>
+                  <View style={styles.micIconContainer} pointerEvents="none">
                     <View style={[styles.micIconStem, isRecording && styles.micIconRecording]} />
                     <View style={[styles.micIconHead, isRecording && styles.micIconRecording]} />
                   </View>
@@ -1020,12 +1065,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   inputContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F7',
     borderTopWidth: 0.5,
-    borderTopColor: '#E5E5EA',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    paddingBottom: 12,
+    borderTopColor: '#C6C6C8',
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 6 : 8,
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 85 : 70,
     left: 0,
@@ -1034,29 +1079,30 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
   },
   sendButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 4,
   },
   sendArrow: {
     width: 0,
     height: 0,
     borderStyle: 'solid',
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
     borderBottomWidth: 10,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#FFFFFF',
     transform: [{ rotate: '90deg' }],
-    marginLeft: 2,
+    marginLeft: 1,
   },
   messageImage: {
     width: 200,
@@ -1067,36 +1113,40 @@ const styles = StyleSheet.create({
   messageTextWithImage: {
     marginTop: 0,
   },
-  attachButton: {
+  plusButton: {
     width: 28,
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 14,
-    backgroundColor: '#8E8E93',
+    backgroundColor: '#34C759',
   },
-  attachButtonIcon: {
-    fontSize: 20,
+  plusButtonIcon: {
+    fontSize: 22,
     color: '#FFFFFF',
-    fontWeight: '400',
-    lineHeight: 20,
+    fontWeight: '300',
+    lineHeight: 22,
   },
   textInputContainer: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#C8C8CC',
+    minHeight: 34,
   },
   textInput: {
     flex: 1,
     fontSize: 17,
+    fontFamily: '-apple-system',
     color: '#000000',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    paddingRight: 44,
-    maxHeight: 100,
-    minHeight: 32,
-    lineHeight: 20,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingRight: 35,
+    height: 34,
+    lineHeight: 22,
   },
   textInputRecording: {
     backgroundColor: '#FFF3F3',
@@ -1105,14 +1155,15 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     position: 'absolute',
-    right: 6,
-    bottom: 6,
+    right: 5,
+    bottom: 5,
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: '#007AFF',
+    zIndex: 10,
   },
   voiceButtonRecording: {
     backgroundColor: '#FF3B30',
@@ -1144,7 +1195,7 @@ const styles = StyleSheet.create({
   micIconHead: {
     width: 8,
     height: 10,
-    backgroundColor: '#8E8E93',
+    backgroundColor: '#FFFFFF',
     borderRadius: 4,
     position: 'absolute',
     top: 1,
@@ -1152,12 +1203,12 @@ const styles = StyleSheet.create({
   micIconStem: {
     width: 2,
     height: 6,
-    backgroundColor: '#8E8E93',
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
     bottom: 1,
   },
   micIconRecording: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#FFFFFF',
   },
   recordingIndicator: {
     flexDirection: 'row',
