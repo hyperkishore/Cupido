@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { personalityInsightsService, PersonalityProfile } from '../services/personalityInsightsService';
+import { useAuth } from '../contexts/AuthContext';
 
 export const PixelPerfectProfileScreen = () => {
   const [profile, setProfile] = useState<PersonalityProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     loadPersonalityProfile();
@@ -129,6 +131,17 @@ export const PixelPerfectProfileScreen = () => {
             <Text style={styles.achievementBullet}>•</Text>
             <Text style={styles.achievementName}>Authentic Soul</Text>
           </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.accountCard}>
+          <Text style={styles.accountLabel}>Phone number</Text>
+          <Text style={styles.accountValue}>{user?.phoneNumber ?? 'Not set'}</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+            <Text style={styles.logoutButtonText}>Log out</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -310,5 +323,35 @@ const styles = StyleSheet.create({
   lastUpdatedText: {
     fontSize: 13,
     color: '#8E8E93',
+  },
+  accountCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    padding: 20,
+    gap: 12,
+  },
+  accountLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  accountValue: {
+    fontSize: 16,
+    color: '#000000',
+  },
+  logoutButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
 });

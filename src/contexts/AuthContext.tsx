@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
 import { AuthService } from '../services/auth';
 import { User } from '../types';
-import { DEMO_MODE } from '../config/demo';
+import { useAppMode } from './AppModeContext';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (name: string) => Promise<void>;
+  signIn: (phoneNumber: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -25,11 +24,12 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { mode } = useAppMode();
 
   useEffect(() => {
     const getSession = async () => {
       try {
-        const currentUser = await AuthService.getCurrentUser();
+        const currentUser = await AuthService.getCurrentUser(mode);
         setUser(currentUser);
       } catch (error) {
         console.error('Error getting current user:', error);
@@ -39,31 +39,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     getSession();
+  }, [mode]);
 
-    if (!DEMO_MODE) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (event === 'SIGNED_IN' && session?.user) {
-            const currentUser = await AuthService.getCurrentUser();
-            setUser(currentUser);
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null);
-          }
-          setLoading(false);
-        }
-      );
-
-      return () => subscription.unsubscribe();
-    }
-  }, []);
-
-  const signIn = async (name: string) => {
+  const signIn = async (phoneNumber: string) => {
     setLoading(true);
     try {
-      const user = await AuthService.signInWithName(name);
-      setUser(user);
+      const nextUser = await AuthService.signInWithPhone(phoneNumber, mode);
+      setUser(nextUser);
     } catch (error) {
-      setLoading(false);
       throw error;
     } finally {
       setLoading(false);
@@ -73,10 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     setLoading(true);
     try {
-      await AuthService.signOut();
+      await AuthService.signOut(mode);
+      setUser(null);
     } catch (error) {
-      setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

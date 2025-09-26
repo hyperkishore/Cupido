@@ -14,38 +14,40 @@ import { useAppMode, AppMode } from '../contexts/AppModeContext';
 
 const PHONE_REGEX = /^[0-9+() -]{6,}$/;
 
-const ModeToggle: React.FC<{ mode: AppMode; onChange: (mode: AppMode) => void }> = ({ mode, onChange }) => (
-  <View style={styles.modeToggleContainer}>
-    <Text style={styles.modeLabel}>Mode</Text>
-    <View style={styles.modeRow}>
-      {(['demo', 'local'] as AppMode[]).map(option => {
-        const selected = option === mode;
-        return (
-          <TouchableOpacity
-            key={option}
-            style={[styles.modeButton, selected && styles.modeButtonSelected]}
-            onPress={() => onChange(option)}
-          >
-            <Text style={[styles.modeButtonText, selected && styles.modeButtonTextSelected]}>
-              {option === 'demo' ? 'Demo' : 'Local'}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+const ModeToggle: React.FC<{ mode: AppMode; onToggle: (mode: AppMode) => void }> = ({ mode, onToggle }) => {
+  return (
+    <View style={styles.modeToggleContainer}>
+      <Text style={styles.modeLabel}>Mode</Text>
+      <View style={styles.modeButtons}>
+        {(['demo', 'local'] as AppMode[]).map(value => {
+          const isActive = mode === value;
+          return (
+            <TouchableOpacity
+              key={value}
+              style={[styles.modeButton, isActive && styles.modeButtonActive]}
+              onPress={() => onToggle(value)}
+            >
+              <Text style={[styles.modeButtonText, isActive && styles.modeButtonTextActive]}>
+                {value === 'demo' ? 'Demo' : 'Local'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
-export const LoginScreen: React.FC = () => {
+export const AuthPhoneScreen: React.FC = () => {
   const { signIn, loading } = useAuth();
   const { mode, setMode } = useAppMode();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleContinue = async () => {
+  const handleSignIn = async () => {
     const trimmed = phoneNumber.trim();
     if (!PHONE_REGEX.test(trimmed)) {
-      setError('Enter a valid phone number (minimum 6 digits).');
+      setError('Enter a valid phone number.');
       return;
     }
 
@@ -60,9 +62,9 @@ export const LoginScreen: React.FC = () => {
     >
       <View style={styles.content}>
         <Text style={styles.title}>Cupido</Text>
-        <Text style={styles.subtitle}>Sign in with your phone number to continue</Text>
+        <Text style={styles.subtitle}>Step into your reflection journey</Text>
 
-        <ModeToggle mode={mode} onChange={setMode} />
+        <ModeToggle mode={mode} onToggle={setMode} />
 
         <View style={styles.fieldContainer}>
           <Text style={styles.fieldLabel}>Phone number</Text>
@@ -71,7 +73,7 @@ export const LoginScreen: React.FC = () => {
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             placeholder="e.g. +1 415 555 0199"
-            placeholderTextColor="#9A9A9A"
+            placeholderTextColor="#B0B0B0"
             keyboardType="phone-pad"
             autoComplete="tel"
             autoCorrect={false}
@@ -80,19 +82,21 @@ export const LoginScreen: React.FC = () => {
         </View>
 
         <TouchableOpacity
-          style={[styles.continueButton, loading && styles.continueButtonDisabled]}
-          onPress={handleContinue}
+          style={[styles.signInButton, loading && styles.signInButtonDisabled]}
+          onPress={handleSignIn}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.continueText}>Continue</Text>
+            <Text style={styles.signInButtonText}>
+              Continue
+            </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.helperText}>
-          In demo mode, any phone number works and loads seeded data. Switch to local mode to use the on-device database.
+          We’ll use this number to personalise your experience. No codes required in demo mode.
         </Text>
       </View>
     </KeyboardAvoidingView>
@@ -106,14 +110,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    alignItems: 'stretch',
     justifyContent: 'center',
     paddingHorizontal: 32,
     paddingVertical: 48,
-    maxWidth: 420,
+    maxWidth: 460,
     alignSelf: 'center',
   },
   title: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '700',
     color: '#000000',
     marginBottom: 8,
@@ -121,9 +126,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#6F6F6F',
+    color: '#6B6B6B',
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 32,
   },
   fieldContainer: {
     marginBottom: 16,
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F1F1F',
+    color: '#1B1B1B',
     marginBottom: 8,
   },
   input: {
@@ -148,17 +153,17 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
   },
-  continueButton: {
+  signInButton: {
     backgroundColor: '#000000',
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 12,
   },
-  continueButtonDisabled: {
+  signInButtonDisabled: {
     opacity: 0.4,
   },
-  continueText: {
+  signInButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
@@ -176,12 +181,12 @@ const styles = StyleSheet.create({
   modeLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1F1F1F',
+    color: '#1B1B1B',
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  modeRow: {
+  modeButtons: {
     flexDirection: 'row',
     gap: 8,
   },
@@ -193,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   },
-  modeButtonSelected: {
+  modeButtonActive: {
     backgroundColor: '#000000',
     borderColor: '#000000',
   },
@@ -202,7 +207,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
   },
-  modeButtonTextSelected: {
+  modeButtonTextActive: {
     color: '#FFFFFF',
   },
 });
