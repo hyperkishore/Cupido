@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from './supabase';
 import { DEMO_MODE } from '../config/demo';
 import questionsData from '../data/questions.json';

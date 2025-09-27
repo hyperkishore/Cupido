@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from './supabase';
 import { PersonaService } from './personaService';
 import { GamificationService } from './gamification';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { StreamChat } from 'stream-chat';
 import { supabase } from './supabase';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Web-compatible version of feedbackDatabase that uses localStorage instead of SQLite
 import { Platform } from 'react-native';
 

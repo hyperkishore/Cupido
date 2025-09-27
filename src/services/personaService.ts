@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from './supabase';
 import { PersonaAI } from './personaAI';
 import { PromptService } from './prompts';

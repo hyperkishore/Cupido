@@ -1,6 +1,11 @@
-import * as SQLite from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+
+let SQLite: any = null;
+// Only import SQLite on mobile platforms
+if (Platform.OS !== 'web') {
+  SQLite = require('expo-sqlite');
+}
 
 // Database name - this is the name you requested
 export const FEEDBACK_DATABASE_NAME = 'cupido_feedback.db';
@@ -46,10 +51,21 @@ export interface FeedbackAttachment {
 }
 
 class FeedbackDatabaseService {
-  private db: SQLite.SQLiteDatabase | null = null;
+  private db: any = null;
 
   async initializeDatabase(): Promise<void> {
     try {
+      // Skip database initialization on web platform
+      if (Platform.OS === 'web') {
+        console.log('Skipping SQLite initialization on web platform');
+        return;
+      }
+      
+      if (!SQLite) {
+        console.warn('SQLite not available on this platform');
+        return;
+      }
+      
       // Open the database
       this.db = await SQLite.openDatabaseAsync(FEEDBACK_DATABASE_NAME);
       
@@ -62,7 +78,10 @@ class FeedbackDatabaseService {
       console.log('Feedback database initialized successfully');
     } catch (error) {
       console.error('Error initializing feedback database:', error);
-      throw error;
+      // Don't throw error on web platform
+      if (Platform.OS !== 'web') {
+        throw error;
+      }
     }
   }
 

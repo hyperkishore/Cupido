@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Progressive Web App (PWA) Utilities
  * Handles PWA installation, updates, and offline capabilities

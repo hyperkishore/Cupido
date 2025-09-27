@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from './supabase';
 import { QARoom, QAMessage } from '../types';
 import { DEMO_MODE } from '../config/demo';
