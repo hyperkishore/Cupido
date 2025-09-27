@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Feather } from '@expo/vector-icons';
 import { AppStateProvider } from './src/contexts/AppStateContext';
 import { FeedbackProvider, useFeedback } from './src/contexts/FeedbackContext';
 import { withSimpleFeedback } from './src/components/withSimpleFeedback';
@@ -51,7 +52,7 @@ const AppShell = () => {
         style={styles.headerIcon}
         onPress={() => setShowMessages(true)}
       >
-        <Text style={styles.iconText}>♡</Text>
+        <Feather name="message-circle" size={20} color="#1C1C1E" />
         {hasNotification && <View style={styles.notificationDot} />}
       </TouchableOpacity>
     </View>
@@ -74,20 +75,22 @@ const AppShell = () => {
           <Tab.Navigator
             screenOptions={({ route }) => ({
               headerShown: false,
-              tabBarIcon: ({ focused }) => {
-                let iconText = '○';
-                
+              tabBarIcon: ({ focused, color }) => {
+                let iconName: keyof typeof Feather.glyphMap = 'circle';
+
                 if (route.name === 'Home') {
-                  iconText = focused ? '⌂' : '⌂';
+                  iconName = 'home';
                 } else if (route.name === 'Reflect') {
-                  iconText = focused ? '☽' : '☽';
+                  iconName = 'edit-3';
                 } else if (route.name === 'Matches') {
-                  iconText = focused ? '♥' : '♡';
+                  iconName = 'heart';
                 } else if (route.name === 'Profile') {
-                  iconText = focused ? '●' : '○';
+                  iconName = 'user';
+                } else if (route.name === 'Docs') {
+                  iconName = 'book-open';
                 }
-                
-                return <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>{iconText}</Text>;
+
+                return <Feather name={iconName} size={20} color={color ?? (focused ? '#007AFF' : '#8E8E93')} />;
               },
               tabBarActiveTintColor: '#007AFF',
               tabBarInactiveTintColor: '#8E8E93',
@@ -139,7 +142,7 @@ const AppShell = () => {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorTitle}>Cupido</Text>
-        <Text style={styles.errorText}>Loading app...</Text>
+        <Text style={styles.errorText}>Loading your reflections…</Text>
         <Text style={styles.errorDetails}>
           {error?.toString() || 'Unknown error occurred'}
         </Text>
@@ -164,11 +167,46 @@ export default function App() {
 
 const Root = () => {
   const { user, loading } = useAuth();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  if (loading) {
+  React.useEffect(() => {
+    // Set a timeout for loading state
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoadingTimeout(true);
+      }
+    }, 5000); // 5 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && !loadingTimeout) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#000000" />
+        <Text style={styles.loadingTitle}>Cupido</Text>
+        <ActivityIndicator size="large" color="#000000" />
+        <Text style={styles.loadingCopy}>Loading your reflection space</Text>
+      </View>
+    );
+  }
+
+  if (loadingTimeout) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingTitle}>Cupido</Text>
+        <Text style={styles.loadingCopy}>Taking longer than usual...</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => {
+            setLoadingTimeout(false);
+            // Reload the app
+            if (Platform.OS === 'web') {
+              window.location.reload();
+            }
+          }}
+        >
+          <Text style={styles.retryButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -230,10 +268,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconText: {
-    fontSize: 24,
-    color: '#000000',
-  },
   notificationDot: {
     position: 'absolute',
     top: 8,
@@ -242,14 +276,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FF3B30',
-  },
-  tabIcon: {
-    fontSize: 22,
-    color: '#8E8E93',
-    lineHeight: 24,
-  },
-  tabIconFocused: {
-    color: '#007AFF',
   },
   errorContainer: {
     flex: 1,
@@ -280,5 +306,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  loadingTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 24,
+  },
+  loadingCopy: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#6C6C70',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

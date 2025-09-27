@@ -8,24 +8,20 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
-  TextInput,
   Image,
-  Animated,
-  Vibration,
-  Pressable,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
+import { Feather } from '@expo/vector-icons';
+import { MinimalChatInput } from './MinimalChatInput';
 import { questionsService, CategoryQuestion } from '../services/questionsLoader';
 import { useAppState, generateId } from '../contexts/AppStateContext';
 import { habitTrackingService } from '../services/habitTrackingService';
 import { personalityInsightsService } from '../services/personalityInsightsService';
 import { conversationMemoryService } from '../services/conversationMemoryService';
 import { intelligentQuestionService, QuestionWithContext } from '../services/intelligentQuestionService';
+import { reflectionCoachService } from '../services/reflectionCoachService';
 
 interface ChatMessage {
   id: string;
@@ -34,7 +30,9 @@ interface ChatMessage {
   timestamp: Date;
   questionId?: string;
   imageUri?: string;
-  imageInsights?: string;
+  audioUri?: string;
+  mood?: string;
+  tags?: string[];
 }
 
 interface ConversationState {
@@ -51,8 +49,10 @@ interface ConversationState {
 export const ChatReflectionInterface = () => {
   const { dispatch } = useAppState();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = Platform.OS === 'ios' ? 85 : 70;
+  const inputBarOffset = tabBarHeight + 12;
+  const keyboardVerticalOffset = Platform.OS === 'ios' ? tabBarHeight + 60 : 0;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentInput, setCurrentInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionWithContext | null>(null);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(true);
   const [conversationState, setConversationState] = useState<ConversationState>({
@@ -67,12 +67,8 @@ export const ChatReflectionInterface = () => {
   });
   const [allQuestions, setAllQuestions] = useState<any[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  // Voice recording states
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [wasVoiceUsed, setWasVoiceUsed] = useState(false);
-  const recordingAnimation = useRef(new Animated.Value(0)).current;
+  const audioPlayerRef = useRef<Audio.Sound | null>(null);
+  const [playingAudioMessageId, setPlayingAudioMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     // Load questions and start conversation
@@ -83,6 +79,10 @@ export const ChatReflectionInterface = () => {
     return () => {
       Keyboard.dismiss();
       setIsWaitingForAnswer(false);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.unloadAsync().catch(() => undefined);
+        audioPlayerRef.current = null;
+      }
     };
   }, []);
 
@@ -111,74 +111,21 @@ export const ChatReflectionInterface = () => {
     }, 100);
   }, [messages]);
 
-  const setupAudioMode = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-    } catch (error) {
-      console.error('Failed to setup audio:', error);
-    }
-  };
 
-  const startRecording = async () => {
-    try {
-      console.log('Starting recording...');
-      
-      // Stop any existing recording first
-      if (recording) {
-        await recording.stopAndUnloadAsync();
-        setRecording(null);
-      }
-
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant audio recording permission to use voice input.');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await newRecording.startAsync();
-
-      setRecording(newRecording);
-      setIsRecording(true);
-
-      // Start pulsing animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(recordingAnimation, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(recordingAnimation, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-
-      // Haptic feedback
-      if (Platform.OS === 'ios') {
-        Vibration.vibrate(10);
-      }
-
-      console.log('Recording started');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      setIsRecording(false);
-      setRecording(null);
-    }
-  };
+  const handleSendMessage = async (message: {
+    text: string;
+    imageUri?: string;
+    fileUri?: string;
+    location?: { latitude: number; longitude: number };
+    audioUri?: string;
+  }) => {
+    if (!currentQuestion) return;
+    
+    const { text, imageUri, fileUri, location, audioUri } = message;
+    
+    if (!text && !imageUri && !fileUri && !location && !audioUri) return;
+    
+    Keyboard.dismiss();
 
   const stopRecording = async () => {
     if (!recording || !isRecording) {
@@ -203,6 +150,10 @@ export const ChatReflectionInterface = () => {
 
       // Clear recording reference
       setRecording(null);
+
+      if (uri) {
+        setPendingAudioUri(uri);
+      }
 
       // Transcribe the audio
       if (uri) {
@@ -443,80 +394,167 @@ export const ChatReflectionInterface = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!currentInput.trim() || !currentQuestion) return;
+    if (!currentQuestion) {
+      return;
+    }
 
-    const answerText = currentInput.trim();
-    
-    // Add user's message
+    const trimmed = currentInput.trim();
+    const imageAttachment = pendingImageUri;
+    const audioAttachment = pendingAudioUri;
+
+    if (!trimmed && !imageAttachment && !audioAttachment) {
+      return;
+    }
+
+    Keyboard.dismiss();
+
+    const now = new Date();
+    let normalizedAnswer = trimmed;
+
+    if (imageAttachment) {
+      normalizedAnswer = normalizedAnswer
+        ? `${normalizedAnswer}\n\n[Shared a photo]`
+        : '[Shared a photo]';
+    }
+
+    if (audioAttachment) {
+      normalizedAnswer = normalizedAnswer
+        ? `${normalizedAnswer}\n\n[Shared a voice note]`
+        : '[Shared a voice note]';
+    }
+
     const userMessage: ChatMessage = {
       id: generateId(),
-      text: answerText,
+      text: trimmed || (imageAttachment ? 'Shared a moment.' : 'Shared a voice note.'),
       isBot: false,
-      timestamp: new Date(),
+      timestamp: now,
+      questionId: currentQuestion.id,
+      imageUri: imageAttachment ?? undefined,
+      audioUri: audioAttachment ?? undefined,
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setCurrentInput('');
+    setIsWaitingForAnswer(false);
 
-    // Save the reflection
+    let sendSucceeded = false;
+
     try {
+      const coachTurn = await reflectionCoachService.createTurn(
+        {
+          question: {
+            id: currentQuestion.id,
+            text: currentQuestion.question,
+            category: currentQuestion.theme,
+          },
+          recentThemes: conversationState.questionsAsked.slice(-3),
+          conversationHistory: nextMessages.slice(-8).map((message) => ({
+            role: message.isBot ? 'coach' : 'user',
+            content: message.text,
+          })),
+        },
+        normalizedAnswer
+      );
+
       const newAnswer = {
         id: generateId(),
         questionId: currentQuestion.id,
         questionText: currentQuestion.question,
-        text: answerText,
+        text: normalizedAnswer,
         category: currentQuestion.theme || 'Self-Discovery',
-        timestamp: new Date().toISOString(),
+        timestamp: now.toISOString(),
         hearts: 0,
         isLiked: false,
+        summary: coachTurn.aiResult.summary,
+        insights: coachTurn.aiResult.insights,
+        mood: coachTurn.aiResult.mood,
+        tags: coachTurn.aiResult.tags,
       };
 
       dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
-      
-      // Save to conversation memory service
+
+      const voiceUsedFlag = wasVoiceUsed || Boolean(audioAttachment);
+
       await conversationMemoryService.addConversation(
         currentQuestion.id,
         currentQuestion.question,
-        answerText,
+        normalizedAnswer,
         currentQuestion.theme || 'Self-Discovery',
         currentQuestion.theme,
-        wasVoiceUsed
+        voiceUsedFlag
       );
-      
+
       await habitTrackingService.addReflection(
         currentQuestion.question,
-        answerText,
-        wasVoiceUsed
+        normalizedAnswer,
+        voiceUsedFlag
       );
 
-      // Analyze reflection for personality insights
       await personalityInsightsService.analyzeReflection(
         currentQuestion.question,
-        answerText,
+        normalizedAnswer,
         currentQuestion.theme || 'Self-Discovery',
-        wasVoiceUsed
+        voiceUsedFlag
       );
 
-      // Bot response after user answers
-      setTimeout(() => {
-        provideFeedbackAndContinue(answerText);
-      }, 1000);
+      setConversationState((prev) => ({
+        ...prev,
+        questionsAsked: [...prev.questionsAsked, currentQuestion.question],
+        currentTopic: currentQuestion.theme,
+        followUpCount: prev.followUpCount + 1,
+        personalityInsights: {
+          traits: Array.from(new Set([...prev.personalityInsights.traits, ...coachTurn.aiResult.tags])),
+          interests: prev.personalityInsights.interests,
+          values: prev.personalityInsights.values,
+        },
+      }));
 
-      // Check for achievements
-      setTimeout(() => {
-        checkForAchievements(answerText);
-      }, 2500);
+      const coachMessage: ChatMessage = {
+        id: generateId(),
+        text: coachTurn.reply,
+        isBot: true,
+        timestamp: new Date(),
+        mood: coachTurn.aiResult.mood,
+        tags: coachTurn.aiResult.tags,
+      };
 
+      setMessages((prev) => [...prev, coachMessage]);
+
+      if (imageAttachment) {
+        setTimeout(() => analyzePhoto(imageAttachment), 1200);
+      }
+
+      setTimeout(() => {
+        askNaturalQuestion();
+      }, 1600);
+
+      setTimeout(() => {
+        checkForAchievements(normalizedAnswer);
+      }, 2200);
+
+      sendSucceeded = true;
     } catch (error) {
-      console.error('Error saving reflection:', error);
+      console.error('Error processing reflection:', error);
+      setIsWaitingForAnswer(true);
+      const errorMessage: ChatMessage = {
+        id: generateId(),
+        text: 'I ran into a hiccup digesting that. Mind sharing again in a moment?',
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      if (sendSucceeded) {
+        setPendingImageUri(null);
+        setPendingAudioUri(null);
+        setWasVoiceUsed(false);
+      }
     }
-
-    setCurrentInput('');
-    setWasVoiceUsed(false);
-    setIsWaitingForAnswer(false);
   };
 
   const provideFeedbackAndContinue = (answerText: string) => {
-    // Analyze the user's response for contextual, friend-like feedback
+    // Legacy helper retained for backwards compatibility (deprecated by reflection Ai service)
     const userResponse = answerText.toLowerCase();
     const responseLength = userResponse.split(' ').length;
     
@@ -765,20 +803,7 @@ export const ChatReflectionInterface = () => {
       });
 
       if (!result.canceled && result.assets[0]) {
-        const userMessage: ChatMessage = {
-          id: generateId(),
-          text: "Here's a photo from my day",
-          isBot: false,
-          timestamp: new Date(),
-          imageUri: result.assets[0].uri,
-        };
-
-        setMessages(prev => [...prev, userMessage]);
-
-        // Analyze the photo and provide insights
-        setTimeout(() => {
-          analyzePhoto(result.assets[0].uri);
-        }, 1000);
+        setPendingImageUri(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -803,7 +828,6 @@ export const ChatReflectionInterface = () => {
       text: insight,
       isBot: true,
       timestamp: new Date(),
-      imageInsights: "Photo analyzed for personality insights",
     };
 
     setMessages(prev => [...prev, botResponse]);
@@ -846,7 +870,50 @@ export const ChatReflectionInterface = () => {
     }
   };
 
+  const toggleAudioPlayback = async (message: ChatMessage) => {
+    if (!message.audioUri) {
+      return;
+    }
+
+    try {
+      if (playingAudioMessageId === message.id && audioPlayerRef.current) {
+        await audioPlayerRef.current.stopAsync();
+        await audioPlayerRef.current.unloadAsync();
+        audioPlayerRef.current = null;
+        setPlayingAudioMessageId(null);
+        return;
+      }
+
+      if (audioPlayerRef.current) {
+        await audioPlayerRef.current.stopAsync();
+        await audioPlayerRef.current.unloadAsync();
+        audioPlayerRef.current = null;
+      }
+
+      const sound = new Audio.Sound();
+      await sound.loadAsync({ uri: message.audioUri });
+      audioPlayerRef.current = sound;
+      setPlayingAudioMessageId(message.id);
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync().catch(() => undefined);
+          if (audioPlayerRef.current === sound) {
+            audioPlayerRef.current = null;
+          }
+          setPlayingAudioMessageId(null);
+        }
+      });
+
+      await sound.playAsync();
+    } catch (error) {
+      console.error('Audio playback error', error);
+      setPlayingAudioMessageId(null);
+    }
+  };
+
   const renderMessage = (message: ChatMessage) => {
+    const isPlayingAudio = playingAudioMessageId === message.id;
     return (
       <View key={message.id} style={[
         styles.messageContainer,
@@ -862,6 +929,33 @@ export const ChatReflectionInterface = () => {
               style={styles.messageImage}
               resizeMode="cover"
             />
+          )}
+          {message.audioUri && (
+            <TouchableOpacity
+              style={styles.audioAttachment}
+              onPress={() => toggleAudioPlayback(message)}
+              activeOpacity={0.8}
+            >
+              <View style={[
+                styles.audioIcon,
+                isPlayingAudio && styles.audioIconActive,
+                message.isBot ? styles.audioIconBot : styles.audioIconUser,
+              ]}>
+                <Feather
+                  name={isPlayingAudio ? 'pause' : 'play'}
+                  size={14}
+                  color={message.isBot ? '#007AFF' : '#FFFFFF'}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.audioLabel,
+                  message.isBot ? styles.botAudioLabel : styles.userAudioLabel,
+                ]}
+              >
+                Voice note
+              </Text>
+            </TouchableOpacity>
           )}
           <Text style={[
             styles.messageText,
@@ -896,13 +990,16 @@ export const ChatReflectionInterface = () => {
     <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 160 : 0}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
         <ScrollView 
           ref={scrollViewRef}
           style={styles.messagesContainer}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.messagesContent, { paddingBottom: isWaitingForAnswer ? 150 : 100 }]}
+          contentContainerStyle={[
+            styles.messagesContent,
+            { paddingBottom: inputBarOffset + (isWaitingForAnswer ? 140 : 110) }
+          ]}
           onScrollBeginDrag={() => {
             Keyboard.dismiss();
           }}
@@ -912,13 +1009,53 @@ export const ChatReflectionInterface = () => {
 
       {/* Input area - only shows when waiting for answer */}
       {isWaitingForAnswer && (
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={[
+          styles.inputContainer,
+          {
+            paddingBottom: insets.bottom + 8,
+            bottom: inputBarOffset,
+          }
+        ]}>
+          {(pendingImageUri || pendingAudioUri) && (
+            <View style={styles.attachmentPreview}>
+              {pendingImageUri && (
+                <View style={styles.imagePreviewWrapper}>
+                  <Image source={{ uri: pendingImageUri }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    onPress={() => setPendingImageUri(null)}
+                    style={styles.previewRemoveButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove attached photo"
+                  >
+                    <Feather name="x" size={14} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {pendingAudioUri && (
+                <View style={styles.audioPreviewChip}>
+                  <Feather name="mic" size={14} color="#0A84FF" />
+                  <Text style={styles.audioPreviewLabel}>Voice note ready</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setPendingAudioUri(null);
+                      setWasVoiceUsed(false);
+                    }}
+                    style={styles.audioPreviewRemove}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove voice note"
+                  >
+                    <Feather name="x" size={12} color="#0A84FF" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
           <View style={styles.inputWrapper}>
             <TouchableOpacity 
               style={styles.plusButton}
               onPress={handleSharePhoto}
             >
-              <Text style={styles.plusButtonIcon}>+</Text>
+              <Feather name="plus" size={20} color="#FFFFFF" />
             </TouchableOpacity>
             
             <View style={styles.textInputContainer}>
@@ -926,18 +1063,28 @@ export const ChatReflectionInterface = () => {
                 style={[styles.textInput, isRecording && styles.textInputRecording]}
                 value={currentInput}
                 onChangeText={setCurrentInput}
-                placeholder={isRecording ? "Recording..." : "iMessage"}
-                placeholderTextColor="#C7C7CC"
-                multiline={false}
+                placeholder={isRecording ? "Recording..." : "Message your reflection coach"}
+                placeholderTextColor="#8E8E93"
+                multiline
                 maxLength={500}
                 editable={!isRecording}
-                blurOnSubmit={true}
-                returnKeyType="send"
+                blurOnSubmit={false}
+                returnKeyType="default"
                 keyboardType="default"
-                numberOfLines={1}
                 autoCorrect={true}
                 autoCapitalize="sentences"
               />
+              
+              {/* Emoji button */}
+              <TouchableOpacity 
+                style={styles.emojiButton}
+                onPress={() => {
+                  // Emoji picker functionality can be added later
+                  Alert.alert('Emoji', 'Emoji picker coming soon!');
+                }}
+              >
+                <Text style={styles.emojiIcon}>😊</Text>
+              </TouchableOpacity>
               
               {/* Voice recording button - WhatsApp style */}
               <Pressable 
@@ -971,7 +1118,7 @@ export const ChatReflectionInterface = () => {
               </Pressable>
             </View>
             
-            {currentInput.trim().length > 0 && (
+            {(currentInput.trim().length > 0 || pendingImageUri || pendingAudioUri) && (
               <TouchableOpacity 
                 style={styles.sendButton}
                 onPress={handleSendMessage}
@@ -1065,22 +1212,64 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   inputContainer: {
-    backgroundColor: '#F2F2F7',
-    borderTopWidth: 0.5,
-    borderTopColor: '#C6C6C8',
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: Platform.OS === 'ios' ? 6 : 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 85 : 70,
+    bottom: 0,
     left: 0,
     right: 0,
     zIndex: 10,
   },
   inputWrapper: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  attachmentPreview: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 12,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  imagePreviewWrapper: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 76,
+    height: 76,
+    borderRadius: 16,
+  },
+  previewRemoveButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  audioPreviewChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E9F2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    gap: 8,
+  },
+  audioPreviewLabel: {
+    fontSize: 13,
+    color: '#0A84FF',
+    fontWeight: '500',
+  },
+  audioPreviewRemove: {
+    padding: 2,
   },
   sendButton: {
     width: 32,
@@ -1113,40 +1302,71 @@ const styles = StyleSheet.create({
   messageTextWithImage: {
     marginTop: 0,
   },
-  plusButton: {
-    width: 28,
-    height: 28,
+  audioAttachment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    marginBottom: 8,
+  },
+  audioIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 14,
-    backgroundColor: '#34C759',
+    marginRight: 8,
   },
-  plusButtonIcon: {
-    fontSize: 22,
+  audioIconUser: {
+    backgroundColor: '#FFFFFF33',
+  },
+  audioIconBot: {
+    backgroundColor: '#007AFF0F',
+  },
+  audioIconActive: {
+    transform: [{ scale: 1.08 }],
+  },
+  audioLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  botAudioLabel: {
+    color: '#1C1C1E',
+  },
+  userAudioLabel: {
     color: '#FFFFFF',
-    fontWeight: '300',
-    lineHeight: 22,
+  },
+  plusButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 18,
+    backgroundColor: '#4CAF50',
   },
   textInputContainer: {
     flex: 1,
     position: 'relative',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#C8C8CC',
-    minHeight: 34,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 24,
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   textInput: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: '-apple-system',
-    color: '#000000',
+    color: '#FFFFFF',
     backgroundColor: 'transparent',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    paddingRight: 35,
-    height: 34,
-    lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingRight: 80,
+    minHeight: 42,
+    maxHeight: 120,
+    lineHeight: 20,
   },
   textInputRecording: {
     backgroundColor: '#FFF3F3',
@@ -1155,18 +1375,19 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     position: 'absolute',
-    right: 5,
-    bottom: 5,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    right: 10,
+    bottom: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: 'transparent',
     zIndex: 10,
   },
   voiceButtonRecording: {
     backgroundColor: '#FF3B30',
+    borderColor: '#FF3B30',
   },
   voiceButtonContent: {
     justifyContent: 'center',
@@ -1207,8 +1428,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 1,
   },
+  emojiButton: {
+    position: 'absolute',
+    right: 40,
+    bottom: 8,
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  emojiIcon: {
+    fontSize: 18,
+  },
   micIconRecording: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FF3B30',
   },
   recordingIndicator: {
     flexDirection: 'row',

@@ -1,309 +1,434 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
   Alert,
+  Pressable,
+  RefreshControl,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppState } from '../contexts/AppStateContext';
+import { homeExperienceService, HomeExperienceData } from '../services/homeExperienceService';
 import { FeedbackWrapper } from '../components/FeedbackWrapper';
-import { YouTubeConnectModal } from '../components/YouTubeConnectModal';
-import { communityService, CommunityReflection } from '../services/communityService';
-import { habitTrackingService } from '../services/habitTrackingService';
+import { SAMPLE_COMMUNITY_REFLECTIONS, SAMPLE_USER_REFLECTIONS } from '../data/sampleReflections';
+import { Feather } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
+import { personalityGraphService } from '../services/personalityGraphService';
+
+const capitalizeTag = (tag: string) => tag.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
 export const PixelPerfectHomeScreen = () => {
-  const { state, dispatch } = useAppState();
-  const [showLinkedInPrompt, setShowLinkedInPrompt] = useState(true);
-  const [showCommunityPrompt, setShowCommunityPrompt] = useState(true);
-  const [showYouTubePrompt, setShowYouTubePrompt] = useState(true);
-  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
-  const [communityFeed, setCommunityFeed] = useState<CommunityReflection[]>([]);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<any>();
+  const { state } = useAppState();
+  const { user } = useAuth();
+  const [homeData, setHomeData] = useState<HomeExperienceData | null>(() => {
+    if (SAMPLE_USER_REFLECTIONS.length === 0) {
+      return null;
+    }
+
+    const latest = SAMPLE_USER_REFLECTIONS[0];
+    const trendingTags = Array.from(
+      SAMPLE_USER_REFLECTIONS.reduce((acc, reflection) => {
+        (reflection.category ? [reflection.category] : []).forEach((tag) => {
+          acc.set(tag, (acc.get(tag) ?? 0) + 1);
+        });
+        return acc;
+      }, new Map<string, number>())
+    )
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag]) => tag);
+
+    return {
+      stats: {
+        currentStreak: 12,
+        longestStreak: 12,
+        totalReflections: SAMPLE_USER_REFLECTIONS.length,
+        authenticityScore: 82,
+        lastReflectionDate: latest?.timestamp ?? new Date().toISOString(),
+      },
+      trendingTags,
+      latestReflection: latest
+        ? {
+            id: latest.id,
+            question: latest.questionText,
+            summary: latest.text,
+            createdAt: latest.timestamp,
+            mood: undefined,
+            insights: [],
+            tags: [],
+          }
+        : undefined,
+      recommendedPrompts: SAMPLE_USER_REFLECTIONS.slice(0, 3).map((reflection) => ({
+        id: reflection.questionId,
+        question: reflection.questionText,
+        category: reflection.category,
+      })),
+      communitySpotlight: SAMPLE_COMMUNITY_REFLECTIONS.slice(0, 3).map((reflection) => ({
+        id: reflection.id,
+        authorId: reflection.authorId,
+        authorName: reflection.authorName,
+        isAnonymous: reflection.isAnonymous,
+        question: reflection.question,
+        answer: reflection.answer,
+        mood: reflection.mood,
+        tags: reflection.tags,
+        createdAt: reflection.createdAt,
+        communityHearts: reflection.communityHearts,
+        hasUserLiked: reflection.hasUserLiked,
+        visibility: reflection.visibility,
+      })),
+      dailyIntention: 'Take a moment to notice one small win and let it land before the day moves on.',
+    } satisfies HomeExperienceData;
+  });
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [liking, setLiking] = useState<Record<string, boolean>>({});
+  const [connectedIntegrations, setConnectedIntegrations] = useState<Record<string, boolean>>({
+    linkedin: false,
+    youtube: false,
+    calendar: false,
+  });
+
+  const refreshHomeData = async () => {
+    setError(null);
+    try {
+      const data = await homeExperienceService.load();
+      setHomeData(data);
+    } catch (err) {
+      console.error('Failed to hydrate home experience', err);
+      setError('Unable to load home data right now.');
+    }
+  };
 
   useEffect(() => {
-    loadCommunityData();
+    setLoading(true);
+    refreshHomeData().finally(() => {
+      setLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.answers.length]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    refreshHomeData().finally(() => setRefreshing(false));
   }, []);
 
-  const loadCommunityData = async () => {
+  const handleStartReflection = () => {
+    navigation.navigate('Reflect');
+  };
+
+  const handlePromptPress = (prompt: HomeExperienceData['recommendedPrompts'][number]) => {
+    navigation.navigate('Reflect', {
+      suggestedPrompt: {
+        id: prompt.id,
+        question: prompt.question,
+        category: prompt.category,
+      },
+    });
+  };
+
+  const handleLikeCommunity = async (reflectionId: string) => {
+    if (!homeData) return;
+
+    const targetReflection = homeData.communitySpotlight.find((item) => item.id === reflectionId);
+    if (!targetReflection) return;
+
+    const previousState = homeData;
+    const nextLikeState = !targetReflection.hasUserLiked;
+    const nextHeartCount = Math.max(
+      0,
+      targetReflection.communityHearts + (nextLikeState ? 1 : -1)
+    );
+
+    setLiking((prev) => ({ ...prev, [reflectionId]: true }));
+    setHomeData((prev) =>
+      prev
+        ? {
+            ...prev,
+            communitySpotlight: prev.communitySpotlight.map((item) =>
+              item.id === reflectionId
+                ? {
+                    ...item,
+                    hasUserLiked: nextLikeState,
+                    communityHearts: nextHeartCount,
+                  }
+                : item
+            ),
+          }
+        : prev
+    );
+
     try {
-      await communityService.initialize();
-      await habitTrackingService.initialize();
-      
-      const feed = await communityService.getCommunityFeed(10);
-      const streak = await habitTrackingService.getCurrentStreak();
-      
-      setCommunityFeed(feed);
-      setCurrentStreak(streak);
-    } catch (error) {
-      console.error('Error loading community data:', error);
+      if (nextLikeState) {
+        await personalityGraphService.recordLike({
+          id: reflectionId,
+          type: 'reflection',
+          tags: targetReflection.tags,
+          mood: targetReflection.mood || undefined,
+          question: targetReflection.question,
+          answer: targetReflection.answer,
+        });
+      }
+
+      await homeExperienceService.toggleLikeCommunityReflection(reflectionId);
+      const updatedData = await homeExperienceService.load();
+      setHomeData(updatedData);
+    } catch (err) {
+      console.error('Failed to toggle like on community reflection', err);
+      setHomeData(previousState);
+      Alert.alert('Not sent', 'Please try again in a moment.');
     } finally {
-      setLoading(false);
+      setLiking((prev) => ({ ...prev, [reflectionId]: false }));
     }
   };
 
-  const handleLikeAnswer = async (reflectionId: string) => {
-    try {
-      await communityService.likeReflection(reflectionId);
-      // Refresh the feed to show updated heart count
-      const updatedFeed = await communityService.getCommunityFeed(10);
-      setCommunityFeed(updatedFeed);
-    } catch (error) {
-      console.error('Error liking reflection:', error);
-    }
+  const handleReflectFromCommunity = (reflection: HomeExperienceData['communitySpotlight'][number]) => {
+    navigation.navigate('Reflect', {
+      suggestedPrompt: {
+        id: `community-${reflection.id}`,
+        question: reflection.question,
+        category: '',
+      },
+    });
   };
 
-  const handleConnectLinkedIn = () => {
+  const handleIntegrationPress = (key: string) => {
     Alert.alert(
-      'Connect LinkedIn',
-      'Connect your LinkedIn profile to find people with similar professional interests.',
-      [
-        { text: 'Maybe Later', style: 'cancel' },
-        { 
-          text: 'Connect', 
-          onPress: () => {
-            setShowLinkedInPrompt(false);
-            Alert.alert('Connected!', 'LinkedIn integration enabled.');
-          }
-        },
-      ]
+      `Connect ${key.charAt(0).toUpperCase() + key.slice(1)}`,
+      'This integration will be available soon.',
+      [{ text: 'OK' }]
     );
+    setConnectedIntegrations((prev) => ({ ...prev, [key]: true }));
   };
 
-  const handleAskCommunity = () => {
-    Alert.alert(
-      'Ask the Community',
-      'Share a thoughtful question with the Cupido community.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Create Question', 
-          onPress: () => {
-            setShowCommunityPrompt(false);
-            Alert.alert('Question Posted!', 'Your question has been shared.');
-          }
-        },
-      ]
-    );
-  };
+  const trendingTags = useMemo(() => {
+    if (!homeData?.trendingTags) return [];
+    return homeData.trendingTags.map(capitalizeTag);
+  }, [homeData]);
 
-  const handleConnectYouTube = () => {
-    setShowYouTubeModal(true);
-  };
+  const connectors = [
+    {
+      key: 'linkedin' as const,
+      icon: 'linkedin' as const,
+      title: 'LinkedIn',
+      subtitle: 'Connect professional energy',
+      accent: '#0A66C2',
+      background: '#E8F1FB',
+    },
+    {
+      key: 'youtube' as const,
+      icon: 'play-circle' as const,
+      title: 'YouTube',
+      subtitle: 'Share your playlists',
+      accent: '#FF3B30',
+      background: '#FFECEC',
+    },
+    {
+      key: 'calendar' as const,
+      icon: 'calendar' as const,
+      title: 'Calendar',
+      subtitle: 'Schedule reflection time',
+      accent: '#5856D6',
+      background: '#EEEDFF',
+    },
+  ];
 
-  const handleYouTubeConnect = () => {
-    setShowYouTubeModal(false);
-    setShowYouTubePrompt(false);
-    Alert.alert(
-      'YouTube Connected!', 
-      'We\'re analyzing your YouTube activity to enhance your personality profile. New insights will appear within 24-48 hours.'
-    );
-  };
-
-
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date();
-    const past = new Date(timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - past.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return 'yesterday';
-    return `${diffInDays}d ago`;
-  };
-
-  const handleAnswerQuestion = (question: string) => {
-    Alert.alert(
-      'Share Your Thoughts',
-      `Reflect on: "${question}"`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reflect', onPress: () => console.log('Navigate to Reflect screen with question:', question) },
-      ]
-    );
-  };
-
-  const renderQuestionCard = (reflection: CommunityReflection, index: number) => {
-    const isLiked = reflection.hasUserLiked;
-    
+  if (error && !homeData) {
     return (
-      <View key={reflection.id}>
-        <FeedbackWrapper
-          componentId={`question-card-${reflection.id}`}
-          componentType="QuestionCard"
-          screenName="HomeScreen"
-        >
-          <View style={styles.questionCard}>
-            <View style={styles.questionHeader}>
-              <View style={styles.authorInfo}>
-                <Text style={styles.authorName}>{reflection.authorName}</Text>
-                <Text style={styles.timestamp}>{formatTimeAgo(reflection.createdAt.toISOString())}</Text>
-              </View>
-              <FeedbackWrapper
-                componentId={`question-text-${reflection.id}`}
-                componentType="QuestionText"
-                screenName="HomeScreen"
-              >
-                <Text style={styles.questionText}>{reflection.question}</Text>
-              </FeedbackWrapper>
-            </View>
-            
-            <FeedbackWrapper
-              componentId={`answer-text-${reflection.id}`}
-              componentType="AnswerText"
-              screenName="HomeScreen"
-            >
-              <Text style={styles.answerText}>{reflection.answer}</Text>
-            </FeedbackWrapper>
-            
-            <View style={styles.questionFooter}>
-              <View style={styles.tagsContainer}>
-                {reflection.tags?.map((tag, tagIndex) => (
-                  <View key={tagIndex} style={styles.categoryTag}>
-                    <Text style={styles.categoryText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-              <FeedbackWrapper
-                componentId={`heart-button-${reflection.id}`}
-                componentType="HeartButton"
-                screenName="HomeScreen"
-              >
-                <TouchableOpacity 
-                  style={styles.heartContainer}
-                  onPress={() => handleLikeAnswer(reflection.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
-                    {isLiked ? '♥' : '♡'}
-                  </Text>
-                  <Text style={[styles.heartCount, isLiked && styles.heartCountLiked]}>
-                    {reflection.communityHearts}
-                  </Text>
-                </TouchableOpacity>
-              </FeedbackWrapper>
-              {index === 1 && (
-                <FeedbackWrapper
-                  componentId={`answer-button-${reflection.id}`}
-                  componentType="AnswerButton"
-                  screenName="HomeScreen"
-                >
-                  <TouchableOpacity 
-                    style={styles.answerButton}
-                    onPress={() => handleAnswerQuestion(reflection.question)}
-                  >
-                    <Text style={styles.answerButtonText}>Reflect</Text>
-                  </TouchableOpacity>
-                </FeedbackWrapper>
-              )}
-            </View>
-          </View>
-        </FeedbackWrapper>
-
-        {/* LinkedIn Connect Prompt after first card */}
-        {index === 0 && showLinkedInPrompt && (
-          <View style={styles.promptCard}>
-            <View style={styles.promptContent}>
-              <View style={styles.linkedinIconContainer}>
-                <Text style={styles.linkedinIcon}>in</Text>
-              </View>
-              <View style={styles.promptTextContainer}>
-                <Text style={styles.promptTitle}>Connect LinkedIn</Text>
-                <Text style={styles.promptSubtitle}>
-                  Find people similar to your professional network
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.connectButton}
-                onPress={handleConnectLinkedIn}
-              >
-                <Text style={styles.connectButtonText}>Connect</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* YouTube Connect Prompt after second card */}
-        {index === 1 && showYouTubePrompt && (
-          <View style={styles.promptCard}>
-            <View style={styles.promptContent}>
-              <View style={styles.youtubeIconContainer}>
-                <Text style={styles.youtubeIcon}>▶</Text>
-              </View>
-              <View style={styles.promptTextContainer}>
-                <Text style={styles.promptTitle}>Connect YouTube</Text>
-                <Text style={styles.promptSubtitle}>
-                  Enhance your profile with viewing insights
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.youtubeConnectButton}
-                onPress={handleConnectYouTube}
-              >
-                <Text style={styles.youtubeConnectButtonText}>Connect</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Community Prompt after fourth card */}
-        {index === 3 && showCommunityPrompt && (
-          <View style={styles.promptCard}>
-            <View style={styles.promptContent}>
-              <View style={styles.communityIconContainer}>
-                <Text style={styles.communityIcon}>✓</Text>
-              </View>
-              <View style={styles.promptTextContainer}>
-                <Text style={styles.promptTitle}>Ask the Community</Text>
-                <Text style={styles.promptSubtitle}>
-                  Share a question that sparks meaningful conversations
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.askButton}
-                onPress={handleAskCommunity}
-              >
-                <Text style={styles.askButtonText}>Ask</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading community reflections...</Text>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>We hit a snag</Text>
+        <Text style={styles.errorMessage}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+          <Text style={styles.retryButtonText}>Try again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  if (!homeData) {
+    return null;
+  }
+
+  // Mix community reflections, connector cards, and prompts for better distribution
+  const feedItems: any[] = [];
+  let communityIndex = 0;
+  let promptIndex = 0;
+  let connectorIndex = 0;
+
+  // Create a mixed feed
+  for (let i = 0; i < 12; i++) {
+    if (i % 4 === 0 && communityIndex < homeData.communitySpotlight.length) {
+      feedItems.push({ type: 'community', data: homeData.communitySpotlight[communityIndex] });
+      communityIndex++;
+    } else if (i % 4 === 1 && connectorIndex < connectors.length) {
+      feedItems.push({ type: 'connector', data: connectors[connectorIndex] });
+      connectorIndex++;
+    } else if (i % 4 === 2 && promptIndex < homeData.recommendedPrompts.length) {
+      feedItems.push({ type: 'prompt', data: homeData.recommendedPrompts[promptIndex] });
+      promptIndex++;
+    } else if (communityIndex < homeData.communitySpotlight.length) {
+      feedItems.push({ type: 'community', data: homeData.communitySpotlight[communityIndex] });
+      communityIndex++;
+    }
+  }
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {currentStreak > 0 && (
-        <View style={styles.streakCard}>
-          <Text style={styles.streakEmoji}>🔥</Text>
-          <View style={styles.streakContent}>
-            <Text style={styles.streakTitle}>{currentStreak} Day Streak!</Text>
-            <Text style={styles.streakSubtitle}>Keep your authentic reflection going</Text>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor="#007AFF"
+        />
+      }
+    >
+      <FeedbackWrapper componentId="home-progress" componentType="HomeStats" screenName="HomeScreen">
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionEyebrow}>Daily ritual</Text>
+              <Text style={styles.sectionTitle}>You are building consistency</Text>
+            </View>
+            <TouchableOpacity style={styles.reflectButton} onPress={handleStartReflection}>
+              <Text style={styles.reflectButtonText}>Reflect now</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.statsCard}>
+            <View style={styles.statBlock}>
+              <Text style={styles.statValue}>{homeData.stats.currentStreak}</Text>
+              <Text style={styles.statLabel}>day streak</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statValue}>{homeData.stats.totalReflections}</Text>
+              <Text style={styles.statLabel}>reflections</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statValue}>{homeData.stats.authenticityScore}</Text>
+              <Text style={styles.statLabel}>authenticity</Text>
+            </View>
           </View>
         </View>
+      </FeedbackWrapper>
+
+      {homeData.latestReflection && (
+        <FeedbackWrapper componentId="home-latest-reflection" componentType="LatestReflection" screenName="HomeScreen">
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>Your latest reflection</Text>
+            <View style={styles.cardSurface}>
+              <Text style={styles.cardQuestion}>{homeData.latestReflection.question}</Text>
+              <Text style={styles.cardSummary}>{homeData.latestReflection.summary}</Text>
+            </View>
+          </View>
+        </FeedbackWrapper>
       )}
-      {communityFeed.map((reflection, index) => renderQuestionCard(reflection, index))}
-      <View style={styles.bottomSpacer} />
-      
-      <YouTubeConnectModal
-        visible={showYouTubeModal}
-        onClose={() => setShowYouTubeModal(false)}
-        onConnect={handleYouTubeConnect}
-      />
+
+      <FeedbackWrapper componentId="home-feed" componentType="MixedFeed" screenName="HomeScreen">
+        <View style={styles.section}>
+          <Text style={styles.sectionEyebrow}>Community feed</Text>
+          {feedItems.map((item, index) => {
+            if (item.type === 'community') {
+              const reflection = item.data;
+              return (
+                <Pressable
+                  key={`community-${reflection.id}`}
+                  onLongPress={() => handleReflectFromCommunity(reflection)}
+                  delayLongPress={280}
+                  style={styles.communityCard}
+                >
+                  <View style={styles.communityHeader}>
+                    <Text style={styles.communityAuthor}>
+                      {reflection.isAnonymous ? 'Anonymous' : reflection.authorName}
+                    </Text>
+                  </View>
+                  <Text style={styles.communityQuestion}>{reflection.question}</Text>
+                  <Text style={styles.communityAnswer}>{reflection.answer}</Text>
+                  {reflection.tags.length > 0 && (
+                    <View style={styles.tagRow}>
+                      {reflection.tags.slice(0, 3).map((tag, tagIndex) => (
+                        <View key={`${reflection.id}-tag-${tagIndex}`} style={styles.microTag}>
+                          <Text style={styles.microTagText}>{capitalizeTag(tag)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <View style={styles.communityFooter}>
+                    <TouchableOpacity
+                      style={[
+                        styles.heartPill,
+                        reflection.hasUserLiked && styles.heartPillActive,
+                        liking[reflection.id] && styles.heartPillDisabled,
+                      ]}
+                      onPress={() => handleLikeCommunity(reflection.id)}
+                      disabled={liking[reflection.id]}
+                      activeOpacity={0.8}
+                    >
+                      <Feather
+                        name="heart"
+                        size={16}
+                        color={reflection.hasUserLiked ? '#FF3B30' : '#8E8E93'}
+                      />
+                      <Text
+                        style={[
+                          styles.heartCount,
+                          reflection.hasUserLiked && styles.heartCountActive,
+                        ]}
+                      >
+                        {reflection.communityHearts}
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.communityHint}>Long press to reflect with this prompt</Text>
+                  </View>
+                </Pressable>
+              );
+            } else if (item.type === 'connector') {
+              const connector = item.data;
+              const isConnected = connectedIntegrations[connector.key];
+              return (
+                <Pressable
+                  key={`connector-${connector.key}`}
+                  onPress={() => handleIntegrationPress(connector.key)}
+                  style={[styles.connectorCardCompact, { backgroundColor: connector.background }]}
+                >
+                  <Feather name={connector.icon} size={20} color={connector.accent} />
+                  <View style={styles.connectorTextCompact}>
+                    <Text style={styles.connectorTitleCompact}>{connector.title}</Text>
+                    <Text style={styles.connectorSubtitleCompact}>{connector.subtitle}</Text>
+                  </View>
+                  <View style={[styles.connectorStatus, isConnected && styles.connectorStatusConnected]}>
+                    <Text style={styles.connectorStatusText}>
+                      {isConnected ? '✓' : '+'}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            } else if (item.type === 'prompt') {
+              const prompt = item.data;
+              return (
+                <TouchableOpacity
+                  key={`prompt-${prompt.id}`}
+                  onPress={() => handlePromptPress(prompt)}
+                  activeOpacity={0.85}
+                  style={styles.promptCardCompact}
+                >
+                  <Text style={styles.promptCategoryCompact}>{prompt.category}</Text>
+                  <Text style={styles.promptQuestionCompact}>{prompt.question}</Text>
+                </TouchableOpacity>
+              );
+            }
+            return null;
+          })}
+        </View>
+      </FeedbackWrapper>
     </ScrollView>
   );
 };
@@ -311,267 +436,262 @@ export const PixelPerfectHomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F7',
   },
-  questionCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#E5E5E7',
+  contentContainer: {
+    paddingBottom: 100,
   },
-  questionHeader: {
-    marginBottom: 12,
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
   },
-  questionText: {
-    fontSize: 17,
+  errorTitle: {
+    fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
-    lineHeight: 24,
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 15,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  section: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  sectionEyebrow: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
-  timestamp: {
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+  },
+  reflectButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  reflectButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  statsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statBlock: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1C1C1E',
+  },
+  statLabel: {
+    fontSize: 12,
     color: '#8E8E93',
     marginTop: 4,
   },
-  answerText: {
-    fontSize: 15,
-    color: '#000000',
-    lineHeight: 22,
-    marginBottom: 16,
+  cardSurface: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  questionFooter: {
+  cardQuestion: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  cardSummary: {
+    fontSize: 14,
+    color: '#3C3C43',
+    lineHeight: 20,
+  },
+  communityCard: {
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  communityAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  heartButton: {
+    padding: 4,
+  },
+  communityQuestion: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  communityAnswer: {
+    fontSize: 14,
+    color: '#3C3C43',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  communityFooter: {
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  categoryTag: {
+  heartPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heartPillActive: {
+    backgroundColor: 'rgba(255, 59, 48, 0.16)',
+  },
+  heartPillDisabled: {
+    opacity: 0.6,
+  },
+  heartCount: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  heartCountActive: {
+    color: '#FF3B30',
+  },
+  communityHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  microTag: {
     backgroundColor: '#F2F2F7',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  categoryText: {
-    fontSize: 11,
-    fontWeight: '600',
+  microTagText: {
+    fontSize: 12,
     color: '#8E8E93',
-    letterSpacing: 0.5,
   },
-  heartContainer: {
+  connectorCardCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginLeft: 'auto',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  heartIcon: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginRight: 4,
-  },
-  heartIconLiked: {
-    color: '#FF3B30',
-  },
-  heartCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  heartCountLiked: {
-    color: '#FF3B30',
-  },
-  answerButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 18,
+  connectorTextCompact: {
+    flex: 1,
     marginLeft: 12,
   },
-  answerButtonText: {
+  connectorTitleCompact: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#1C1C1E',
   },
-  promptCard: {
-    backgroundColor: '#F8F8F8',
-    marginHorizontal: 20,
-    marginVertical: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  closeButtonText: {
-    fontSize: 20,
+  connectorSubtitleCompact: {
+    fontSize: 12,
     color: '#8E8E93',
-    fontWeight: '300',
+    marginTop: 2,
   },
-  promptContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  linkedinIconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#0A66C2',
-    borderRadius: 8,
+  connectorStatus: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  linkedinIcon: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  communityIconContainer: {
-    width: 40,
-    height: 40,
+  connectorStatusConnected: {
     backgroundColor: '#34C759',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
-  communityIcon: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  promptTextContainer: {
-    flex: 1,
-  },
-  promptTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  promptSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-  },
-  connectButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  connectButtonText: {
+  connectorStatusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#1C1C1E',
   },
-  askButton: {
+  promptCardCompact: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  askButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  bottomSpacer: {
-    height: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  streakCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    margin: 20,
-    padding: 16,
     borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF6B35',
+    padding: 14,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
   },
-  streakEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  streakContent: {
-    flex: 1,
-  },
-  streakTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  streakSubtitle: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  authorInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  authorName: {
-    fontSize: 14,
+  promptCategoryCompact: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: '#007AFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  youtubeIconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#FF0000',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  youtubeIcon: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  youtubeConnectButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  youtubeConnectButtonText: {
+  promptQuestionCompact: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
+    color: '#1C1C1E',
+    lineHeight: 18,
   },
 });

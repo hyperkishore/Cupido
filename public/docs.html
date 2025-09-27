@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #e5e5e7;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .sidebar h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #1d1d1f;
+        }
+        
+        .search-container {
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            background: #f5f5f7;
+        }
+        
+        .search-input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+            background: white;
+        }
+        
+        .search-input::placeholder {
+            color: #86868b;
+        }
+        
+        .category {
+            margin-bottom: 20px;
+        }
+        
+        .category-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .category-title:hover {
+            background: #f5f5f7;
+        }
+        
+        .category-title.active {
+            background: rgba(0, 122, 255, 0.08);
+            color: #007aff;
+        }
+        
+        .doc-list {
+            margin-left: 5px;
+            display: none;
+        }
+        
+        .doc-list.active {
+            display: block;
+        }
+        
+        .doc-folder {
+            margin: 4px 0;
+        }
+        
+        .folder-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #424245;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .folder-title::before {
+            content: '▸';
+            margin-right: 6px;
+            font-size: 12px;
+            color: #86868b;
+            transition: transform 0.2s ease;
+        }
+        
+        .folder-title:hover {
+            background: #f5f5f7;
+        }
+        
+        .folder-title.active::before {
+            transform: rotate(90deg);
+        }
+        
+        .doc-folder-children {
+            margin-left: 14px;
+            display: none;
+        }
+        
+        .doc-folder-children.active {
+            display: block;
+        }
+        
+        .doc-item {
+            padding: 7px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            font-size: 14px;
+            color: #1d1d1f;
+            transition: all 0.2s;
+        }
+        
+        .doc-item:hover {
+            background: #f5f5f7;
+        }
+        
+        .doc-item.active {
+            background: #007aff;
+            color: white;
+        }
+        
+        .page-sections {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e7;
+        }
+        
+        .page-sections-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #86868b;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 0 10px;
+        }
+        
+        .section-item {
+            font-size: 13px;
+            padding: 6px 10px;
+            color: #424245;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            margin: 2px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .section-item:hover {
+            background: #f5f5f7;
+            color: #007aff;
+        }
+        
+        .section-item.h2 {
+            padding-left: 20px;
+            font-weight: 500;
+        }
+        
+        .section-item.h3 {
+            padding-left: 35px;
+            font-size: 12px;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        .markdown-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .markdown-content h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        .markdown-content h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 30px 0 15px;
+            color: #1d1d1f;
+        }
+        
+        .markdown-content h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 25px 0 12px;
+            color: #1d1d1f;
+        }
+        
+        .markdown-content p {
+            margin: 15px 0;
+            line-height: 1.7;
+            color: #424245;
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        .markdown-content li {
+            margin: 8px 0;
+            color: #424245;
+        }
+        
+        .markdown-content code {
+            background: #f5f5f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 14px;
+        }
+        
+        .markdown-content pre {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e5e5e7;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .container {
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #86868b;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                top: 60px;
+                height: calc(100vh - 60px);
+                z-index: 99;
+                transition: left 0.3s;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Cupido Documentation</h1>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <h2>Documentation</h2>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="search-input"
+                    placeholder="Search sections..."
+                    autocomplete="off"
+                />
+            </div>
+            <div id="nav-container"></div>
+            <div id="page-sections" class="page-sections hidden">
+                <div class="page-sections-title">On This Page</div>
+                <div id="sections-list"></div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="markdown-content" id="content">
+                <div class="loading">Loading documentation...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let docsManifest = [];
+        let docIndex = [];
+        let currentDoc = '';
+        let allSections = [];
+        
+        document.addEventListener('DOMContentLoaded', initNavigation);
+        
+        function slugify(value) {
+            return value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-');
+        }
+
+        function encodePath(filePath) {
+            return filePath
+                .split('/')
+                .map((segment) => encodeURIComponent(segment))
+                .join('/');
+        }
+
+        async function initNavigation() {
+            const navContainer = document.getElementById('nav-container');
+            navContainer.innerHTML = '<div class="loading">Loading navigation...</div>';
+            
+            try {
+                const response = await fetch(`./docs/docs-manifest.json?ts=${Date.now()}`);
+                docsManifest = response.ok ? await response.json() : [];
+            } catch (error) {
+                console.error('Error loading docs manifest:', error);
+                docsManifest = [];
+            }
+
+            navContainer.innerHTML = '';
+            docIndex = [];
+
+            docsManifest.forEach((category) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+
+                const categoryTitle = document.createElement('div');
+                categoryTitle.className = 'category-title';
+                categoryTitle.textContent = category.label;
+                categoryTitle.dataset.category = category.name;
+                categoryTitle.onclick = () => toggleCategory(category.name);
+
+                const docList = document.createElement('div');
+                docList.className = 'doc-list';
+                docList.id = `category-${slugify(category.name)}`;
+
+                populateDocList(docList, category.children, category.name, [], []);
+
+                categoryDiv.appendChild(categoryTitle);
+                categoryDiv.appendChild(docList);
+                navContainer.appendChild(categoryDiv);
+            });
+
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', handleSearch);
+
+            const defaultDocPath = 'Other files/README.md';
+            const defaultEntry = docIndex.find((doc) => doc.path === defaultDocPath);
+            if (defaultEntry) {
+                loadDocument(defaultDocPath, defaultEntry.category);
+            } else {
+                const firstDoc = findFirstDoc(docsManifest);
+                if (firstDoc) {
+                    loadDocument(firstDoc.path, firstDoc.category);
+                }
+            }
+        }
+
+        function populateDocList(container, items, categoryName, parentLabels = [], parentFolderIds = []) {
+            items.forEach((item) => {
+                if (item.type === 'folder') {
+                    const folderWrapper = document.createElement('div');
+                    folderWrapper.className = 'doc-folder';
+
+                    const folderTitle = document.createElement('div');
+                    folderTitle.className = 'folder-title';
+                    folderTitle.textContent = item.label;
+
+                    const folderId = `folder-${slugify([...parentLabels, item.name].join('-'))}`;
+                    const folderChildren = document.createElement('div');
+                    folderChildren.className = 'doc-folder-children';
+                    folderChildren.id = folderId;
+
+                    folderTitle.onclick = () => {
+                        const isActive = folderChildren.classList.toggle('active');
+                        folderTitle.classList.toggle('active', isActive);
+                    };
+
+                    folderWrapper.appendChild(folderTitle);
+                    folderWrapper.appendChild(folderChildren);
+                    container.appendChild(folderWrapper);
+
+                    populateDocList(
+                        folderChildren,
+                        item.children,
+                        categoryName,
+                        [...parentLabels, item.label],
+                        [...parentFolderIds, folderId]
+                    );
+                } else if (item.type === 'file') {
+                    const docItem = document.createElement('div');
+                    docItem.className = 'doc-item';
+                    docItem.textContent = item.label;
+                    docItem.style.paddingLeft = `${12 + parentFolderIds.length * 12}px`;
+
+                    const searchKey = [categoryName, ...parentLabels, item.label, item.name]
+                        .join(' ')
+                        .toLowerCase();
+
+                    const docId = `doc-${slugify(item.path)}`;
+                    docItem.id = docId;
+                    docItem.dataset.path = item.path;
+                    docItem.dataset.category = categoryName;
+                    docItem.dataset.folders = JSON.stringify(parentFolderIds);
+                    docItem.dataset.searchKey = searchKey;
+
+                    docItem.onclick = () => loadDocument(item.path, categoryName);
+
+                    container.appendChild(docItem);
+
+                    docIndex.push({
+                        path: item.path,
+                        element: docItem,
+                        category: categoryName,
+                        folderIds: parentFolderIds,
+                        searchKey,
+                    });
+                }
+            });
+        }
+
+        function findFirstDoc(manifest) {
+            for (const category of manifest) {
+                const file = findFirstFile(category.children);
+                if (file) {
+                    return { path: file.path, category: category.name };
+                }
+            }
+            return null;
+        }
+
+        function findFirstFile(items) {
+            for (const item of items) {
+                if (item.type === 'file') {
+                    return item;
+                }
+                if (item.type === 'folder') {
+                    const childFile = findFirstFile(item.children);
+                    if (childFile) {
+                        return childFile;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function toggleCategory(categoryName) {
+            const categoryId = `category-${slugify(categoryName)}`;
+            const categoryElement = document.getElementById(categoryId);
+            if (!categoryElement) {
+                return;
+            }
+
+            const isActive = categoryElement.classList.contains('active');
+            if (isActive) {
+                categoryElement.classList.remove('active');
+                if (categoryElement.previousElementSibling) {
+                    categoryElement.previousElementSibling.classList.remove('active');
+                }
+            } else {
+                openCategory(categoryName);
+            }
+        }
+
+        function openCategory(categoryName) {
+            const categoryId = `category-${slugify(categoryName)}`;
+            const categoryElement = document.getElementById(categoryId);
+            if (!categoryElement) {
+                return;
+            }
+
+            document.querySelectorAll('.doc-list').forEach((list) => list.classList.remove('active'));
+            document.querySelectorAll('.category-title').forEach((title) => title.classList.remove('active'));
+
+            categoryElement.classList.add('active');
+            if (categoryElement.previousElementSibling) {
+                categoryElement.previousElementSibling.classList.add('active');
+            }
+        }
+
+        async function loadDocument(docPath, categoryName) {
+            currentDoc = docPath;
+
+            setActiveDoc(docPath, categoryName);
+
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = '<div class="loading">Loading documentation...</div>';
+
+            try {
+                const response = await fetch(`./docs/${encodePath(docPath)}`);
+                let content = response.ok ? await response.text() : getFallbackContent(docPath);
+
+                const html = parseMarkdown(content);
+                contentDiv.innerHTML = html;
+                generatePageSections();
+                contentDiv.scrollTop = 0;
+
+            } catch (error) {
+                console.error('Error loading document:', error);
+                contentDiv.innerHTML = getFallbackContent(docPath);
+            }
+        }
+
+        function setActiveDoc(docPath, categoryName) {
+            docIndex.forEach((doc) => doc.element.classList.remove('active'));
+
+            const activeEntry = docIndex.find((doc) => doc.path === docPath);
+            if (!activeEntry) {
+                return;
+            }
+
+            openCategory(categoryName);
+            openFolders(activeEntry.folderIds);
+            activeEntry.element.classList.add('active');
+        }
+
+        function openFolders(folderIds = []) {
+            document.querySelectorAll('.doc-folder-children').forEach((folder) => folder.classList.remove('active'));
+            document.querySelectorAll('.folder-title').forEach((title) => title.classList.remove('active'));
+
+            folderIds.forEach((folderId) => {
+                const folderElement = document.getElementById(folderId);
+                if (folderElement) {
+                    folderElement.classList.add('active');
+                    const siblingTitle = folderElement.previousElementSibling;
+                    if (siblingTitle && siblingTitle.classList.contains('folder-title')) {
+                        siblingTitle.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        function parseMarkdown(markdown) {
+            let html = markdown;
+            
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            
+            // Bold and italic
+            html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+            html = html.replace(/\*(.*)\*/gim, '<em>$1</em>');
+            
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank">$1</a>');
+            
+            // Code blocks
+            html = html.replace(/```([^`]+)```/gim, '<pre><code>$1</code></pre>');
+            html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
+            
+            // Lists
+            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            // Paragraphs
+            html = html.replace(/\n\n/gim, '</p><p>');
+            html = '<p>' + html + '</p>';
+            
+            // Clean up
+            html = html.replace(/<p><h/gim, '<h');
+            html = html.replace(/<\/h(\d)><\/p>/gim, '</h$1>');
+            html = html.replace(/<p><pre>/gim, '<pre>');
+            html = html.replace(/<\/pre><\/p>/gim, '</pre>');
+            html = html.replace(/<p><ul>/gim, '<ul>');
+            html = html.replace(/<\/ul><\/p>/gim, '</ul>');
+            
+            return html;
+        }
+        
+        function generatePageSections() {
+            const pageSections = document.getElementById('page-sections');
+            const sectionsList = document.getElementById('sections-list');
+            const headers = document.querySelectorAll('.markdown-content h2, .markdown-content h3');
+            
+            if (headers.length === 0) {
+                pageSections.classList.add('hidden');
+                return;
+            }
+            
+            pageSections.classList.remove('hidden');
+            sectionsList.innerHTML = '';
+            allSections = [];
+            
+            headers.forEach((header, index) => {
+                const sectionItem = document.createElement('div');
+                sectionItem.className = `section-item ${header.tagName.toLowerCase()}`;
+                sectionItem.textContent = header.textContent;
+                sectionItem.onclick = () => {
+                    header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                };
+                sectionsList.appendChild(sectionItem);
+                
+                allSections.push({
+                    element: header,
+                    text: header.textContent.toLowerCase()
+                });
+            });
+        }
+        
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                docIndex.forEach((doc) => {
+                    doc.element.style.display = 'block';
+                });
+                document.querySelectorAll('.doc-folder').forEach((folder) => {
+                    folder.style.display = 'block';
+                });
+                document.querySelectorAll('.category').forEach((category) => {
+                    category.style.display = 'block';
+                });
+                document.querySelectorAll('.doc-folder-children').forEach((folder) => folder.classList.remove('active'));
+                document.querySelectorAll('.folder-title').forEach((title) => title.classList.remove('active'));
+                document.querySelectorAll('.section-item').forEach((item) => {
+                    item.style.display = 'block';
+                });
+                const currentEntry = docIndex.find((doc) => doc.path === currentDoc);
+                if (currentEntry) {
+                    openCategory(currentEntry.category);
+                    openFolders(currentEntry.folderIds);
+                    currentEntry.element.classList.add('active');
+                }
+                return;
+            }
+
+            docIndex.forEach((doc) => {
+                const match = doc.searchKey.includes(searchTerm);
+                doc.element.style.display = match ? 'block' : 'none';
+            });
+
+            document.querySelectorAll('.section-item').forEach((item) => {
+                const title = item.textContent.toLowerCase();
+                item.style.display = title.includes(searchTerm) ? 'block' : 'none';
+            });
+
+            document.querySelectorAll('.doc-folder').forEach((folder) => {
+                const hasVisibleChild = Array.from(folder.querySelectorAll('.doc-item')).some(
+                    (item) => item.style.display !== 'none'
+                );
+                folder.style.display = hasVisibleChild ? 'block' : 'none';
+                const folderChildren = folder.querySelector('.doc-folder-children');
+                const folderTitle = folder.querySelector('.folder-title');
+                if (hasVisibleChild && folderChildren && folderTitle) {
+                    folderChildren.classList.add('active');
+                    folderTitle.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('.category').forEach((category) => {
+                const hasVisibleDoc = Array.from(category.querySelectorAll('.doc-item')).some(
+                    (item) => item.style.display !== 'none'
+                );
+                category.style.display = hasVisibleDoc ? 'block' : 'none';
+                if (hasVisibleDoc) {
+                    const categoryTitle = category.querySelector('.category-title');
+                    const docList = category.querySelector('.doc-list');
+                    if (docList && categoryTitle) {
+                        docList.classList.add('active');
+                        categoryTitle.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        function getFallbackContent(docPath) {
+            return `<h1>${docPath}</h1><p>Documentation is being loaded...</p>`;
+        }
+    </script>
+</body>
+</html>

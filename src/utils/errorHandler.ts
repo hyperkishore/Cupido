@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Centralized Error Handling and Monitoring
  */

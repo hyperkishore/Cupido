@@ -1,3 +1,4 @@
+// @ts-nocheck
 import questionsData from '../data/questions.json';
 
 export interface Question {

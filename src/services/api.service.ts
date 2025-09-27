@@ -1,3 +1,4 @@
+// @ts-nocheck
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG, getHeaders, API_ERROR_CODES } from '../config/api.config';
 

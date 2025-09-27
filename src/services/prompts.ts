@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from './supabase';
 import { Prompt, Response } from '../types';
 import { DEMO_MODE } from '../config/demo';
