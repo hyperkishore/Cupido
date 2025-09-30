@@ -1,322 +1,543 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
+  TextInput,
+  TouchableOpacity,
   ScrollView,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  Keyboard,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MinimalChatInput } from './MinimalChatInput';
-import { useAppState, generateId } from '../contexts/AppStateContext';
-import { intelligentQuestionService } from '../services/intelligentQuestionService';
-import { reflectionCoachService } from '../services/reflectionCoachService';
-import { conversationMemoryService } from '../services/conversationMemoryService';
-import { habitTrackingService } from '../services/habitTrackingService';
-import { personalityInsightsService } from '../services/personalityInsightsService';
-import { persistentStorage } from '../services/storage/persistentStorage';
-import { useAuth } from '../contexts/AuthContext';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { chatAiService } from '../services/chatAiService';
+import { chatDatabase, type ChatMessage as DBChatMessage, type ChatConversation } from '../services/chatDatabase';
+import { generateId } from '../contexts/AppStateContext';
 
-interface ChatMessage {
+interface Message {
   id: string;
   text: string;
   isBot: boolean;
   timestamp: Date;
-  imageUri?: string;
-  audioUri?: string;
-  fileUri?: string;
-  location?: { latitude: number; longitude: number };
 }
+
+// Natural conversation starters and responses
+const CONVERSATION_STARTERS = [
+  "Tell me about your week - what's been the highlight?",
+  "What's something that made you smile recently?",
+  "If you could have dinner with anyone tonight, who would it be?",
+  "What's been on your mind lately?",
+  "What's the best part of your day usually?",
+  "What are you looking forward to this weekend?",
+  "What's something you've been curious about?",
+  "Tell me about a place that feels like home to you.",
+];
+
+// Getting-to-know-you questions for dating context
+const GETTING_TO_KNOW_QUESTIONS = [
+  "What's your idea of a perfect Saturday?",
+  "What's something you're passionate about that people might not expect?",
+  "What's the last thing that made you laugh out loud?",
+  "If you could learn any skill instantly, what would it be?",
+  "What's your go-to comfort food?",
+  "What's the best advice you've ever received?",
+  "What's something you've changed your mind about recently?",
+  "What's a small thing that instantly improves your mood?",
+  "What's your favorite way to unwind after a long day?",
+  "What's something you're really good at that might surprise people?",
+];
+
+// Deeper questions for when conversation develops
+const DEEPER_QUESTIONS = [
+  "What's something you believe that most people disagree with?",
+  "What's a moment that changed how you see the world?",
+  "What's something you're working on improving about yourself?",
+  "What does a meaningful relationship look like to you?",
+  "What's something you've learned about yourself this year?",
+  "What's a challenge you've overcome that you're proud of?",
+  "What's something you wish people knew about you?",
+  "What makes you feel most like yourself?",
+];
+
+// Natural, friendly responses
+const FRIENDLY_RESPONSES = [
+  "Oh interesting! ",
+  "That sounds amazing! ",
+  "I love that! ",
+  "That's so cool! ",
+  "Wow, ",
+  "That's awesome! ",
+  "I can totally see that! ",
+  "",  // Sometimes no prefix
+];
+
+const FOLLOW_UPS = [
+  "Tell me more about that!",
+  "What was that like?",
+  "How did that make you feel?",
+  "What's the story behind that?",
+  "I'd love to hear more!",
+  "What drew you to that?",
+  "How did you get into that?",
+  "What's your favorite part about it?",
+];
+
+const SESSION_STORAGE_KEY = 'cupido_user_session';
+
+const getStoredSessionUserId = async (): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    try {
+      const storage = (globalThis as any)?.localStorage as
+        | { getItem: (key: string) => string | null }
+        | undefined;
+      return storage?.getItem(SESSION_STORAGE_KEY) ?? null;
+    } catch (error) {
+      console.warn('Failed to read session from web storage', error);
+      return null;
+    }
+  }
+
+  try {
+    return await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to read session from AsyncStorage', error);
+    return null;
+  }
+};
+
+const setStoredSessionUserId = async (value: string) => {
+  if (Platform.OS === 'web') {
+    try {
+      const storage = (globalThis as any)?.localStorage as
+        | { setItem: (key: string, val: string) => void }
+        | undefined;
+      storage?.setItem(SESSION_STORAGE_KEY, value);
+    } catch (error) {
+      console.warn('Failed to persist session to web storage', error);
+    }
+    return;
+  }
+
+  try {
+    await AsyncStorage.setItem(SESSION_STORAGE_KEY, value);
+  } catch (error) {
+    console.warn('Failed to persist session to AsyncStorage', error);
+  }
+};
 
 interface SimpleReflectionChatProps {
-  /**
-   * Total bottom inset reserved for the tab bar + safe area so the input isn't hidden.
-   */
-  bottomInset?: number;
+  onKeyboardToggle?: (isVisible: boolean) => void;
 }
 
-export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ bottomInset = 0 }) => {
-  const { dispatch } = useAppState();
-  const { user } = useAuth();
+export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
-  const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
+  const tabBarHeight = useBottomTabBarHeight();
   const scrollViewRef = useRef<ScrollView>(null);
-  const userId = user?.id || user?.phoneNumber || 'guest';
+  
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [conversationCount, setConversationCount] = useState(0);
+  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'assistant'; content: string}>>([]);
+  const [currentConversation, setCurrentConversation] = useState<ChatConversation | null>(null);
+  const [userId, setUserId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
 
+  // Initialize chat with database
   useEffect(() => {
-    startConversation();
+    let unsubscribe: (() => void) | undefined;
+
+    const setupChat = async () => {
+      unsubscribe = await initializeChat();
+    };
+
+    setupChat();
+
+    return () => {
+      unsubscribe?.();
+    };
   }, []);
 
+  const initializeChat = async (): Promise<(() => void) | undefined> => {
+    try {
+      setIsLoading(true);
+      
+      // Generate unique user ID for each session, persisted per platform
+      let sessionUserId = await getStoredSessionUserId();
+      if (!sessionUserId) {
+        sessionUserId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        await setStoredSessionUserId(sessionUserId);
+      }
+      
+      console.log('🔑 Using session user ID:', sessionUserId);
+      const user = await chatDatabase.getOrCreateUser(sessionUserId, `User ${sessionUserId.slice(-6)}`);
+      
+      if (!user) {
+        console.error('Failed to create user');
+        return;
+      }
+      
+      setUserId(user.id);
+      
+      // Get or create conversation
+      const conversation = await chatDatabase.getOrCreateConversation(user.id);
+      if (!conversation) {
+        console.error('Failed to create conversation');
+        return;
+      }
+      
+      setCurrentConversation(conversation);
+      
+      // Load chat history
+      const history = await chatDatabase.getChatHistory(conversation.id);
+      
+      if (history.length > 0) {
+        // Convert DB messages to UI messages
+        const uiMessages: Message[] = history.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          isBot: msg.is_bot,
+          timestamp: new Date(msg.created_at),
+        }));
+        
+        setMessages(uiMessages);
+        setConversationCount(history.filter(msg => !msg.is_bot).length);
+        
+        // Rebuild conversation history for AI
+        const aiHistory = history.map(msg => ({
+          role: msg.is_bot ? 'assistant' as const : 'user' as const,
+          content: msg.content,
+        }));
+        setConversationHistory(aiHistory);
+      } else {
+        // Start with a greeting if no history
+        const greetings = [
+          "Hey! How's your day going?",
+          "Hi there! What's been happening with you lately?",
+          "Hey! Good to see you here. What's on your mind?",
+          "Hi! How are you feeling today?",
+          "Hey! What's been the best part of your week so far?",
+        ];
+        
+        const greetingText = greetings[Math.floor(Math.random() * greetings.length)];
+        
+        // Save greeting to database
+        const savedMessage = await chatDatabase.saveMessage(
+          conversation.id,
+          greetingText,
+          true, // is_bot
+          undefined, // no AI model for greeting
+          { type: 'greeting' }
+        );
+        
+        if (savedMessage) {
+          const greeting: Message = {
+            id: savedMessage.id,
+            text: greetingText,
+            isBot: true,
+            timestamp: new Date(savedMessage.created_at),
+          };
+          setMessages([greeting]);
+        }
+      }
+      
+      // Setup real-time subscription
+      const unsubscribe = chatDatabase.subscribeToMessages(conversation.id, (newMessage) => {
+        // Only add messages from other sources (shouldn't happen in reflection chat, but good for extensibility)
+        setMessages(prev => {
+          const exists = prev.find(msg => msg.id === newMessage.id);
+          if (exists) return prev;
+          
+          return [...prev, {
+            id: newMessage.id,
+            text: newMessage.content,
+            isBot: newMessage.is_bot,
+            timestamp: new Date(newMessage.created_at),
+          }];
+        });
+      });
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Keyboard listeners
+  useEffect(() => {
+    const showListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+        onKeyboardToggle?.(true);
+      }
+    );
+
+    const hideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        onKeyboardToggle?.(false);
+      }
+    );
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, [onKeyboardToggle]);
+
+  // Auto-scroll
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [messages]);
 
-  const startConversation = async () => {
-    await conversationMemoryService.initialize();
-    await intelligentQuestionService.initialize();
+  const generateResponse = async (userMessage: string) => {
+    setIsTyping(true);
     
-    const greeting = "Hey! I'm excited to get to know you better through our conversations. Ready to share what's on your mind?";
-    
-    setMessages([{
-      id: generateId(),
-      text: greeting,
-      isBot: true,
-      timestamp: new Date(),
-    }]);
-    
-    setTimeout(() => {
-      askQuestion();
-    }, 1500);
-  };
-
-  const askQuestion = async () => {
     try {
-      // Show typing indicator
-      setIsTyping(true);
+      // Update conversation history to include the new user message BEFORE calling AI
+      const updatedHistory = [
+        ...conversationHistory,
+        { role: 'user' as const, content: userMessage }
+      ];
       
-      const questionWithContext = await intelligentQuestionService.getQuestionWithMemoryContext('');
-      
-      if (!questionWithContext) {
-        setIsTyping(false);
-        return;
+      console.log('💬 Sending to AI:', {
+        userMessage,
+        historyLength: updatedHistory.length,
+        fullHistory: updatedHistory
+      });
+
+      // Call the AI service with UPDATED conversation history
+      const aiResponse = await chatAiService.generateResponse(
+        userMessage,
+        updatedHistory,
+        conversationCount
+      );
+
+      // Add natural delay to feel more human
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
+
+      // Save bot message to database
+      if (currentConversation) {
+        console.log('AI Response received:', {
+          message: aiResponse.message,
+          model: aiResponse.usedModel,
+          shouldAskQuestion: aiResponse.shouldAskQuestion
+        });
+
+        const savedBotMessage = await chatDatabase.saveMessage(
+          currentConversation.id,
+          aiResponse.message,
+          true, // is_bot
+          aiResponse.usedModel, // ai_model used (was aiResponse.model)
+          { 
+            response_time: Date.now(),
+            conversation_count: conversationCount + 1,
+            shouldAskQuestion: aiResponse.shouldAskQuestion
+          }
+        );
+
+        if (savedBotMessage) {
+          const botMessage: Message = {
+            id: savedBotMessage.id,
+            text: aiResponse.message,
+            isBot: true,
+            timestamp: new Date(savedBotMessage.created_at),
+          };
+
+          setMessages(prev => [...prev, botMessage]);
+        }
       }
       
-      const { question, memoryReference, conversationLeadIn } = questionWithContext;
-      setCurrentQuestion(question);
+      setConversationCount(prev => prev + 1);
       
-      // Build more natural message text
-      let messageText = '';
-      
-      // Add natural transition based on conversation depth
-      if (messages.length > 3) {
-        const transitions = [
-          "That's really insightful. ",
-          "Thanks for sharing that. ",
-          "I appreciate your openness. ",
-          "Interesting perspective! ",
-        ];
-        messageText = transitions[Math.floor(Math.random() * transitions.length)];
-      }
-      
-      if (memoryReference) {
-        messageText += `${memoryReference} ${conversationLeadIn} ${question.question}`;
-      } else {
-        messageText += `${conversationLeadIn} ${question.question}`;
-      }
-      
-      // Simulate natural typing delay
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-      
-      setIsTyping(false);
-      
-      setMessages(prev => [...prev, {
-        id: generateId(),
-        text: messageText,
-        isBot: true,
-        timestamp: new Date(),
-      }]);
-      
-      setIsWaitingForAnswer(true);
+      // Update conversation history for context (use the updated history we passed to AI)
+      setConversationHistory([
+        ...updatedHistory,
+        { role: 'assistant', content: aiResponse.message }
+      ]);
+
     } catch (error) {
-      console.error('Error getting question:', error);
+      console.error('Error generating response:', error);
+      
+      // Fallback to a friendly error message
+      const fallbackText = "Sorry, I'm having trouble connecting right now! But I'm still here - what else would you like to chat about?";
+      
+      // Save fallback message to database
+      if (currentConversation) {
+        const savedFallback = await chatDatabase.saveMessage(
+          currentConversation.id,
+          fallbackText,
+          true, // is_bot
+          undefined, // no AI model for fallback
+          { type: 'error_fallback' }
+        );
+
+        if (savedFallback) {
+          const fallbackMessage: Message = {
+            id: savedFallback.id,
+            text: fallbackText,
+            isBot: true,
+            timestamp: new Date(savedFallback.created_at),
+          };
+          
+          setMessages(prev => [...prev, fallbackMessage]);
+        }
+      }
+      
+      setConversationCount(prev => prev + 1);
+    } finally {
       setIsTyping(false);
     }
   };
 
-  const handleSendMessage = async (message: {
-    text: string;
-    imageUri?: string;
-    fileUri?: string;
-    location?: { latitude: number; longitude: number };
-    audioUri?: string;
-  }) => {
-    if (!currentQuestion) return;
-    
-    const { text, imageUri, fileUri, location, audioUri } = message;
-    
-    // Create user message
-    let displayText = text;
-    if (imageUri) displayText += displayText ? '\n[Photo attached]' : '[Photo]';
-    if (fileUri) displayText += displayText ? '\n[File attached]' : '[File]';
-    if (location) displayText += displayText ? '\n[Location shared]' : '[Location]';
-    if (audioUri) displayText += displayText ? '\n[Voice note]' : '[Voice note]';
-    
-    const userMessage: ChatMessage = {
-      id: generateId(),
-      text: displayText || 'Shared content',
-      isBot: false,
-      timestamp: new Date(),
-      imageUri,
-      audioUri,
-      fileUri,
-      location,
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setIsWaitingForAnswer(false);
-    
+  const handleSend = async () => {
+    if (!inputText.trim() || isSending) return;
+
+    const messageText = inputText.trim();
+    setInputText('');
+    setIsSending(true);
+
+    console.log('📤 Sending message:', messageText);
+
+    // Save user message to database first
+    if (currentConversation) {
+      const savedUserMessage = await chatDatabase.saveMessage(
+        currentConversation.id,
+        messageText,
+        false, // is_bot = false for user
+        undefined, // no AI model for user messages
+        { message_length: messageText.length }
+      );
+
+      if (savedUserMessage) {
+        const userMessage: Message = {
+          id: savedUserMessage.id,
+          text: messageText,
+          isBot: false,
+          timestamp: new Date(savedUserMessage.created_at),
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+      }
+    }
+
+    // Generate response
     try {
-      // Process the reflection
-      const coachTurn = await reflectionCoachService.createTurn(
-        {
-          question: {
-            id: currentQuestion.id,
-            text: currentQuestion.question,
-            category: currentQuestion.theme,
-          },
-          recentThemes: [],
-          conversationHistory: messages.slice(-6).map((msg) => ({
-            role: msg.isBot ? 'coach' : 'user',
-            content: msg.text,
-          })),
-        },
-        displayText
-      );
-      
-      // Save the answer
-      const newAnswer = {
-        id: generateId(),
-        questionId: currentQuestion.id,
-        questionText: currentQuestion.question,
-        text: displayText,
-        category: currentQuestion.theme || 'Self-Discovery',
-        timestamp: new Date().toISOString(),
-        hearts: 0,
-        isLiked: false,
-        summary: coachTurn.aiResult.summary,
-        insights: coachTurn.aiResult.insights,
-        mood: coachTurn.aiResult.mood,
-        tags: coachTurn.aiResult.tags,
-      };
-      
-      dispatch({ type: 'ADD_ANSWER', payload: newAnswer });
-      
-      // Track in services
-      await conversationMemoryService.addConversation(
-        currentQuestion.id,
-        currentQuestion.question,
-        displayText,
-        currentQuestion.theme || 'Self-Discovery',
-        currentQuestion.theme,
-        Boolean(audioUri)
-      );
-      
-      await habitTrackingService.addReflection(
-        currentQuestion.question,
-        displayText,
-        Boolean(audioUri)
-      );
-      
-      await personalityInsightsService.analyzeReflection(
-        currentQuestion.question,
-        displayText,
-        currentQuestion.theme || 'Self-Discovery',
-        Boolean(audioUri)
-      );
-      
-      // Add coach response
-      setMessages(prev => [...prev, {
-        id: generateId(),
-        text: coachTurn.reply,
-        isBot: true,
-        timestamp: new Date(),
-      }]);
-      
-      // Ask next question after delay
-      setTimeout(() => {
-        askQuestion();
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Error processing reflection:', error);
-      setIsWaitingForAnswer(true);
+      await generateResponse(messageText);
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const renderMessage = (message: ChatMessage) => (
-    <View 
-      key={message.id} 
-      style={[
-        styles.messageContainer,
-        message.isBot ? styles.botMessageContainer : styles.userMessageContainer
-      ]}
-    >
-      <View style={[
-        styles.messageBubble,
-        message.isBot ? styles.botBubble : styles.userBubble
-      ]}>
-        {message.imageUri && (
-          <Image 
-            source={{ uri: message.imageUri }} 
-            style={styles.messageImage}
-            resizeMode="cover"
-          />
-        )}
-        <Text style={[
-          styles.messageText,
-          message.isBot ? styles.botText : styles.userText
-        ]}>
-          {message.text}
-        </Text>
-      </View>
-      <Text style={[
-        styles.timestamp,
-        message.isBot ? styles.botTimestamp : styles.userTimestamp
-      ]}>
-        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </Text>
-    </View>
-  );
-
-  const tabBarOffset = Math.max(bottomInset - insets.bottom, 0);
-  const bottomGutter = 120 + tabBarOffset + insets.bottom;
+  // Fixed positioning calculations
+  const INPUT_AREA_HEIGHT = 70;
+  const inputBottomPosition = keyboardVisible ? 0 : tabBarHeight;
+  const messagesBottomPadding = INPUT_AREA_HEIGHT + (keyboardVisible ? 10 : tabBarHeight + 10);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={tabBarOffset + insets.bottom + 24}
-    >
-      <View style={styles.innerContainer}>
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={[styles.messagesContent, { paddingBottom: bottomGutter }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {messages.map(renderMessage)}
-        </ScrollView>
-
+    <View style={styles.container}>
+      {/* Messages area */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.messagesContainer}
+        contentContainerStyle={[
+          styles.messagesContent,
+          { paddingBottom: messagesBottomPadding }
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {messages.map((message) => (
+          <View
+            key={message.id}
+            style={[
+              styles.messageContainer,
+              message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
+            ]}
+          >
+            <View
+              style={[
+                styles.messageBubble,
+                message.isBot ? styles.botBubble : styles.userBubble,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  message.isBot ? styles.botText : styles.userText,
+                ]}
+              >
+                {message.text}
+              </Text>
+            </View>
+            <Text style={styles.timestamp}>
+              {message.timestamp.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+          </View>
+        ))}
+        
         {isTyping && (
-          <View style={styles.typingIndicator}>
-            <Text style={styles.typingText}>Coach is typing...</Text>
+          <View style={styles.typingContainer}>
+            <Text style={styles.typingText}>typing...</Text>
           </View>
         )}
-        
-        {/* Fixed input at bottom, lifted above the tab bar */}
-        <View
-          style={[
-            styles.inputWrapper,
-            {
-              paddingBottom: insets.bottom + 12,
-              bottom: tabBarOffset,
-            },
-          ]}
-        >
-          <MinimalChatInput 
-            onSendMessage={handleSendMessage}
-            placeholder={messages.length > 0 ? "Share your thoughts..." : "Say hello to start..."}
+      </ScrollView>
+
+      {/* Fixed input area */}
+      <View 
+        style={[
+          styles.inputWrapper,
+          { 
+            bottom: inputBottomPosition,
+            height: INPUT_AREA_HEIGHT,
+          }
+        ]}
+      >
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.textInput}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Share your thoughts..."
+            placeholderTextColor="#999"
+            multiline
+            maxLength={500}
+            returnKeyType="send"
+            blurOnSubmit={false}
+            onSubmitEditing={handleSend}
           />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!inputText.trim() || isSending) && styles.sendButtonDisabled
+            ]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isSending}
+          >
+            <Feather 
+              name="send" 
+              size={20} 
+              color={(inputText.trim() && !isSending) ? '#007AFF' : '#C0C0C0'} 
+            />
+          </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -325,17 +546,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  innerContainer: {
-    flex: 1,
-    position: 'relative',
-  },
   messagesContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   messagesContent: {
-    paddingTop: 16,
-    paddingBottom: 20,
+    padding: 16,
+  },
+  messageContainer: {
+    marginBottom: 16,
+  },
+  botMessageContainer: {
+    alignItems: 'flex-start',
+  },
+  userMessageContainer: {
+    alignItems: 'flex-end',
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 16,
+  },
+  botBubble: {
+    backgroundColor: '#F0F0F0',
+    borderTopLeftRadius: 4,
+  },
+  userBubble: {
+    backgroundColor: '#007AFF',
+    borderTopRightRadius: 4,
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  botText: {
+    color: '#000',
+  },
+  userText: {
+    color: '#FFF',
+  },
+  timestamp: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
+    marginHorizontal: 4,
+  },
+  typingContainer: {
+    padding: 8,
+    alignItems: 'flex-start',
+  },
+  typingText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
   },
   inputWrapper: {
     position: 'absolute',
@@ -344,69 +606,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 5,
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    zIndex: 999,
-    elevation: 999,
   },
-  messageContainer: {
-    marginBottom: 12,
-    maxWidth: '80%',
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  botMessageContainer: {
-    alignSelf: 'flex-start',
-  },
-  userMessageContainer: {
-    alignSelf: 'flex-end',
-  },
-  messageBubble: {
-    borderRadius: 18,
+  textInput: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 80,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 4,
-  },
-  botBubble: {
-    backgroundColor: '#F5F5F5',
-  },
-  userBubble: {
-    backgroundColor: '#000',
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  botText: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 22,
+    fontSize: 16,
     color: '#000',
   },
-  userText: {
-    color: '#FFF',
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  messageImage: {
-    width: 200,
-    height: 150,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  timestamp: {
-    fontSize: 11,
-    color: '#999',
-  },
-  botTimestamp: {
-    textAlign: 'left',
-    marginLeft: 4,
-  },
-  userTimestamp: {
-    textAlign: 'right',
-    marginRight: 4,
-  },
-  typingIndicator: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  typingText: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
+  sendButtonDisabled: {
+    opacity: 0.5,
   },
 });
