@@ -40,7 +40,7 @@ class ChatDatabaseService {
         .from('profiles')
         .select('*')
         .eq('phone_number', phoneNumber)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
       if (existingUser && !fetchError) {
         // Update last_active
@@ -48,28 +48,37 @@ class ChatDatabaseService {
           .from('profiles')
           .update({ last_active: new Date().toISOString() })
           .eq('id', existingUser.id);
-        
+
         return existingUser;
       }
 
-      // Create new user if not found
-      const { data: newUser, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          phone_number: phoneNumber,
-          name: name || `User ${phoneNumber.slice(-4)}`,
-          created_at: new Date().toISOString(),
-          last_active: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Create new user if not found (PGRST116 = no rows returned, which is expected)
+      if (!existingUser && (!fetchError || fetchError.code === 'PGRST116')) {
+        const { data: newUser, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            phone_number: phoneNumber,
+            name: name || `User ${phoneNumber.slice(-4)}`,
+            created_at: new Date().toISOString(),
+            last_active: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      if (createError) {
-        console.error('Error creating user:', createError);
-        return null;
+        if (createError) {
+          console.error('Error creating user:', createError);
+          return null;
+        }
+
+        return newUser;
       }
 
-      return newUser;
+      // If we got here with an error, log it
+      if (fetchError) {
+        console.error('Unexpected error fetching user:', fetchError);
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in getOrCreateUser:', error);
       return null;
@@ -86,30 +95,39 @@ class ChatDatabaseService {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
       if (existingConv && !fetchError) {
         return existingConv;
       }
 
-      // Create new conversation
-      const { data: newConv, error: createError } = await supabase
-        .from('chat_conversations')
-        .insert({
-          user_id: userId,
-          title: 'Daily Reflection Chat',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Create new conversation if not found (PGRST116 = no rows returned, which is expected)
+      if (!existingConv && (!fetchError || fetchError.code === 'PGRST116')) {
+        const { data: newConv, error: createError } = await supabase
+          .from('chat_conversations')
+          .insert({
+            user_id: userId,
+            title: 'Daily Reflection Chat',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      if (createError) {
-        console.error('Error creating conversation:', createError);
-        return null;
+        if (createError) {
+          console.error('Error creating conversation:', createError);
+          return null;
+        }
+
+        return newConv;
       }
 
-      return newConv;
+      // If we got here with an error, log it
+      if (fetchError) {
+        console.error('Unexpected error fetching conversation:', fetchError);
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in getOrCreateConversation:', error);
       return null;
