@@ -1,21 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SimpleReflectionChat } from '../components/SimpleReflectionChat';
+import { useNavigation } from '@react-navigation/native';
 
 export const PixelPerfectReflectScreen = () => {
-  const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
-  const bottomInset = tabBarHeight > 0 ? tabBarHeight : insets.bottom + 60;
+  const navigation = useNavigation();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    // Hide tab bar when keyboard is visible for better UX
+    if (navigation && navigation.setOptions) {
+      navigation.setOptions({
+        tabBarStyle: isKeyboardVisible ? { display: 'none' } : undefined,
+      });
+    }
+  }, [isKeyboardVisible, navigation]);
+
+  const handleKeyboardToggle = (visible: boolean) => {
+    setIsKeyboardVisible(visible);
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Daily Reflection</Text>
+        <Text style={styles.headerSubtitle}>Explore your thoughts deeply</Text>
       </View>
       <View style={styles.chatContainer}>
-        <SimpleReflectionChat bottomInset={bottomInset} />
+        <SimpleReflectionChat onKeyboardToggle={handleKeyboardToggle} />
       </View>
     </View>
   );
@@ -28,7 +40,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
@@ -36,6 +49,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
   chatContainer: {
     flex: 1,
