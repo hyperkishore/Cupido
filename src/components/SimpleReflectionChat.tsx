@@ -17,6 +17,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { chatAiService } from '../services/chatAiService';
 import { chatDatabase, type ChatMessage as DBChatMessage, type ChatConversation } from '../services/chatDatabase';
 import { generateId } from '../contexts/AppStateContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -86,15 +87,18 @@ const FOLLOW_UPS = [
   "What's your favorite part about it?",
 ];
 
-const SESSION_STORAGE_KEY = 'cupido_user_session';
+// Create user-specific storage key
+const getSessionStorageKey = (userId: string) => `cupido_chat_session_${userId}`;
 
-const getStoredSessionUserId = async (): Promise<string | null> => {
+const getStoredSessionUserId = async (authUserId: string): Promise<string | null> => {
+  const key = getSessionStorageKey(authUserId);
+
   if (Platform.OS === 'web') {
     try {
       const storage = (globalThis as any)?.localStorage as
         | { getItem: (key: string) => string | null }
         | undefined;
-      return storage?.getItem(SESSION_STORAGE_KEY) ?? null;
+      return storage?.getItem(key) ?? null;
     } catch (error) {
       console.warn('Failed to read session from web storage', error);
       return null;
@@ -102,20 +106,22 @@ const getStoredSessionUserId = async (): Promise<string | null> => {
   }
 
   try {
-    return await AsyncStorage.getItem(SESSION_STORAGE_KEY);
+    return await AsyncStorage.getItem(key);
   } catch (error) {
     console.warn('Failed to read session from AsyncStorage', error);
     return null;
   }
 };
 
-const setStoredSessionUserId = async (value: string) => {
+const setStoredSessionUserId = async (authUserId: string, value: string) => {
+  const key = getSessionStorageKey(authUserId);
+
   if (Platform.OS === 'web') {
     try {
       const storage = (globalThis as any)?.localStorage as
         | { setItem: (key: string, val: string) => void }
         | undefined;
-      storage?.setItem(SESSION_STORAGE_KEY, value);
+      storage?.setItem(key, value);
     } catch (error) {
       console.warn('Failed to persist session to web storage', error);
     }
@@ -123,7 +129,7 @@ const setStoredSessionUserId = async (value: string) => {
   }
 
   try {
-    await AsyncStorage.setItem(SESSION_STORAGE_KEY, value);
+    await AsyncStorage.setItem(key, value);
   } catch (error) {
     console.warn('Failed to persist session to AsyncStorage', error);
   }
@@ -137,7 +143,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const scrollViewRef = useRef<ScrollView>(null);
-  
+  const { user: authUser } = useAuth(); // Get authenticated user from context
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -150,11 +157,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  // Initialize chat with database
+  // Initialize chat with database - reinitialize when user changes
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
     const setupChat = async () => {
+      // Clear existing messages when user changes
+      setMessages([]);
+      setConversationHistory([]);
+      setConversationCount(0);
+
       unsubscribe = await initializeChat();
     };
 
@@ -163,27 +175,41 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     return () => {
       unsubscribe?.();
     };
-  }, []);
+  }, [authUser?.id]); // Re-initialize when user changes
 
   const initializeChat = async (): Promise<(() => void) | undefined> => {
     try {
       setIsLoading(true);
-      
-      // Generate unique user ID for each session, persisted per platform
-      let sessionUserId = await getStoredSessionUserId();
-      if (!sessionUserId) {
-        sessionUserId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-        await setStoredSessionUserId(sessionUserId);
+
+      // Use authenticated user or generate demo user
+      let sessionUserId: string;
+      let userName: string;
+
+      if (authUser) {
+        // Use authenticated user's phone number or ID
+        sessionUserId = authUser.phoneNumber || authUser.id;
+        userName = authUser.name || `User ${sessionUserId.slice(-6)}`;
+        console.log('🔑 Using authenticated user:', sessionUserId);
+      } else {
+        // Demo mode: Generate or retrieve user-specific session ID
+        const demoUserId = 'demo_user';
+        sessionUserId = await getStoredSessionUserId(demoUserId) || `demo_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+        if (!await getStoredSessionUserId(demoUserId)) {
+          await setStoredSessionUserId(demoUserId, sessionUserId);
+        }
+
+        userName = `Demo User`;
+        console.log('🔑 Using demo session user ID:', sessionUserId);
       }
-      
-      console.log('🔑 Using session user ID:', sessionUserId);
-      const user = await chatDatabase.getOrCreateUser(sessionUserId, `User ${sessionUserId.slice(-6)}`);
-      
+
+      const user = await chatDatabase.getOrCreateUser(sessionUserId, userName);
+
       if (!user) {
         console.error('Failed to create user');
         return;
       }
-      
+
       setUserId(user.id);
       
       // Get or create conversation

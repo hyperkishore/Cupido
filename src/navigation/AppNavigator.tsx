@@ -3,6 +3,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
+import { useAppMode } from '../contexts/AppModeContext';
 import { AuthScreen } from '../screens/AuthScreen';
 import { PromptScreen } from '../screens/PromptScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -15,12 +16,18 @@ const Tab = createBottomTabNavigator();
 
 export const AppNavigator: React.FC = () => {
   const { user, loading } = useAuth();
+  const { mode } = useAppMode();
 
   if (loading) {
     return <DemoLoader />;
   }
 
-  if (!user) {
+  // In demo mode, bypass authentication
+  if (mode === 'demo') {
+    // Demo mode - no authentication required
+    // The chat components will handle demo user creation
+  } else if (!user) {
+    // Local mode requires authentication
     return <AuthScreen />;
   }
 
