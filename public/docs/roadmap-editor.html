@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido - Roadmap Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .roadmap-item {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .roadmap-item h3 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .roadmap-item p {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .roadmap-item .meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .roadmap-item .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .badge-phase {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-priority {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-status {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #roadmapItems {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            padding: 10px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .timestamp {
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Cupido Roadmap Editor</h1>
+            <p>Add feature requests, bugs, and improvements to the product roadmap</p>
+        </div>
+
+        <div class="main-content">
+            <div class="section">
+                <h2>📝 Add New Item</h2>
+                <div id="successMessage" class="success-message">Item added successfully!</div>
+                <div id="errorMessage" class="error-message">Error adding item. Please try again.</div>
+
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="setQuickTemplate('bug')">🐛 Bug</button>
+                    <button class="quick-action-btn" onclick="setQuickTemplate('feature')">✨ Feature</button>
+                    <button class="quick-action-btn" onclick="setQuickTemplate('improvement')">💪 Improvement</button>
+                    <button class="quick-action-btn" onclick="setQuickTemplate('urgent')">🚨 Urgent</button>
+                </div>
+
+                <form id="roadmapForm">
+                    <div class="form-group">
+                        <label for="title">Title *</label>
+                        <input type="text" id="title" required placeholder="e.g., Fix multi-user chat sessions">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea id="description" required placeholder="Describe the feature, bug, or improvement in detail..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type">Type *</label>
+                        <select id="type" required>
+                            <option value="">Select type...</option>
+                            <option value="feature">Feature</option>
+                            <option value="bug">Bug Fix</option>
+                            <option value="improvement">Improvement</option>
+                            <option value="technical">Technical Debt</option>
+                            <option value="design">Design/UX</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority *</label>
+                        <select id="priority" required>
+                            <option value="">Select priority...</option>
+                            <option value="critical">🔴 Critical</option>
+                            <option value="high">🟠 High</option>
+                            <option value="medium">🟡 Medium</option>
+                            <option value="low">🟢 Low</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phase">Target Phase</label>
+                        <select id="phase">
+                            <option value="">Select phase...</option>
+                            <option value="immediate">Immediate (This Week)</option>
+                            <option value="phase1">Phase 1 (Q1 2025)</option>
+                            <option value="phase2">Phase 2 (Q2 2025)</option>
+                            <option value="phase3">Phase 3 (Q3 2025)</option>
+                            <option value="phase4">Phase 4 (Q4 2025)</option>
+                            <option value="future">Future</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="acceptanceCriteria">Acceptance Criteria</label>
+                        <textarea id="acceptanceCriteria" placeholder="What needs to be done for this to be considered complete?"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add to Roadmap</button>
+                    <button type="reset" class="btn btn-secondary">Clear</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>📋 Recent Roadmap Items</h2>
+                <div id="roadmapItems">
+                    <!-- Items will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load existing roadmap items from localStorage
+        let roadmapData = JSON.parse(localStorage.getItem('cupidoRoadmap') || '[]');
+
+        // Quick templates
+        const templates = {
+            bug: {
+                type: 'bug',
+                priority: 'high',
+                phase: 'immediate'
+            },
+            feature: {
+                type: 'feature',
+                priority: 'medium',
+                phase: 'phase1'
+            },
+            improvement: {
+                type: 'improvement',
+                priority: 'medium',
+                phase: 'phase2'
+            },
+            urgent: {
+                type: 'bug',
+                priority: 'critical',
+                phase: 'immediate'
+            }
+        };
+
+        function setQuickTemplate(templateType) {
+            const template = templates[templateType];
+            if (template) {
+                document.getElementById('type').value = template.type;
+                document.getElementById('priority').value = template.priority;
+                document.getElementById('phase').value = template.phase;
+            }
+        }
+
+        // Display roadmap items
+        function displayRoadmapItems() {
+            const container = document.getElementById('roadmapItems');
+
+            if (roadmapData.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No items yet. Add your first roadmap item!</p>';
+                return;
+            }
+
+            const sortedData = [...roadmapData].reverse(); // Show newest first
+            container.innerHTML = sortedData.map(item => `
+                <div class="roadmap-item">
+                    <h3>${item.title}</h3>
+                    <p>${item.description}</p>
+                    ${item.acceptanceCriteria ? `<p><strong>Acceptance:</strong> ${item.acceptanceCriteria}</p>` : ''}
+                    <div class="meta">
+                        <span class="badge badge-status">${item.type}</span>
+                        <span class="badge badge-priority">${item.priority}</span>
+                        ${item.phase ? `<span class="badge badge-phase">${item.phase}</span>` : ''}
+                    </div>
+                    <div class="timestamp">Added: ${new Date(item.timestamp).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        // Save to localStorage and generate markdown
+        function saveRoadmapItem(item) {
+            roadmapData.push(item);
+            localStorage.setItem('cupidoRoadmap', JSON.stringify(roadmapData));
+
+            // Generate markdown for copying
+            const markdown = generateMarkdown();
+
+            // Save to a virtual clipboard (for developer to copy)
+            console.log('New Roadmap Item Added:');
+            console.log('=======================');
+            console.log(markdown);
+
+            // Also save the full markdown to localStorage
+            localStorage.setItem('cupidoRoadmapMarkdown', markdown);
+        }
+
+        // Generate markdown from all items
+        function generateMarkdown() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            let markdown = `## 🔄 Dynamic Roadmap Updates\n`;
+            markdown += `*Last Updated: ${dateStr}*\n\n`;
+
+            // Group by phase
+            const phases = {
+                immediate: '### 🚨 Immediate Actions',
+                phase1: '### 📅 Phase 1 Items',
+                phase2: '### 📅 Phase 2 Items',
+                phase3: '### 📅 Phase 3 Items',
+                phase4: '### 📅 Phase 4 Items',
+                future: '### 🔮 Future Considerations',
+                unplanned: '### 📝 Unplanned Items'
+            };
+
+            Object.keys(phases).forEach(phase => {
+                const phaseItems = roadmapData.filter(item =>
+                    (item.phase || 'unplanned') === phase
+                );
+
+                if (phaseItems.length > 0) {
+                    markdown += `\n${phases[phase]}\n\n`;
+                    phaseItems.forEach(item => {
+                        markdown += `#### ${item.title}\n`;
+                        markdown += `- **Type:** ${item.type}\n`;
+                        markdown += `- **Priority:** ${item.priority}\n`;
+                        markdown += `- **Description:** ${item.description}\n`;
+                        if (item.acceptanceCriteria) {
+                            markdown += `- **Acceptance Criteria:** ${item.acceptanceCriteria}\n`;
+                        }
+                        markdown += `- **Added:** ${new Date(item.timestamp).toLocaleDateString()}\n\n`;
+                    });
+                }
+            });
+
+            return markdown;
+        }
+
+        // Handle form submission
+        document.getElementById('roadmapForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const item = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                type: document.getElementById('type').value,
+                priority: document.getElementById('priority').value,
+                phase: document.getElementById('phase').value,
+                acceptanceCriteria: document.getElementById('acceptanceCriteria').value,
+                timestamp: new Date().toISOString()
+            };
+
+            saveRoadmapItem(item);
+            displayRoadmapItems();
+
+            // Show success message
+            const successMsg = document.getElementById('successMessage');
+            successMsg.style.display = 'block';
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+            }, 3000);
+
+            // Reset form
+            this.reset();
+        });
+
+        // Initial display
+        displayRoadmapItems();
+
+        // Add export functionality
+        function exportToMarkdown() {
+            const markdown = generateMarkdown();
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cupido-roadmap-updates.md';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Add export button (optional)
+        console.log('To export roadmap as markdown, run: exportToMarkdown()');
+    </script>
+</body>
+</html>

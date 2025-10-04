@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -89,11 +88,14 @@ export const PixelPerfectHomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liking, setLiking] = useState<Record<string, boolean>>({});
+  const [sortMode, setSortMode] = useState<'resonance' | 'recent'>('resonance');
+  const [firstLoad, setFirstLoad] = useState(true);
   const [connectedIntegrations, setConnectedIntegrations] = useState<Record<string, boolean>>({
     linkedin: false,
     youtube: false,
     calendar: false,
   });
+  const lastErrorToastRef = useRef<number>(0);
 
   const refreshHomeData = async () => {
     setError(null);
@@ -108,9 +110,14 @@ export const PixelPerfectHomeScreen = () => {
 
   useEffect(() => {
     setLoading(true);
-    refreshHomeData().finally(() => {
-      setLoading(false);
-    });
+    refreshHomeData()
+      .catch(() => {
+        // error state already handled in refreshHomeData
+      })
+      .finally(() => {
+        setLoading(false);
+        setFirstLoad(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.answers.length]);
 
@@ -134,6 +141,15 @@ export const PixelPerfectHomeScreen = () => {
   };
 
   const handleLikeCommunity = async (reflectionId: string) => {
+    if (!user?.id) {
+      const now = Date.now();
+      if (now - lastErrorToastRef.current > 2000) {
+        Alert.alert('Sign in to give hearts', 'Create an account to celebrate reflections.');
+        lastErrorToastRef.current = now;
+      }
+      return;
+    }
+
     if (!homeData) return;
 
     const targetReflection = homeData.communitySpotlight.find((item) => item.id === reflectionId);
@@ -212,6 +228,29 @@ export const PixelPerfectHomeScreen = () => {
     return homeData.trendingTags.map(capitalizeTag);
   }, [homeData]);
 
+  const communityFeed = useMemo(() => {
+    if (!homeData?.communitySpotlight) {
+      return [];
+    }
+    const base = [...homeData.communitySpotlight];
+    if (sortMode === 'recent') {
+      return base.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+    return base.sort(
+      (a, b) => (b.communityHearts ?? 0) - (a.communityHearts ?? 0)
+    );
+  }, [homeData, sortMode]);
+
+  const communityHintCopy = useMemo(
+    () =>
+      sortMode === 'resonance'
+        ? 'Long press to reflect · Sorted by hearts'
+        : 'Long press to reflect · Latest community shares',
+    [sortMode]
+  );
+
   const connectors = [
     {
       key: 'linkedin' as const,
@@ -251,6 +290,26 @@ export const PixelPerfectHomeScreen = () => {
     );
   }
 
+  if (!homeData && (loading || firstLoad)) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.skeletonContainer}>
+        <View style={styles.section}>
+          <View style={styles.skeletonBlockLarge} />
+          <View style={styles.skeletonBlock} />
+        </View>
+        <View style={styles.section}>
+          <View style={styles.skeletonHeaderRow}>
+            <View style={styles.skeletonPill} />
+            <View style={styles.skeletonToggle} />
+          </View>
+          <View style={styles.skeletonCard} />
+          <View style={styles.skeletonCard} />
+          <View style={styles.skeletonCard} />
+        </View>
+      </ScrollView>
+    );
+  }
+
   if (!homeData) {
     return null;
   }
@@ -263,8 +322,8 @@ export const PixelPerfectHomeScreen = () => {
 
   // Create a mixed feed
   for (let i = 0; i < 12; i++) {
-    if (i % 4 === 0 && communityIndex < homeData.communitySpotlight.length) {
-      feedItems.push({ type: 'community', data: homeData.communitySpotlight[communityIndex] });
+    if (i % 4 === 0 && communityIndex < communityFeed.length) {
+      feedItems.push({ type: 'community', data: communityFeed[communityIndex] });
       communityIndex++;
     } else if (i % 4 === 1 && connectorIndex < connectors.length) {
       feedItems.push({ type: 'connector', data: connectors[connectorIndex] });
@@ -272,8 +331,8 @@ export const PixelPerfectHomeScreen = () => {
     } else if (i % 4 === 2 && promptIndex < homeData.recommendedPrompts.length) {
       feedItems.push({ type: 'prompt', data: homeData.recommendedPrompts[promptIndex] });
       promptIndex++;
-    } else if (communityIndex < homeData.communitySpotlight.length) {
-      feedItems.push({ type: 'community', data: homeData.communitySpotlight[communityIndex] });
+    } else if (communityIndex < communityFeed.length) {
+      feedItems.push({ type: 'community', data: communityFeed[communityIndex] });
       communityIndex++;
     }
   }
@@ -320,6 +379,17 @@ export const PixelPerfectHomeScreen = () => {
         </View>
       </FeedbackWrapper>
 
+      {error && (
+        <View style={styles.section}>
+          <View style={styles.inlineError}>
+            <Text style={styles.inlineErrorText}>{error}</Text>
+            <TouchableOpacity onPress={handleRefresh}>
+              <Text style={styles.inlineErrorAction}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {homeData.latestReflection && (
         <FeedbackWrapper componentId="home-latest-reflection" componentType="LatestReflection" screenName="HomeScreen">
           <View style={styles.section}>
@@ -334,7 +404,43 @@ export const PixelPerfectHomeScreen = () => {
 
       <FeedbackWrapper componentId="home-feed" componentType="MixedFeed" screenName="HomeScreen">
         <View style={styles.section}>
-          <Text style={styles.sectionEyebrow}>Community feed</Text>
+          <View style={styles.feedHeader}>
+            <Text style={styles.sectionEyebrow}>Community feed</Text>
+            <View style={styles.sortToggle}>
+              {(['resonance', 'recent'] as const).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[
+                    styles.sortChip,
+                    sortMode === mode && styles.sortChipActive,
+                  ]}
+                  onPress={() => setSortMode(mode)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: sortMode === mode }}
+                >
+                  <Text
+                    style={[
+                      styles.sortChipText,
+                      sortMode === mode && styles.sortChipTextActive,
+                    ]}
+                  >
+                    {mode === 'resonance' ? 'Most hearts' : 'Latest'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          {!communityFeed.length && !loading && (
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateTitle}>Be the first to share</Text>
+              <Text style={styles.emptyStateBody}>
+                When you post a reflection it appears here for the community to resonate with.
+              </Text>
+              <TouchableOpacity style={styles.emptyStateButton} onPress={handleStartReflection}>
+                <Text style={styles.emptyStateButtonText}>Share a reflection</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {feedItems.map((item, index) => {
             if (item.type === 'community') {
               const reflection = item.data;
@@ -386,7 +492,7 @@ export const PixelPerfectHomeScreen = () => {
                         {reflection.communityHearts}
                       </Text>
                     </TouchableOpacity>
-                    <Text style={styles.communityHint}>Long press to reflect with this prompt</Text>
+                    <Text style={styles.communityHint}>{communityHintCopy}</Text>
                   </View>
                 </Pressable>
               );
@@ -473,6 +579,34 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
     paddingHorizontal: 16,
+  },
+  inlineError: {
+    backgroundColor: '#FFF4F4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFD3D3',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inlineErrorText: {
+    color: '#B00020',
+    fontSize: 13,
+    flex: 1,
+    marginRight: 12,
+  },
+  inlineErrorAction: {
+    color: '#B00020',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -620,6 +754,104 @@ const styles = StyleSheet.create({
   communityHint: {
     fontSize: 12,
     color: '#8E8E93',
+  },
+  sortToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 16,
+    padding: 2,
+    gap: 4,
+  },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  sortChipActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sortChipText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  sortChipTextActive: {
+    color: '#1C1C1E',
+  },
+  emptyStateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 6,
+  },
+  emptyStateBody: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  emptyStateButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  emptyStateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  skeletonContainer: {
+    paddingBottom: 80,
+  },
+  skeletonBlockLarge: {
+    height: 120,
+    backgroundColor: '#ECECEC',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  skeletonBlock: {
+    height: 80,
+    backgroundColor: '#F1F1F1',
+    borderRadius: 12,
+  },
+  skeletonHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  skeletonPill: {
+    width: 120,
+    height: 16,
+    backgroundColor: '#ECECEC',
+    borderRadius: 10,
+  },
+  skeletonToggle: {
+    width: 110,
+    height: 28,
+    backgroundColor: '#ECECEC',
+    borderRadius: 14,
+  },
+  skeletonCard: {
+    height: 120,
+    backgroundColor: '#F1F1F1',
+    borderRadius: 12,
+    marginBottom: 12,
   },
   tagRow: {
     flexDirection: 'row',

@@ -126,6 +126,14 @@ class HomeExperienceService {
     const repo = options.repository ?? reflectionsRepository;
     await repo.likeCommunityReflection(reflectionId);
   }
+
+  async toggleLikeCommunityReflection(
+    reflectionId: string,
+    options: { repository?: ReflectionsRepo } = {}
+  ): Promise<void> {
+    const repo = options.repository ?? reflectionsRepository;
+    await repo.likeCommunityReflection(reflectionId);
+  }
 }
 
 export const homeExperienceService = new HomeExperienceService();

@@ -1,4 +1,4 @@
-export let DEMO_MODE = true; // Dynamic flag controlled by AppModeProvider
+export let DEMO_MODE = false; // Dynamic flag controlled by AppModeProvider
 
 export const setDemoMode = (value: boolean) => {
   DEMO_MODE = value;

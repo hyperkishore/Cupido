@@ -102,8 +102,13 @@ class IntelligentQuestionService {
   }
 
   async selectNextQuestion(
-    criteria: Partial<QuestionSelectionCriteria> = {}
+    options: {
+      selectionCriteria?: Partial<QuestionSelectionCriteria>;
+      preferredTheme?: string;
+    } = {}
   ): Promise<QuestionWithContext | null> {
+    const { selectionCriteria = {}, preferredTheme } = options;
+
     if (this.allQuestions.length === 0) {
       await this.initialize();
     }
@@ -128,12 +133,31 @@ class IntelligentQuestionService {
       emotionalStateAware: true,
       topicDiversity: true,
       personalGrowthFocus: true,
-      ...criteria
+      ...selectionCriteria,
     };
 
     // Filter and score questions
-    const scoredQuestions = this.scoreQuestions(memory, context, defaultCriteria);
-    
+    const scoredQuestions = this.scoreQuestions(memory, context, defaultCriteria).map((question) => {
+      if (!preferredTheme) {
+        return question;
+      }
+
+      const normalizedTheme = preferredTheme.toLowerCase();
+      const questionTheme = (question.theme || '').toLowerCase();
+
+      if (questionTheme.includes(normalizedTheme)) {
+        return {
+          ...question,
+          contextScore: question.contextScore + 35,
+        };
+      }
+
+      return {
+        ...question,
+        contextScore: question.contextScore - 10,
+      };
+    });
+
     if (scoredQuestions.length === 0) {
       return this.getStarterQuestion();
     }
@@ -447,12 +471,21 @@ class IntelligentQuestionService {
     return starterQuestions[Math.floor(Math.random() * starterQuestions.length)];
   }
 
-  async getQuestionWithMemoryContext(questionId: string): Promise<{
+  async getQuestionWithMemoryContext(
+    questionId: string,
+    options: {
+      preferredTheme?: string;
+      selectionCriteria?: Partial<QuestionSelectionCriteria>;
+    } = {}
+  ): Promise<{
     question: QuestionWithContext;
     memoryReference?: string;
     conversationLeadIn: string;
   } | null> {
-    const question = await this.selectNextQuestion();
+    const question = await this.selectNextQuestion({
+      preferredTheme: options.preferredTheme,
+      selectionCriteria: options.selectionCriteria,
+    });
     if (!question) return null;
     
     const memory = await conversationMemoryService.getConversationMemory();
