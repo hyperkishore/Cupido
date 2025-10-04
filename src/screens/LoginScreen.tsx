@@ -14,31 +14,9 @@ import { useAppMode, AppMode } from '../contexts/AppModeContext';
 
 const PHONE_REGEX = /^[0-9+() -]{6,}$/;
 
-const ModeToggle: React.FC<{ mode: AppMode; onChange: (mode: AppMode) => void }> = ({ mode, onChange }) => (
-  <View style={styles.modeToggleContainer}>
-    <Text style={styles.modeLabel}>Mode</Text>
-    <View style={styles.modeRow}>
-      {(['demo', 'local'] as AppMode[]).map(option => {
-        const selected = option === mode;
-        return (
-          <TouchableOpacity
-            key={option}
-            style={[styles.modeButton, selected && styles.modeButtonSelected]}
-            onPress={() => onChange(option)}
-          >
-            <Text style={[styles.modeButtonText, selected && styles.modeButtonTextSelected]}>
-              {option === 'demo' ? 'Demo' : 'Local'}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  </View>
-);
-
 export const LoginScreen: React.FC = () => {
   const { signIn, loading } = useAuth();
-  const { mode, setMode } = useAppMode();
+  const { setMode } = useAppMode();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +31,11 @@ export const LoginScreen: React.FC = () => {
     await signIn(trimmed);
   };
 
+  const handleTryDemo = () => {
+    setMode('demo');
+    // Demo mode will bypass authentication in AppNavigator
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -61,8 +44,6 @@ export const LoginScreen: React.FC = () => {
       <View style={styles.content}>
         <Text style={styles.title}>Cupido</Text>
         <Text style={styles.subtitle}>Sign in with your phone number to continue</Text>
-
-        <ModeToggle mode={mode} onChange={setMode} />
 
         <View style={styles.fieldContainer}>
           <Text style={styles.fieldLabel}>Phone number</Text>
@@ -91,9 +72,11 @@ export const LoginScreen: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        <Text style={styles.helperText}>
-          In demo mode, any phone number works and loads seeded data. Switch to local mode to use the on-device database.
-        </Text>
+        <TouchableOpacity onPress={handleTryDemo} style={styles.demoLinkContainer}>
+          <Text style={styles.demoLinkText}>
+            Just exploring? <Text style={styles.demoLinkHighlight}>Try demo mode</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -170,39 +153,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     lineHeight: 18,
   },
-  modeToggleContainer: {
-    marginBottom: 24,
-  },
-  modeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F1F1F',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  modeRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  modeButton: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#D0D0D0',
-    paddingVertical: 12,
+  demoLinkContainer: {
+    marginTop: 24,
     alignItems: 'center',
   },
-  modeButtonSelected: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+  demoLinkText: {
+    fontSize: 14,
+    color: '#6F6F6F',
+    textAlign: 'center',
   },
-  modeButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  modeButtonTextSelected: {
-    color: '#FFFFFF',
+  demoLinkHighlight: {
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
 });
