@@ -58,7 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await AuthService.signOut(mode);
       setUser(null);
+      // If we're in local mode, ensure we stay in local mode to show login screen
+      // Don't switch to demo mode on logout
     } catch (error) {
+      console.error('Error signing out:', error);
       throw error;
     } finally {
       setLoading(false);

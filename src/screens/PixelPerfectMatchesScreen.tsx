@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { matchingService, Match, CompatibilityScore } from '../services/matchingService';
 import { conversationMemoryService } from '../services/conversationMemoryService';
+import { useAppMode } from '../contexts/AppModeContext';
 
 export const PixelPerfectMatchesScreen = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -17,10 +18,118 @@ export const PixelPerfectMatchesScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [conversationMemory, setConversationMemory] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const { mode } = useAppMode();
+
+  // Demo matches for demo mode
+  const demoMatches: Match[] = [
+    {
+      id: 'demo-1',
+      profileId: 'demo-profile-1',
+      compatibilityScore: {
+        overall: 92,
+        values: 88,
+        personality: 95,
+        lifestyle: 90,
+        interests: 85,
+        matchType: 'personality_twin' as const,
+        strengths: ['Shared love for adventure', 'Similar communication style', 'Both value authenticity'],
+        challenges: ['Different work schedules'],
+      },
+      profile: {
+        id: 'demo-profile-1',
+        name: 'Alex Chen',
+        age: 28,
+        location: 'San Francisco',
+        bio: 'Coffee enthusiast, weekend hiker, and startup founder. Looking for someone who appreciates deep conversations and spontaneous adventures.',
+        interests: ['Hiking', 'Coffee', 'Startups', 'Travel'],
+        photos: [],
+        personalityTraits: {
+          openness: 85,
+          conscientiousness: 75,
+          extraversion: 65,
+          agreeableness: 80,
+          neuroticism: 30,
+        },
+      },
+      matchedAt: new Date(),
+      status: 'pending',
+    },
+    {
+      id: 'demo-2',
+      profileId: 'demo-profile-2',
+      compatibilityScore: {
+        overall: 87,
+        values: 92,
+        personality: 82,
+        lifestyle: 88,
+        interests: 86,
+        matchType: 'complementary_growth' as const,
+        strengths: ['Complementary personalities', 'Shared values', 'Growth mindset'],
+        challenges: ['Different social preferences'],
+      },
+      profile: {
+        id: 'demo-profile-2',
+        name: 'Jordan Taylor',
+        age: 30,
+        location: 'Oakland',
+        bio: 'Artist by day, chef by night. Seeking someone who finds joy in the simple things and isn\'t afraid to try new experiences.',
+        interests: ['Art', 'Cooking', 'Jazz', 'Yoga'],
+        photos: [],
+        personalityTraits: {
+          openness: 90,
+          conscientiousness: 70,
+          extraversion: 55,
+          agreeableness: 85,
+          neuroticism: 25,
+        },
+      },
+      matchedAt: new Date(Date.now() - 86400000),
+      status: 'pending',
+    },
+    {
+      id: 'demo-3',
+      profileId: 'demo-profile-3',
+      compatibilityScore: {
+        overall: 94,
+        values: 96,
+        personality: 91,
+        lifestyle: 93,
+        interests: 95,
+        matchType: 'deep_alignment' as const,
+        strengths: ['Deep value alignment', 'Similar life goals', 'Emotional compatibility'],
+        challenges: ['Geographic distance'],
+      },
+      profile: {
+        id: 'demo-profile-3',
+        name: 'Morgan Rivera',
+        age: 27,
+        location: 'Berkeley',
+        bio: 'Book lover, environmental advocate, and weekend farmer\'s market regular. Looking for genuine connection and shared growth.',
+        interests: ['Reading', 'Environment', 'Gardening', 'Philosophy'],
+        photos: [],
+        personalityTraits: {
+          openness: 88,
+          conscientiousness: 82,
+          extraversion: 60,
+          agreeableness: 88,
+          neuroticism: 28,
+        },
+      },
+      matchedAt: new Date(Date.now() - 172800000),
+      status: 'pending',
+    },
+  ];
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (mode === 'demo') {
+      // Use demo data
+      setMatches(demoMatches);
+      setLoading(false);
+    } else {
+      // Load real data
+      loadData();
+    }
+  }, [mode]);
 
   const loadData = async () => {
     try {

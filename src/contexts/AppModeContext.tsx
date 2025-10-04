@@ -14,7 +14,7 @@ const ModeContext = createContext<ModeContextValue | undefined>(undefined);
 const STORAGE_KEY = 'cupido_app_mode';
 
 export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [mode, setModeState] = useState<AppMode>('demo');
+  const [mode, setModeState] = useState<AppMode>('local');
 
   useEffect(() => {
     const loadMode = async () => {

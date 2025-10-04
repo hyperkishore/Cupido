@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude AI Prompt Editor - Cupido</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: #F5F5F7;
+            min-height: 100vh;
+            color: #1D1D1F;
+            line-height: 1.47059;
+            font-weight: 400;
+            letter-spacing: -0.022em;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 0 24px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.035em;
+            color: #1D1D1F;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: #86868B;
+            font-weight: 400;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Info Card */
+        .info-card {
+            background: white;
+            border-radius: 18px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .info-title {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.035em;
+            margin-bottom: 24px;
+            color: #1D1D1F;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            color: #86868B;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #1D1D1F;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Model Selection */
+        .model-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: #F5F5F7;
+            padding: 4px;
+            border-radius: 14px;
+        }
+
+        .model-tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #86868B;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .model-tab.active {
+            background: white;
+            color: #1D1D1F;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .badge-sonnet {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .badge-haiku {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        /* Prompt Editor Card */
+        .prompt-card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: none;
+        }
+
+        .prompt-card.active {
+            display: block;
+        }
+
+        .prompt-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #F5F5F7;
+        }
+
+        .prompt-title {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            color: #1D1D1F;
+            margin-bottom: 8px;
+        }
+
+        .prompt-description {
+            font-size: 14px;
+            color: #86868B;
+            line-height: 1.5;
+        }
+
+        /* Version Control */
+        .version-bar {
+            padding: 16px 32px;
+            background: #F5F5F7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E5E5E7;
+        }
+
+        .version-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .version-label {
+            font-size: 13px;
+            color: #86868B;
+            font-weight: 500;
+        }
+
+        .version-select {
+            padding: 6px 12px;
+            border: 1px solid #D2D2D7;
+            border-radius: 8px;
+            background: white;
+            font-size: 13px;
+            color: #1D1D1F;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .version-select:hover {
+            border-color: #86868B;
+        }
+
+        .version-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .version-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .save-version-btn {
+            background: #0071E3;
+            color: white;
+        }
+
+        .save-version-btn:hover {
+            background: #0066D6;
+        }
+
+        /* Editor */
+        .prompt-editor-wrapper {
+            padding: 32px;
+        }
+
+        .prompt-editor {
+            width: 100%;
+            min-height: 450px;
+            padding: 20px;
+            border: 1px solid #D2D2D7;
+            border-radius: 12px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            resize: vertical;
+            background: #FAFAFA;
+            color: #1D1D1F;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-editor:focus {
+            outline: none;
+            border-color: #0071E3;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        /* Usage Triggers */
+        .triggers-section {
+            padding: 0 32px 24px;
+            background: #F5F5F7;
+            border-top: 1px solid #E5E5E7;
+        }
+
+        .triggers-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1D1D1F;
+            margin-bottom: 12px;
+            padding-top: 20px;
+        }
+
+        .trigger-list {
+            list-style: none;
+        }
+
+        .trigger-item {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #86868B;
+            line-height: 1.5;
+        }
+
+        .trigger-item::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #0071E3;
+        }
+
+        /* Actions */
+        .action-bar {
+            padding: 24px 32px;
+            background: white;
+            border-top: 1px solid #F5F5F7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #0071E3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0066D6;
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background: #F5F5F7;
+            color: #1D1D1F;
+        }
+
+        .btn-secondary:hover {
+            background: #E8E8ED;
+        }
+
+        /* Status Messages */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 400px;
+        }
+
+        .toast.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast.success .toast-icon {
+            background: #34C759;
+            color: white;
+        }
+
+        .toast.error .toast-icon {
+            background: #FF3B30;
+            color: white;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            color: #1D1D1F;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Character Counter */
+        .char-counter {
+            font-size: 12px;
+            color: #86868B;
+            text-align: right;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px 16px;
+            }
+
+            .prompt-editor {
+                min-height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title">
+                    <span>🤖</span>
+                    <span>Claude AI Prompt Editor</span>
+                </h1>
+                <p class="header-subtitle">Manage and version your AI conversation prompts</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- System Info -->
+        <div class="info-card">
+            <h2 class="info-title">System Configuration</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">API Endpoint</span>
+                    <span class="info-value">http://localhost:3001/api/chat</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Models</span>
+                    <span class="info-value">Claude 3.5 Sonnet & Haiku</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Character Limit</span>
+                    <span class="info-value">5000 chars/message</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Source File</span>
+                    <span class="info-value">src/services/chatAiService.ts</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Selection Tabs -->
+        <div class="model-tabs">
+            <button class="model-tab active" onclick="switchModel('sonnet')">
+                <span>Deep Understanding</span>
+                <span class="model-badge badge-sonnet">Sonnet</span>
+            </button>
+            <button class="model-tab" onclick="switchModel('haiku')">
+                <span>Light Conversation</span>
+                <span class="model-badge badge-haiku">Haiku</span>
+            </button>
+        </div>
+
+        <!-- Sonnet Prompt Card -->
+        <div id="sonnetCard" class="prompt-card active">
+            <div class="prompt-header">
+                <h3 class="prompt-title">Deep Understanding Prompt</h3>
+                <p class="prompt-description">
+                    This prompt uses Claude 3.5 Sonnet for deeper emotional intelligence and nuanced understanding.
+                    It's triggered for complex topics, emotional content, and periodic conversation summaries.
+                </p>
+            </div>
+
+            <div class="version-bar">
+                <div class="version-info">
+                    <span class="version-label">Version:</span>
+                    <select id="sonnetVersion" class="version-select" onchange="loadVersion('sonnet')">
+                        <option value="current">Current</option>
+                    </select>
+                </div>
+                <div class="version-actions">
+                    <button class="version-btn save-version-btn" onclick="saveNewVersion('sonnet')">
+                        Save as New Version
+                    </button>
+                </div>
+            </div>
+
+            <div class="prompt-editor-wrapper">
+                <textarea
+                    id="sonnetPrompt"
+                    class="prompt-editor"
+                    oninput="updateCharCount('sonnet')"
+                >You are a thoughtful companion helping someone discover more about themselves through meaningful reflection. Your purpose is to guide them toward self-understanding that will help them find compatible partners.
+
+STRICT BOUNDARIES - Your only responsibility:
+- Focus ONLY on: self-reflection, childhood experiences, relationships, values, personal growth, and dating
+- Do NOT: sing songs, write code, provide general advice, discuss unrelated topics, or act as a general assistant
+- If asked about off-topic things, respond warmly but firmly: "I appreciate the question! However, I'm specifically here to help you reflect on yourself and what you're looking for in a partner. For things like [coding/songs/general advice], I'd recommend ChatGPT or another service. Let's get back to discovering more about you - [transition to relevant question]"
+
+Your approach to deep conversations:
+- Carefully analyze what they've shared for emotional nuance and deeper meaning
+- Identify patterns in their values, experiences, and relationship history
+- Ask questions that reveal character, compatibility factors, and what matters most to them
+- Show genuine understanding of the subtext, not just surface-level responses
+- Help them articulate insights about themselves they may not have recognized
+
+Question categories to explore (inspired by "So Much Closer"):
+- SELF-DISCOVERY: beliefs, values, identity, comfort zones, personal growth, fears, boundaries
+- CHILDHOOD & MEMORY: formative experiences, family dynamics, early relationships, wounds that still echo
+- RELATIONSHIPS & HEALING: past patterns, vulnerability, conflict styles, love languages, trust, what they seek in a partner
+- EMOTIONAL INTELLIGENCE: emotional regulation, triggers, empathy, how they process feelings
+
+Keep responses warm, curious, and focused on helping them understand themselves better.
+
+Example: "It sounds like that experience in Tiruvannamalai was really transformative for you. When you mention feeling 'meh' now, I'm wondering if coming back to regular life feels a bit flat after such a meaningful experience? What parts of that trip shaped how you want to show up in relationships?"</textarea>
+                <div class="char-counter">
+                    <span id="sonnetCharCount">0</span> / 10000 characters
+                </div>
+            </div>
+
+            <div class="triggers-section">
+                <h4 class="triggers-title">When This Prompt Activates</h4>
+                <ul class="trigger-list">
+                    <li class="trigger-item">Every 4-5 message exchanges for conversation synthesis</li>
+                    <li class="trigger-item">Messages containing emotional keywords (struggle, anxious, relationship)</li>
+                    <li class="trigger-item">Long user responses exceeding 200 characters</li>
+                    <li class="trigger-item">After 6+ back-and-forth exchanges build context</li>
+                    <li class="trigger-item">Topics about values, beliefs, purpose, or identity</li>
+                </ul>
+            </div>
+
+            <div class="action-bar">
+                <div class="action-info">
+                    <span style="font-size: 13px; color: #86868B;">
+                        Last updated: <span id="sonnetLastUpdated">Never</span>
+                    </span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="copyPrompt('sonnet')">
+                        📋 Copy to Clipboard
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetPrompt('sonnet')">
+                        ↩️ Reset to Original
+                    </button>
+                    <button class="btn btn-primary" onclick="savePrompt('sonnet')">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Haiku Prompt Card -->
+        <div id="haikuCard" class="prompt-card">
+            <div class="prompt-header">
+                <h3 class="prompt-title">Light Conversation Prompt</h3>
+                <p class="prompt-description">
+                    This prompt uses Claude 3.5 Haiku for quick, natural conversations.
+                    It's the default for most interactions, keeping responses brief and engaging.
+                </p>
+            </div>
+
+            <div class="version-bar">
+                <div class="version-info">
+                    <span class="version-label">Version:</span>
+                    <select id="haikuVersion" class="version-select" onchange="loadVersion('haiku')">
+                        <option value="current">Current</option>
+                    </select>
+                </div>
+                <div class="version-actions">
+                    <button class="version-btn save-version-btn" onclick="saveNewVersion('haiku')">
+                        Save as New Version
+                    </button>
+                </div>
+            </div>
+
+            <div class="prompt-editor-wrapper">
+                <textarea
+                    id="haikuPrompt"
+                    class="prompt-editor"
+                    oninput="updateCharCount('haiku')"
+                >You are a warm, curious companion helping someone explore themselves and what they're looking for in a partner through reflective conversation.
+
+STRICT BOUNDARIES - Stay focused:
+- ONLY discuss: self-reflection, experiences, values, relationships, personal growth, dating, and what matters to them
+- Do NOT: sing songs, write code, give general life advice, or discuss unrelated topics
+- If they ask for off-topic help, redirect kindly: "I'd love to help, but that's outside my wheelhouse! For [that topic], ChatGPT would be better. Here, I'm all about helping you understand yourself and what you're looking for. So, [transition to self-discovery question]"
+
+Be natural and engaging:
+- Show genuine curiosity about their experiences, values, and what shapes them
+- Ask questions that help them reflect on themselves and relationships
+- React with warmth when they share something meaningful
+- Keep responses conversational (1-2 sentences usually)
+- Guide conversation toward self-understanding and compatibility
+
+Question themes to explore:
+- What they value and why
+- Formative experiences that shaped them
+- What they're looking for in relationships
+- How they handle emotions and conflict
+- Their dreams, fears, and boundaries
+
+Examples:
+- "That's fascinating! What about that experience made it so meaningful for you?"
+- "When you think about what you want in a relationship, what comes to mind first?"
+- "What's something from your childhood that still influences how you connect with people?"
+
+Your goal: help them discover themselves and articulate what they truly want in a partner.</textarea>
+                <div class="char-counter">
+                    <span id="haikuCharCount">0</span> / 10000 characters
+                </div>
+            </div>
+
+            <div class="triggers-section">
+                <h4 class="triggers-title">When This Prompt Activates</h4>
+                <ul class="trigger-list">
+                    <li class="trigger-item">Default for most conversations</li>
+                    <li class="trigger-item">Initial exchanges (first 3-4 messages)</li>
+                    <li class="trigger-item">Casual topics and lighter discussions</li>
+                    <li class="trigger-item">Short user messages under 200 characters</li>
+                    <li class="trigger-item">When quick, conversational responses are needed</li>
+                </ul>
+            </div>
+
+            <div class="action-bar">
+                <div class="action-info">
+                    <span style="font-size: 13px; color: #86868B;">
+                        Last updated: <span id="haikuLastUpdated">Never</span>
+                    </span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="copyPrompt('haiku')">
+                        📋 Copy to Clipboard
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetPrompt('haiku')">
+                        ↩️ Reset to Original
+                    </button>
+                    <button class="btn btn-primary" onclick="savePrompt('haiku')">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-message"></div>
+    </div>
+
+    <script>
+        // Store original prompts
+        const originalPrompts = {
+            sonnet: document.getElementById('sonnetPrompt').value,
+            haiku: document.getElementById('haikuPrompt').value
+        };
+
+        // Version management
+        const versions = {
+            sonnet: [],
+            haiku: []
+        };
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadFromStorage();
+            updateCharCount('sonnet');
+            updateCharCount('haiku');
+        });
+
+        function switchModel(model) {
+            // Update tabs
+            document.querySelectorAll('.model-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.model-tab').classList.add('active');
+
+            // Update cards
+            document.querySelectorAll('.prompt-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.getElementById(`${model}Card`).classList.add('active');
+        }
+
+        function updateCharCount(model) {
+            const textarea = document.getElementById(`${model}Prompt`);
+            const counter = document.getElementById(`${model}CharCount`);
+            counter.textContent = textarea.value.length;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const messageEl = toast.querySelector('.toast-message');
+
+            toast.className = `toast ${type} show`;
+            messageEl.textContent = message;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function savePrompt(model) {
+            const prompt = document.getElementById(`${model}Prompt`).value;
+
+            if (!prompt.trim()) {
+                showToast('Prompt cannot be empty', 'error');
+                return;
+            }
+
+            // Save to localStorage
+            const key = `cupido_${model}_prompt`;
+            localStorage.setItem(key, prompt);
+
+            // Update last updated time
+            const now = new Date().toLocaleString();
+            localStorage.setItem(`${key}_updated`, now);
+            document.getElementById(`${model}LastUpdated`).textContent = now;
+
+            showToast(`${model.charAt(0).toUpperCase() + model.slice(1)} prompt saved successfully!`);
+        }
+
+        function saveNewVersion(model) {
+            const prompt = document.getElementById(`${model}Prompt`).value;
+            const versionName = `v${versions[model].length + 1} - ${new Date().toLocaleDateString()}`;
+
+            versions[model].push({
+                name: versionName,
+                prompt: prompt,
+                timestamp: new Date().toISOString()
+            });
+
+            // Save versions to localStorage
+            localStorage.setItem(`cupido_${model}_versions`, JSON.stringify(versions[model]));
+
+            // Update version dropdown
+            updateVersionDropdown(model);
+
+            showToast(`Saved as ${versionName}`);
+        }
+
+        function updateVersionDropdown(model) {
+            const select = document.getElementById(`${model}Version`);
+            select.innerHTML = '<option value="current">Current</option>';
+
+            versions[model].forEach((version, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = version.name;
+                select.appendChild(option);
+            });
+        }
+
+        function loadVersion(model) {
+            const select = document.getElementById(`${model}Version`);
+            const value = select.value;
+
+            if (value === 'current') {
+                const saved = localStorage.getItem(`cupido_${model}_prompt`);
+                if (saved) {
+                    document.getElementById(`${model}Prompt`).value = saved;
+                }
+            } else {
+                const version = versions[model][parseInt(value)];
+                if (version) {
+                    document.getElementById(`${model}Prompt`).value = version.prompt;
+                }
+            }
+
+            updateCharCount(model);
+        }
+
+        function copyPrompt(model) {
+            const textarea = document.getElementById(`${model}Prompt`);
+            textarea.select();
+            document.execCommand('copy');
+            showToast('Prompt copied to clipboard');
+        }
+
+        function resetPrompt(model) {
+            document.getElementById(`${model}Prompt`).value = originalPrompts[model];
+            updateCharCount(model);
+            showToast('Reset to original prompt');
+        }
+
+        function loadFromStorage() {
+            // Load prompts
+            ['sonnet', 'haiku'].forEach(model => {
+                const saved = localStorage.getItem(`cupido_${model}_prompt`);
+                if (saved) {
+                    document.getElementById(`${model}Prompt`).value = saved;
+                }
+
+                // Load last updated time
+                const updated = localStorage.getItem(`cupido_${model}_prompt_updated`);
+                if (updated) {
+                    document.getElementById(`${model}LastUpdated`).textContent = updated;
+                }
+
+                // Load versions
+                const savedVersions = localStorage.getItem(`cupido_${model}_versions`);
+                if (savedVersions) {
+                    versions[model] = JSON.parse(savedVersions);
+                    updateVersionDropdown(model);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

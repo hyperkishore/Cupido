@@ -2,10 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SimpleReflectionChat } from '../components/SimpleReflectionChat';
 import { useNavigation } from '@react-navigation/native';
+import { userProfileService } from '../services/userProfileService';
 
 export const PixelPerfectReflectScreen = () => {
   const navigation = useNavigation();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    // Load user profile
+    const loadProfile = async () => {
+      await userProfileService.initialize();
+      const name = userProfileService.getName();
+      if (name) {
+        setUserName(name);
+      }
+    };
+    loadProfile();
+
+    // Check for updates periodically
+    const interval = setInterval(loadProfile, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // Hide tab bar when keyboard is visible for better UX
@@ -23,8 +41,12 @@ export const PixelPerfectReflectScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Daily Reflection</Text>
-        <Text style={styles.headerSubtitle}>Explore your thoughts deeply</Text>
+        <Text style={styles.headerTitle}>
+          {userName ? `${userName}'s Reflection` : 'Daily Reflection'}
+        </Text>
+        <Text style={styles.headerSubtitle}>
+          {userName ? `Hey ${userName}, let's explore your thoughts` : 'Explore your thoughts deeply'}
+        </Text>
       </View>
       <View style={styles.chatContainer}>
         <SimpleReflectionChat onKeyboardToggle={handleKeyboardToggle} />
