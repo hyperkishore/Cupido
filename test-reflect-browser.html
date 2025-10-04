@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reflect Chat Browser Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00aaff; }
+        button {
+            background: #00ff00;
+            color: #1e1e1e;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        #logs {
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Reflect Tab Chat - Browser Test</h1>
+    <p>This test simulates the exact fetch call that SimpleReflectionChat.tsx makes</p>
+
+    <button onclick="runTest()">▶️ Run Test</button>
+    <button onclick="clearLogs()">🗑️ Clear Logs</button>
+    <button onclick="testMultiple()">🔄 Run 3 Tests</button>
+
+    <div id="logs"></div>
+
+    <script>
+        const logs = document.getElementById('logs');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            logs.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logs.innerHTML = '';
+        }
+
+        async function runTest() {
+            log('========================================', 'info');
+            log('🚀 Starting Reflect Chat Test', 'info');
+            log('========================================', 'info');
+
+            const proxyUrl = 'http://localhost:3001/api/chat';
+            const testMessage = 'Hey, this is a test from the browser!';
+
+            const conversationHistory = [
+                {
+                    role: 'system',
+                    content: 'You are a warm, curious friend chatting with someone on a dating app. Be natural, engaging, and conversational.'
+                },
+                {
+                    role: 'user',
+                    content: testMessage
+                }
+            ];
+
+            log(`📡 Target URL: ${proxyUrl}`, 'info');
+            log(`💬 Test message: "${testMessage}"`, 'info');
+            log(`📦 Payload: ${JSON.stringify({messages: conversationHistory, modelType: 'haiku'}, null, 2)}`, 'info');
+            log('⏳ Sending request...', 'info');
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: conversationHistory,
+                        modelType: 'haiku'
+                    })
+                });
+
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                log(`📥 Response received in ${duration}ms`, 'info');
+                log(`📊 HTTP Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ ERROR: ${errorText}`, 'error');
+                    log('========================================', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+
+                log('✅ SUCCESS! Received response from Claude:', 'success');
+                log(`🤖 Model used: ${data.usedModel}`, 'success');
+                log(`💬 Response: ${data.message}`, 'success');
+                log(`📏 Response length: ${data.message.length} characters`, 'info');
+
+                // Validation checks
+                if (!data.message || typeof data.message !== 'string') {
+                    log('❌ VALIDATION FAILED: Invalid message format', 'error');
+                } else if (!data.usedModel) {
+                    log('❌ VALIDATION FAILED: Missing usedModel field', 'error');
+                } else if (data.message.includes("I'm having trouble connecting")) {
+                    log('⚠️ WARNING: Got fallback response instead of real AI', 'error');
+                } else {
+                    log('✅ All validations passed!', 'success');
+                }
+
+                log('========================================', 'success');
+
+            } catch (error) {
+                log(`❌ CRITICAL ERROR: ${error.message}`, 'error');
+                log(`📚 Stack: ${error.stack}`, 'error');
+                log('🔍 Troubleshooting:', 'error');
+                log('  1. Check if proxy server is running on port 3001', 'error');
+                log('  2. Check browser console for CORS errors', 'error');
+                log('  3. Check network tab for failed requests', 'error');
+                log('========================================', 'error');
+            }
+        }
+
+        async function testMultiple() {
+            for (let i = 1; i <= 3; i++) {
+                log(`\n>>> Running test ${i}/3`, 'info');
+                await runTest();
+                if (i < 3) {
+                    log('⏱️ Waiting 2 seconds before next test...', 'info');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+            log('\n🏁 All tests completed!', 'success');
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            log('🌐 Page loaded. Click "Run Test" to start testing.', 'info');
+            log('📍 This test uses the same code path as SimpleReflectionChat.tsx', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type ChatMessageRole = 'coach' | 'user' | 'system';
+
 interface ChatMessage {
   id: string;
   questionId?: string;
@@ -12,6 +14,7 @@ interface ChatMessage {
   summary?: string;
   insights?: string[];
   isBot: boolean;
+  role?: ChatMessageRole;
   metadata?: any;
 }
 
@@ -124,7 +127,10 @@ class PersistentStorageService {
       if (!session) return;
 
       // Add to chat history
-      session.chatHistory.push(message);
+      session.chatHistory.push({
+        ...message,
+        role: message.role ?? (message.isBot ? 'coach' : 'user'),
+      });
       
       // Keep last 1000 messages
       if (session.chatHistory.length > 1000) {
