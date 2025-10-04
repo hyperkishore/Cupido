@@ -42,13 +42,13 @@ const AppShell = () => {
 
   const HeaderRight = () => (
     <View style={styles.headerRight}>
-      <View style={[styles.modeChip, mode === 'demo' ? styles.modeChipDemo : styles.modeChipLocal]}>
-        <Text style={styles.modeChipText}>
-          {mode === 'demo' ? 'Demo' : 'Local'}
-        </Text>
-      </View>
+      {mode === 'demo' && (
+        <View style={[styles.modeChip, styles.modeChipDemo]}>
+          <Text style={styles.modeChipText}>Demo</Text>
+        </View>
+      )}
       <VersionDisplay />
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.headerIcon}
         onPress={() => setShowMessages(true)}
       >
@@ -167,6 +167,7 @@ export default function App() {
 
 const Root = () => {
   const { user, loading } = useAuth();
+  const { mode } = useAppMode();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   React.useEffect(() => {
@@ -182,35 +183,45 @@ const Root = () => {
 
   if (loading && !loadingTimeout) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTitle}>Cupido</Text>
-        <ActivityIndicator size="large" color="#000000" />
-        <Text style={styles.loadingCopy}>Loading your reflection space</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <Text style={styles.loadingTitle}>Cupido</Text>
+          <ActivityIndicator size="large" color="#000000" />
+          <Text style={styles.loadingCopy}>Loading your reflection space</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (loadingTimeout) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTitle}>Cupido</Text>
-        <Text style={styles.loadingCopy}>Taking longer than usual...</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={() => {
-            setLoadingTimeout(false);
-            // Reload the app
-            if (Platform.OS === 'web') {
-              window.location.reload();
-            }
-          }}
-        >
-          <Text style={styles.retryButtonText}>Refresh</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <Text style={styles.loadingTitle}>Cupido</Text>
+          <Text style={styles.loadingCopy}>Taking longer than usual...</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setLoadingTimeout(false);
+              // Reload the app
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              }
+            }}
+          >
+            <Text style={styles.retryButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
+  // In demo mode, bypass authentication entirely
+  if (mode === 'demo') {
+    return <AppShell />;
+  }
+
+  // In local mode, require authentication
   if (!user) {
     return <LoginScreen />;
   }
@@ -303,9 +314,13 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  loadingContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
   },
   loadingTitle: {
     fontSize: 34,

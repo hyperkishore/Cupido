@@ -41,3 +41,6 @@ yarn-error.*
 
 # Environment
 .env
+
+# Local Netlify folder
+.netlify

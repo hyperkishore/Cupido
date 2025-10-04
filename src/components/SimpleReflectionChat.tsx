@@ -9,7 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +20,7 @@ import { chatAiService } from '../services/chatAiService';
 import { chatDatabase, type ChatMessage as DBChatMessage, type ChatConversation } from '../services/chatDatabase';
 import { generateId } from '../contexts/AppStateContext';
 import { useAuth } from '../contexts/AuthContext';
+import { userProfileService } from '../services/userProfileService';
 
 interface Message {
   id: string;
@@ -181,6 +184,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     try {
       setIsLoading(true);
 
+      // Initialize user profile service
+      await userProfileService.initialize();
+
       // Use authenticated user or generate demo user
       let sessionUserId: string;
       let userName: string;
@@ -274,13 +280,18 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         }
       }
       
-      // Setup real-time subscription
+      // Setup real-time subscription - but don't add messages we create locally
+      // This is mainly for multi-device sync or admin messages
+      const localMessageIds = new Set<string>();
       const unsubscribe = chatDatabase.subscribeToMessages(conversation.id, (newMessage) => {
-        // Only add messages from other sources (shouldn't happen in reflection chat, but good for extensibility)
+        // Ignore messages we created locally
+        if (localMessageIds.has(newMessage.id)) return;
+
+        // Only add messages that don't already exist
         setMessages(prev => {
           const exists = prev.find(msg => msg.id === newMessage.id);
           if (exists) return prev;
-          
+
           return [...prev, {
             id: newMessage.id,
             text: newMessage.content,
@@ -289,6 +300,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           }];
         });
       });
+
+      // Store reference to local message IDs for this session
+      (window as any).__localChatMessageIds = localMessageIds;
+
       return unsubscribe;
     } catch (error) {
       console.error('Error initializing chat:', error);
@@ -375,6 +390,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         );
 
         if (savedBotMessage) {
+          // Mark this message as locally created to prevent duplication
+          const localIds = (window as any).__localChatMessageIds;
+          if (localIds) localIds.add(savedBotMessage.id);
+
           const botMessage: Message = {
             id: savedBotMessage.id,
             text: aiResponse.message,
@@ -428,12 +447,67 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
+  const handlePhotoUpload = async () => {
+    // Request permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photos to upload images.');
+      return;
+    }
+
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const imageUri = result.assets[0].uri;
+
+      // Create a message indicating photo was shared
+      const photoMessage: Message = {
+        id: generateId(),
+        text: '📷 [Photo shared]',
+        isBot: false,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, photoMessage]);
+
+      // Generate a response about the photo
+      setTimeout(() => {
+        const photoResponse: Message = {
+          id: generateId(),
+          text: 'Nice photo! Tell me more about it - what does this mean to you?',
+          isBot: true,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, photoResponse]);
+      }, 1000);
+    }
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || isSending) return;
 
     const messageText = inputText.trim();
     setInputText('');
     setIsSending(true);
+
+    // Extract profile information from user messages
+    const previousMessages = messages.filter(m => !m.isBot).map(m => m.text);
+    const profileUpdates = userProfileService.extractProfileFromMessage(messageText, previousMessages);
+    if (Object.keys(profileUpdates).length > 0) {
+      await userProfileService.updateProfile(profileUpdates);
+
+      // If we just got the user's name, log it
+      if (profileUpdates.name) {
+        console.log('User name collected:', profileUpdates.name);
+      }
+    }
 
     console.log('📤 Sending message:', messageText);
 
@@ -469,8 +543,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   // Fixed positioning calculations
   const INPUT_AREA_HEIGHT = 70;
-  const inputBottomPosition = keyboardVisible ? 0 : tabBarHeight;
-  const messagesBottomPadding = INPUT_AREA_HEIGHT + (keyboardVisible ? 10 : tabBarHeight + 10);
+  const inputBottomPosition = 0; // Always at the bottom
+  const messagesBottomPadding = INPUT_AREA_HEIGHT + tabBarHeight + 10;
 
   return (
     <View style={styles.container}>
@@ -535,6 +609,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         ]}
       >
         <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={handlePhotoUpload}
+          >
+            <Feather name="plus" size={20} color="#007AFF" />
+          </TouchableOpacity>
           <TextInput
             style={styles.textInput}
             value={inputText}
@@ -542,7 +622,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             placeholder="Share your thoughts..."
             placeholderTextColor="#999"
             multiline
-            maxLength={500}
+            maxLength={10000}
             returnKeyType="send"
             blurOnSubmit={false}
             onSubmitEditing={handleSend}
@@ -555,10 +635,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             onPress={handleSend}
             disabled={!inputText.trim() || isSending}
           >
-            <Feather 
-              name="send" 
-              size={20} 
-              color={(inputText.trim() && !isSending) ? '#007AFF' : '#C0C0C0'} 
+            <Feather
+              name="send"
+              size={20}
+              color={(inputText.trim() && !isSending) ? '#007AFF' : '#C0C0C0'}
             />
           </TouchableOpacity>
         </View>
@@ -669,5 +749,13 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  attachButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

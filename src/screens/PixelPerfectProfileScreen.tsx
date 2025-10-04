@@ -8,11 +8,13 @@ import {
 } from 'react-native';
 import { personalityInsightsService, PersonalityProfile } from '../services/personalityInsightsService';
 import { useAuth } from '../contexts/AuthContext';
+import { useAppMode } from '../contexts/AppModeContext';
 
 export const PixelPerfectProfileScreen = () => {
   const [profile, setProfile] = useState<PersonalityProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, signOut } = useAuth();
+  const { mode, setMode } = useAppMode();
 
   useEffect(() => {
     loadPersonalityProfile();
@@ -27,6 +29,19 @@ export const PixelPerfectProfileScreen = () => {
       console.error('Error loading personality profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // If we're in demo mode, switch back to local mode first
+      // This ensures the login screen will be shown
+      if (mode === 'demo') {
+        await setMode('local');
+      }
+      await signOut();
+    } catch (error) {
+      console.error('Error logging out:', error);
     }
   };
 
@@ -139,7 +154,9 @@ export const PixelPerfectProfileScreen = () => {
         <View style={styles.accountCard}>
           <Text style={styles.accountLabel}>Phone number</Text>
           <Text style={styles.accountValue}>{user?.phoneNumber ?? 'Not set'}</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+          <Text style={styles.accountLabel}>Mode</Text>
+          <Text style={styles.accountValue}>{mode === 'demo' ? 'Demo' : 'Local'}</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Log out</Text>
           </TouchableOpacity>
         </View>

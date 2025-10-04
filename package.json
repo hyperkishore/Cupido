@@ -1,6 +1,6 @@
 {
   "name": "cupido",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "index.ts",
   "scripts": {
     "docs:manifest": "node scripts/generate-docs-manifest.js",
@@ -19,6 +19,7 @@
     "test:unit": "node tests/reflectionAiService.test.js && node tests/homeExperienceService.test.js && node tests/intelligentQuestionService.test.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
     "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",

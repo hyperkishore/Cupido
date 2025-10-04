@@ -1,62 +1,57 @@
 [
   {
     "type": "category",
-    "name": "Product Documentation",
-    "label": "Product Documentation",
+    "name": "Archive",
+    "label": "Archive",
     "children": [
       {
-        "type": "file",
-        "name": "CURRENT_FUNCTIONALITY_SUMMARY.md",
-        "label": "📱 Current Application Functionality Summary",
-        "path": "Product Documentation/CURRENT_FUNCTIONALITY_SUMMARY.md"
-      },
-      {
-        "type": "file",
-        "name": "DATING_APP_COMPLETE.md",
-        "label": "🌹 Cupido Dating App - Complete Implementation & Design",
-        "path": "Product Documentation/DATING_APP_COMPLETE.md"
-      },
-      {
-        "type": "file",
-        "name": "PRODUCTION_READY_SUMMARY.md",
-        "label": "Cupido - Production-Ready Application Summary",
-        "path": "Product Documentation/PRODUCTION_READY_SUMMARY.md"
-      },
-      {
-        "type": "file",
-        "name": "PRODUCT_ROADMAP.md",
-        "label": "Cupido: Product Roadmap & Requirements Document (PRD)",
-        "path": "Product Documentation/PRODUCT_ROADMAP.md"
-      },
-      {
-        "type": "file",
-        "name": "DEMO_GUIDE.md",
-        "label": "🎯 Cupido Demo Mode Guide",
-        "path": "Product Documentation/DEMO_GUIDE.md"
-      },
-      {
-        "type": "file",
-        "name": "LAUNCH_CHECKLIST.md",
-        "label": "Cupido - Production Launch Checklist",
-        "path": "Product Documentation/LAUNCH_CHECKLIST.md"
-      },
-      {
-        "type": "file",
-        "name": "FEEDBACK_SYSTEM.md",
-        "label": "Cupido Feedback System",
-        "path": "Product Documentation/FEEDBACK_SYSTEM.md"
-      },
-      {
-        "type": "file",
-        "name": "REFLECTION_UI_IMPROVEMENTS.md",
-        "label": "Reflection Screen UI Improvements",
-        "path": "Product Documentation/REFLECTION_UI_IMPROVEMENTS.md"
-      },
-      {
-        "type": "file",
-        "name": "UI_IMPROVEMENTS_TODO.md",
-        "label": "UI Improvements TODO - Apple/Airbnb Design Language",
-        "path": "Product Documentation/UI_IMPROVEMENTS_TODO.md"
+        "type": "folder",
+        "name": "Codex_musing",
+        "label": "Codex musing",
+        "children": [
+          {
+            "type": "file",
+            "name": "1_Current_Product_Spec.md",
+            "label": "Current Product Spec",
+            "path": "Archive/Codex_musing/1_Current_Product_Spec.md"
+          },
+          {
+            "type": "file",
+            "name": "2_Version_History.md",
+            "label": "Version History",
+            "path": "Archive/Codex_musing/2_Version_History.md"
+          },
+          {
+            "type": "file",
+            "name": "3_Product_Vision_and_Roadmap.md",
+            "label": "Product Vision and Roadmap",
+            "path": "Archive/Codex_musing/3_Product_Vision_and_Roadmap.md"
+          },
+          {
+            "type": "file",
+            "name": "4_Archive_Candidates.md",
+            "label": "Archive Candidates",
+            "path": "Archive/Codex_musing/4_Archive_Candidates.md"
+          },
+          {
+            "type": "file",
+            "name": "5_Functional_Gaps_and_Fixes.md",
+            "label": "Functional Gaps and Suggested Fixes",
+            "path": "Archive/Codex_musing/5_Functional_Gaps_and_Fixes.md"
+          },
+          {
+            "type": "file",
+            "name": "6_Code_Gaps_and_Restructure.md",
+            "label": "Code Gaps and Restructure Plan",
+            "path": "Archive/Codex_musing/6_Code_Gaps_and_Restructure.md"
+          },
+          {
+            "type": "file",
+            "name": "index.md",
+            "label": "index",
+            "path": "Archive/Codex_musing/index.md"
+          }
+        ]
       }
     ]
   },
@@ -68,26 +63,8 @@
       {
         "type": "file",
         "name": "API.md",
-        "label": "API Documentation & Setup",
+        "label": "API Documentation",
         "path": "Code Documentation/API.md"
-      },
-      {
-        "type": "file",
-        "name": "QUICK_DEPLOY_GUIDE.md",
-        "label": "🚀 Quick Deploy Guide",
-        "path": "Code Documentation/QUICK_DEPLOY_GUIDE.md"
-      },
-      {
-        "type": "file",
-        "name": "PRODUCTION_DEPLOYMENT_GUIDE.md",
-        "label": "Cupido Production Deployment Guide",
-        "path": "Code Documentation/PRODUCTION_DEPLOYMENT_GUIDE.md"
-      },
-      {
-        "type": "file",
-        "name": "SYSTEM_ARCHITECTURE.md",
-        "label": "Cupido - Full System Architecture",
-        "path": "Code Documentation/SYSTEM_ARCHITECTURE.md"
       },
       {
         "type": "file",
@@ -100,6 +77,18 @@
         "name": "DEBUG_RUNBOOK.md",
         "label": "Debug Runbook - Cupido",
         "path": "Code Documentation/DEBUG_RUNBOOK.md"
+      },
+      {
+        "type": "file",
+        "name": "PRODUCTION_DEPLOYMENT_GUIDE.md",
+        "label": "Cupido Production Deployment Guide",
+        "path": "Code Documentation/PRODUCTION_DEPLOYMENT_GUIDE.md"
+      },
+      {
+        "type": "file",
+        "name": "QUICK_DEPLOY_GUIDE.md",
+        "label": "Quick Deploy Guide - Cupido Web App",
+        "path": "Code Documentation/QUICK_DEPLOY_GUIDE.md"
       },
       {
         "type": "file",
@@ -118,6 +107,12 @@
         "name": "RESTORE_INSTRUCTIONS.md",
         "label": "🔄 How to Restore This Pixel-Perfect Version",
         "path": "Code Documentation/RESTORE_INSTRUCTIONS.md"
+      },
+      {
+        "type": "file",
+        "name": "SYSTEM_ARCHITECTURE.md",
+        "label": "Cupido - Full System Architecture",
+        "path": "Code Documentation/SYSTEM_ARCHITECTURE.md"
       },
       {
         "type": "file",
@@ -174,57 +169,62 @@
   },
   {
     "type": "category",
-    "name": "Archive",
-    "label": "Archive",
+    "name": "Product Documentation",
+    "label": "Product Documentation",
     "children": [
       {
-        "type": "folder",
-        "name": "Codex_musing",
-        "label": "Codex musing (Archived)",
-        "children": [
-          {
-            "type": "file",
-            "name": "1_Current_Product_Spec.md",
-            "label": "Current Product Spec",
-            "path": "Archive/Codex_musing/1_Current_Product_Spec.md"
-          },
-          {
-            "type": "file",
-            "name": "2_Version_History.md",
-            "label": "Version History",
-            "path": "Archive/Codex_musing/2_Version_History.md"
-          },
-          {
-            "type": "file",
-            "name": "3_Product_Vision_and_Roadmap.md",
-            "label": "Product Vision and Roadmap",
-            "path": "Archive/Codex_musing/3_Product_Vision_and_Roadmap.md"
-          },
-          {
-            "type": "file",
-            "name": "4_Archive_Candidates.md",
-            "label": "Archive Candidates",
-            "path": "Archive/Codex_musing/4_Archive_Candidates.md"
-          },
-          {
-            "type": "file",
-            "name": "5_Functional_Gaps_and_Fixes.md",
-            "label": "Functional Gaps and Suggested Fixes",
-            "path": "Archive/Codex_musing/5_Functional_Gaps_and_Fixes.md"
-          },
-          {
-            "type": "file",
-            "name": "6_Code_Gaps_and_Restructure.md",
-            "label": "Code Gaps and Restructure Plan",
-            "path": "Archive/Codex_musing/6_Code_Gaps_and_Restructure.md"
-          },
-          {
-            "type": "file",
-            "name": "index.md",
-            "label": "index",
-            "path": "Archive/Codex_musing/index.md"
-          }
-        ]
+        "type": "file",
+        "name": "CURRENT_FUNCTIONALITY_SUMMARY.md",
+        "label": "Cupido - Current Application Functionality Summary",
+        "path": "Product Documentation/CURRENT_FUNCTIONALITY_SUMMARY.md"
+      },
+      {
+        "type": "file",
+        "name": "DATING_APP_COMPLETE.md",
+        "label": "🌹 Cupido Dating App - Complete Implementation",
+        "path": "Product Documentation/DATING_APP_COMPLETE.md"
+      },
+      {
+        "type": "file",
+        "name": "DEMO_GUIDE.md",
+        "label": "🎯 Cupido Demo Mode Guide",
+        "path": "Product Documentation/DEMO_GUIDE.md"
+      },
+      {
+        "type": "file",
+        "name": "FEEDBACK_SYSTEM.md",
+        "label": "Cupido Feedback System",
+        "path": "Product Documentation/FEEDBACK_SYSTEM.md"
+      },
+      {
+        "type": "file",
+        "name": "LAUNCH_CHECKLIST.md",
+        "label": "Cupido - Production Launch Checklist",
+        "path": "Product Documentation/LAUNCH_CHECKLIST.md"
+      },
+      {
+        "type": "file",
+        "name": "PRODUCT_ROADMAP.md",
+        "label": "Cupido: Product Roadmap & Requirements Document (PRD)",
+        "path": "Product Documentation/PRODUCT_ROADMAP.md"
+      },
+      {
+        "type": "file",
+        "name": "PRODUCTION_READY_SUMMARY.md",
+        "label": "Cupido - Production-Ready Application Summary",
+        "path": "Product Documentation/PRODUCTION_READY_SUMMARY.md"
+      },
+      {
+        "type": "file",
+        "name": "REFLECTION_UI_IMPROVEMENTS.md",
+        "label": "Reflection Screen UI Improvements",
+        "path": "Product Documentation/REFLECTION_UI_IMPROVEMENTS.md"
+      },
+      {
+        "type": "file",
+        "name": "UI_IMPROVEMENTS_TODO.md",
+        "label": "UI Improvements TODO - Apple/Airbnb Design Language",
+        "path": "Product Documentation/UI_IMPROVEMENTS_TODO.md"
       }
     ]
   }
