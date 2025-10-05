@@ -1018,18 +1018,20 @@
                 }
 
                 // Update profile tracking based on user response
-                const responseText = data.response.toLowerCase();
-                if (responseText.includes('my name is') || responseText.includes('i\'m ')) {
-                    updateProfileField('name', currentPersona.name);
-                }
-                if (responseText.includes('i\'m ') && responseText.match(/\d+/)) {
-                    updateProfileField('age', currentPersona.age);
-                }
-                if (responseText.includes(currentPersona.location.toLowerCase())) {
-                    updateProfileField('location', currentPersona.location);
-                }
-                if (responseText.includes(currentPersona.occupation.toLowerCase())) {
-                    updateProfileField('work', currentPersona.occupation);
+                const responseText = (data.message || '').toLowerCase();
+                if (responseText && currentPersona) {
+                    if (responseText.includes('my name is') || responseText.includes('i\'m ')) {
+                        updateProfileField('name', currentPersona.name);
+                    }
+                    if (responseText.includes('i\'m ') && responseText.match(/\d+/)) {
+                        updateProfileField('age', currentPersona.age);
+                    }
+                    if (currentPersona.location && responseText.includes(currentPersona.location.toLowerCase())) {
+                        updateProfileField('location', currentPersona.location);
+                    }
+                    if (currentPersona.occupation && responseText.includes(currentPersona.occupation.toLowerCase())) {
+                        updateProfileField('work', currentPersona.occupation);
+                    }
                 }
 
                 return data.message || data.response;
