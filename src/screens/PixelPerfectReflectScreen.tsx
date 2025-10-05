@@ -41,10 +41,10 @@ export const PixelPerfectReflectScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+        <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit>
           {userName ? `${userName}'s Reflection` : 'Daily Reflection'}
         </Text>
-        <Text style={styles.headerSubtitle}>
+        <Text style={styles.headerSubtitle} numberOfLines={2}>
           {userName ? `Hey ${userName}, let's explore your thoughts` : 'Explore your thoughts deeply'}
         </Text>
       </View>

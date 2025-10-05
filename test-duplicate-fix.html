@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Duplicate Message Fix</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+        .test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #333;
+        }
+        #log {
+            height: 200px;
+            overflow-y: scroll;
+            background: #f4f4f4;
+            padding: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Testing Duplicate Message Fix</h1>
+
+    <div class="test">
+        <h2>Test Checklist:</h2>
+        <ul>
+            <li>✅ Disabled real-time subscription to prevent duplicates</li>
+            <li>✅ Added duplicate checking before adding messages to UI</li>
+            <li>✅ Enhanced Enter key debouncing</li>
+            <li>✅ Improved message hash tracking</li>
+        </ul>
+    </div>
+
+    <div class="test">
+        <h2>Console Log Monitoring:</h2>
+        <p>Open DevTools (F12) and look for:</p>
+        <ul>
+            <li>📤 [timestamp] Sending message: (should appear ONCE)</li>
+            <li>✅ User/Bot message saved to database (ONCE each)</li>
+            <li>⚠️ Message already exists, not adding duplicate</li>
+            <li>⚠️ Blocked duplicate: message already pending</li>
+        </ul>
+    </div>
+
+    <iframe src="http://localhost:8081"></iframe>
+
+    <div id="log">
+        <h3>Console Output:</h3>
+        <pre id="console-output">Monitoring console...</pre>
+    </div>
+
+    <script>
+        // Override console.log to capture messages
+        const originalLog = console.log;
+        const logOutput = document.getElementById('console-output');
+        const logs = [];
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg =>
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' ');
+
+            if (message.includes('📤') ||
+                message.includes('✅') ||
+                message.includes('⚠️') ||
+                message.includes('🔔')) {
+                logs.push(`[${new Date().toISOString()}] ${message}`);
+                logOutput.textContent = logs.slice(-20).join('\n');
+                logOutput.scrollTop = logOutput.scrollHeight;
+
+                // Check for duplicates
+                if (message.includes('📤 [')) {
+                    const sendCount = logs.filter(log =>
+                        log.includes('📤 [') && log.includes(args[1])
+                    ).length;
+                    if (sendCount > 1) {
+                        alert('⚠️ DUPLICATE DETECTED: Message sent multiple times!');
+                    }
+                }
+            }
+        };
+
+        console.log('Test page loaded - monitoring for duplicates...');
+    </script>
+</body>
+</html>
