@@ -35,6 +35,8 @@ class ChatDatabaseService {
   // Get or create user profile
   async getOrCreateUser(phoneNumber: string, name?: string): Promise<UserProfile | null> {
     try {
+      console.log(`👤 Looking for user with phone: ${phoneNumber}`);
+
       // First try to get existing user
       const { data: existingUser, error: fetchError } = await supabase
         .from('profiles')
@@ -43,6 +45,7 @@ class ChatDatabaseService {
         .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
       if (existingUser && !fetchError) {
+        console.log(`✅ Found existing user: ${existingUser.id} (${existingUser.name})`);
         // Update last_active
         await supabase
           .from('profiles')
@@ -54,6 +57,7 @@ class ChatDatabaseService {
 
       // Create new user if not found (PGRST116 = no rows returned, which is expected)
       if (!existingUser && (!fetchError || fetchError.code === 'PGRST116')) {
+        console.log(`📝 Creating new user with phone: ${phoneNumber}`);
         const { data: newUser, error: createError } = await supabase
           .from('profiles')
           .insert({
@@ -70,6 +74,7 @@ class ChatDatabaseService {
           return null;
         }
 
+        console.log(`✅ Created new user: ${newUser.id} (${newUser.name})`);
         return newUser;
       }
 
@@ -88,6 +93,8 @@ class ChatDatabaseService {
   // Get or create conversation for user
   async getOrCreateConversation(userId: string): Promise<ChatConversation | null> {
     try {
+      console.log(`🔍 Looking for conversation for user: ${userId}`);
+
       // First try to get existing conversation
       const { data: existingConv, error: fetchError } = await supabase
         .from('chat_conversations')
@@ -98,11 +105,13 @@ class ChatDatabaseService {
         .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
 
       if (existingConv && !fetchError) {
+        console.log(`✅ Found existing conversation: ${existingConv.id}`);
         return existingConv;
       }
 
       // Create new conversation if not found (PGRST116 = no rows returned, which is expected)
       if (!existingConv && (!fetchError || fetchError.code === 'PGRST116')) {
+        console.log(`📝 Creating new conversation for user: ${userId}`);
         const { data: newConv, error: createError } = await supabase
           .from('chat_conversations')
           .insert({
@@ -119,6 +128,7 @@ class ChatDatabaseService {
           return null;
         }
 
+        console.log(`✅ Created new conversation: ${newConv.id}`);
         return newConv;
       }
 
@@ -175,7 +185,7 @@ class ChatDatabaseService {
   }
 
   // Get chat history for a conversation
-  async getChatHistory(conversationId: string, limit: number = 50): Promise<ChatMessage[]> {
+  async getChatHistory(conversationId: string, limit: number = 200): Promise<ChatMessage[]> {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
@@ -274,7 +284,7 @@ class ChatDatabaseService {
       // Calculate analytics
       const totalMessages = messages.length;
       const totalConversations = conversations.length;
-      
+
       const modelUsage = messages.reduce(
         (acc, msg) => {
           if (msg.ai_model === 'haiku') acc.haiku++;
@@ -287,7 +297,7 @@ class ChatDatabaseService {
       const responseTimes = messages
         .filter(msg => msg.metadata?.response_time)
         .map(msg => msg.metadata.response_time);
-      
+
       const averageResponseTime = responseTimes.length > 0
         ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
         : 0;
@@ -306,6 +316,63 @@ class ChatDatabaseService {
         averageResponseTime: 0,
         modelUsage: { haiku: 0, sonnet: 0 },
       };
+    }
+  }
+
+  // Delete all user data
+  async deleteAllUserData(userId: string): Promise<boolean> {
+    try {
+      console.log(`🗑️ Starting to delete all data for user: ${userId}`);
+
+      // Get all user conversations
+      const conversations = await this.getUserConversations(userId);
+      const conversationIds = conversations.map(c => c.id);
+
+      if (conversationIds.length > 0) {
+        // Delete all messages in user's conversations
+        const { error: messagesError } = await supabase
+          .from('chat_messages')
+          .delete()
+          .in('conversation_id', conversationIds);
+
+        if (messagesError) {
+          console.error('Error deleting messages:', messagesError);
+          return false;
+        }
+
+        console.log(`✅ Deleted all messages for ${conversationIds.length} conversations`);
+
+        // Delete all conversations
+        const { error: conversationsError } = await supabase
+          .from('chat_conversations')
+          .delete()
+          .eq('user_id', userId);
+
+        if (conversationsError) {
+          console.error('Error deleting conversations:', conversationsError);
+          return false;
+        }
+
+        console.log(`✅ Deleted all conversations for user`);
+      }
+
+      // Delete the user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        return false;
+      }
+
+      console.log(`✅ Successfully deleted all data for user: ${userId}`);
+      return true;
+
+    } catch (error) {
+      console.error('Error in deleteAllUserData:', error);
+      return false;
     }
   }
 }

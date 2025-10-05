@@ -5,10 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
+  Platform,
 } from 'react-native';
 import { personalityInsightsService, PersonalityProfile } from '../services/personalityInsightsService';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppMode } from '../contexts/AppModeContext';
+import { chatDatabase } from '../services/chatDatabase';
 
 export const PixelPerfectProfileScreen = () => {
   const [profile, setProfile] = useState<PersonalityProfile | null>(null);
@@ -43,6 +46,89 @@ export const PixelPerfectProfileScreen = () => {
     } catch (error) {
       console.error('Error logging out:', error);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete All Data',
+      'This will permanently delete all your conversations, messages, and profile data. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete Everything',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Get current user ID
+              let userId: string | null = null;
+
+              if (user?.id) {
+                // Authenticated user
+                userId = user.id;
+              } else {
+                // Demo user - get from localStorage or AsyncStorage
+                if (Platform.OS === 'web') {
+                  const storedSession = window.localStorage.getItem('cupido_chat_session_demo_user');
+                  if (storedSession) {
+                    // Get the user profile from the database using the session ID
+                    const userProfile = await chatDatabase.getOrCreateUser(storedSession, 'Demo User');
+                    userId = userProfile?.id || null;
+                  }
+                }
+              }
+
+              if (!userId) {
+                Alert.alert('Error', 'Could not identify user account');
+                return;
+              }
+
+              // Delete all user data from Supabase
+              const success = await chatDatabase.deleteAllUserData(userId);
+
+              if (success) {
+                // Clear local storage
+                if (Platform.OS === 'web') {
+                  window.localStorage.removeItem('cupido_chat_session_demo_user');
+                  window.localStorage.clear();
+                }
+
+                // Clear personality insights
+                await personalityInsightsService.clearAllData();
+
+                Alert.alert(
+                  'Success',
+                  'All your data has been deleted successfully.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: async () => {
+                        // Log out and restart fresh
+                        if (mode === 'demo') {
+                          await setMode('local');
+                        }
+                        await signOut();
+                        // Force reload to start fresh
+                        if (Platform.OS === 'web') {
+                          window.location.reload();
+                        }
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert('Error', 'Failed to delete all data. Please try again.');
+              }
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', 'An error occurred while deleting your data.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -156,9 +242,14 @@ export const PixelPerfectProfileScreen = () => {
           <Text style={styles.accountValue}>{user?.phoneNumber ?? 'Not set'}</Text>
           <Text style={styles.accountLabel}>Mode</Text>
           <Text style={styles.accountValue}>{mode === 'demo' ? 'Demo' : 'Local'}</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Log out</Text>
-          </TouchableOpacity>
+          <View style={styles.accountButtons}>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>Log out</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteButtonText}>Delete All Data</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -359,8 +450,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
   },
+  accountButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
   logoutButton: {
-    alignSelf: 'flex-start',
     backgroundColor: '#F2F2F7',
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -370,5 +465,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000000',
+  },
+  deleteButton: {
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF3B30',
   },
 });

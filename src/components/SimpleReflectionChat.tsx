@@ -10,6 +10,7 @@ import {
   Platform,
   Keyboard,
   Alert,
+  Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +28,7 @@ interface Message {
   text: string;
   isBot: boolean;
   timestamp: Date;
+  imageUri?: string; // Add support for images
 }
 
 // Natural conversation starters and responses
@@ -98,10 +100,13 @@ const getStoredSessionUserId = async (authUserId: string): Promise<string | null
 
   if (Platform.OS === 'web') {
     try {
-      const storage = (globalThis as any)?.localStorage as
-        | { getItem: (key: string) => string | null }
-        | undefined;
-      return storage?.getItem(key) ?? null;
+      // Use window.localStorage directly for better reliability
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const value = window.localStorage.getItem(key);
+        console.log(`📦 Retrieved session from localStorage: ${key} = ${value}`);
+        return value;
+      }
+      return null;
     } catch (error) {
       console.warn('Failed to read session from web storage', error);
       return null;
@@ -121,10 +126,11 @@ const setStoredSessionUserId = async (authUserId: string, value: string) => {
 
   if (Platform.OS === 'web') {
     try {
-      const storage = (globalThis as any)?.localStorage as
-        | { setItem: (key: string, val: string) => void }
-        | undefined;
-      storage?.setItem(key, value);
+      // Use window.localStorage directly for better reliability
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+        console.log(`💾 Saved session to localStorage: ${key} = ${value}`);
+      }
     } catch (error) {
       console.warn('Failed to persist session to web storage', error);
     }
@@ -199,14 +205,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       } else {
         // Demo mode: Generate or retrieve user-specific session ID
         const demoUserId = 'demo_user';
-        sessionUserId = await getStoredSessionUserId(demoUserId) || `demo_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        const storedSessionId = await getStoredSessionUserId(demoUserId);
 
-        if (!await getStoredSessionUserId(demoUserId)) {
+        if (storedSessionId) {
+          // Use existing session ID
+          sessionUserId = storedSessionId;
+          console.log('🔑 Retrieved existing demo session:', sessionUserId);
+        } else {
+          // Generate new session ID only if none exists
+          sessionUserId = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
           await setStoredSessionUserId(demoUserId, sessionUserId);
+          console.log('🔑 Created new demo session:', sessionUserId);
         }
 
         userName = `Demo User`;
-        console.log('🔑 Using demo session user ID:', sessionUserId);
       }
 
       const user = await chatDatabase.getOrCreateUser(sessionUserId, userName);
@@ -227,9 +239,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       
       setCurrentConversation(conversation);
       
-      // Load chat history
-      const history = await chatDatabase.getChatHistory(conversation.id);
-      
+      // Load chat history (increased limit to load more messages)
+      const history = await chatDatabase.getChatHistory(conversation.id, 200);
+      console.log(`📚 Loaded ${history.length} messages from database for conversation ${conversation.id}`);
+
       if (history.length > 0) {
         // Convert DB messages to UI messages
         const uiMessages: Message[] = history.map(msg => ({
@@ -282,27 +295,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       
       // Setup real-time subscription - but don't add messages we create locally
       // This is mainly for multi-device sync or admin messages
-      const localMessageIds = new Set<string>();
-      const unsubscribe = chatDatabase.subscribeToMessages(conversation.id, (newMessage) => {
-        // Ignore messages we created locally
-        if (localMessageIds.has(newMessage.id)) return;
-
-        // Only add messages that don't already exist
-        setMessages(prev => {
-          const exists = prev.find(msg => msg.id === newMessage.id);
-          if (exists) return prev;
-
-          return [...prev, {
-            id: newMessage.id,
-            text: newMessage.content,
-            isBot: newMessage.is_bot,
-            timestamp: new Date(newMessage.created_at),
-          }];
-        });
-      });
+      // IMPORTANT: We'll disable the subscription for now to prevent duplicates
+      const unsubscribe = () => {}; // Disabled subscription to prevent duplicates
 
       // Store reference to local message IDs for this session
-      (window as any).__localChatMessageIds = localMessageIds;
+      (window as any).__localChatMessageIds = new Set<string>();
 
       return unsubscribe;
     } catch (error) {
@@ -382,18 +379,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           aiResponse.message,
           true, // is_bot
           aiResponse.usedModel, // ai_model used (was aiResponse.model)
-          { 
+          {
             response_time: Date.now(),
             conversation_count: conversationCount + 1,
             shouldAskQuestion: aiResponse.shouldAskQuestion
           }
         );
 
-        if (savedBotMessage) {
-          // Mark this message as locally created to prevent duplication
-          const localIds = (window as any).__localChatMessageIds;
-          if (localIds) localIds.add(savedBotMessage.id);
+        if (!savedBotMessage) {
+          console.error('❌ Failed to save AI message to database');
+        } else {
+          console.log('✅ AI message saved to database:', savedBotMessage.id);
+        }
 
+        if (savedBotMessage) {
           const botMessage: Message = {
             id: savedBotMessage.id,
             text: aiResponse.message,
@@ -401,7 +400,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             timestamp: new Date(savedBotMessage.created_at),
           };
 
-          setMessages(prev => [...prev, botMessage]);
+          // Check if message already exists before adding
+          setMessages(prev => {
+            const exists = prev.find(msg => msg.id === savedBotMessage.id || msg.text === aiResponse.message);
+            if (exists) {
+              console.log('⚠️ Bot message already exists, not adding duplicate');
+              return prev;
+            }
+            console.log('✅ Adding bot message to UI');
+            return [...prev, botMessage];
+          });
         }
       }
       
@@ -467,33 +475,128 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     if (!result.canceled && result.assets[0]) {
       const imageUri = result.assets[0].uri;
 
-      // Create a message indicating photo was shared
+      // Create a message with the actual image
       const photoMessage: Message = {
         id: generateId(),
-        text: '📷 [Photo shared]',
+        text: 'Photo shared',
         isBot: false,
         timestamp: new Date(),
+        imageUri: imageUri, // Store the image URI
       };
+
+      // Save to database if conversation exists
+      if (currentConversation) {
+        const savedMessage = await chatDatabase.saveMessage(
+          currentConversation.id,
+          'Photo shared',
+          false, // is_bot
+          undefined,
+          { imageUri: imageUri }
+        );
+        if (savedMessage) {
+          photoMessage.id = savedMessage.id;
+        }
+      }
 
       setMessages(prev => [...prev, photoMessage]);
 
-      // Generate a response about the photo
-      setTimeout(() => {
-        const photoResponse: Message = {
+      // Send image to AI for analysis
+      setIsTyping(true);
+      try {
+        // Convert image to base64 for Claude Vision
+        let base64Data = null;
+        if (Platform.OS === 'web') {
+          // For web, fetch the blob and convert to base64
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          base64Data = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64 = reader.result?.toString().split(',')[1];
+              resolve(base64);
+            };
+            reader.readAsDataURL(blob);
+          });
+        }
+
+        // Send image with message to AI
+        const aiResponse = await chatAiService.generateResponseWithImage(
+          "I just shared a photo with you. What can you see in this image?",
+          [...conversationHistory, { role: 'user' as const, content: "I just shared a photo with you. What can you see in this image?" }],
+          conversationCount,
+          base64Data ? { base64: base64Data, mimeType: 'image/jpeg' } : undefined
+        );
+
+        if (currentConversation) {
+          const savedBotMessage = await chatDatabase.saveMessage(
+            currentConversation.id,
+            aiResponse.message,
+            true,
+            aiResponse.usedModel,
+            { response_to_image: imageUri }
+          );
+
+          if (savedBotMessage) {
+            const botMessage: Message = {
+              id: savedBotMessage.id,
+              text: aiResponse.message,
+              isBot: true,
+              timestamp: new Date(savedBotMessage.created_at),
+            };
+            setMessages(prev => [...prev, botMessage]);
+          }
+        }
+
+        setConversationHistory([
+          ...conversationHistory,
+          { role: 'user', content: "I just shared a photo with you" },
+          { role: 'assistant', content: aiResponse.message }
+        ]);
+      } catch (error) {
+        console.error('Error processing photo:', error);
+        const fallbackMessage: Message = {
           id: generateId(),
-          text: 'Nice photo! Tell me more about it - what does this mean to you?',
+          text: 'I see your photo! Tell me more about it - what\'s the story behind this image?',
           isBot: true,
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, photoResponse]);
-      }, 1000);
+        setMessages(prev => [...prev, fallbackMessage]);
+      } finally {
+        setIsTyping(false);
+      }
     }
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || isSending) return;
+    if (!inputText.trim() || isSending) {
+      console.log('⚠️ Blocked send: empty text or already sending');
+      return;
+    }
 
+    // Enhanced duplicate prevention with message hash
     const messageText = inputText.trim();
+    const messageHash = `${messageText}_${Date.now()}`;
+
+    if ((window as any).__pendingMessages?.has(messageHash)) {
+      console.log('⚠️ Blocked duplicate: message already pending');
+      return;
+    }
+
+    // Initialize pending messages set if needed
+    if (!(window as any).__pendingMessages) {
+      (window as any).__pendingMessages = new Set();
+    }
+
+    // Add to pending messages
+    (window as any).__pendingMessages.add(messageHash);
+
+    // Clear pending after 2 seconds (safety cleanup)
+    setTimeout(() => {
+      (window as any).__pendingMessages?.delete(messageHash);
+    }, 2000);
+
+    console.log(`📤 [${new Date().toISOString()}] Sending message:`, messageText);
+
     setInputText('');
     setIsSending(true);
 
@@ -509,8 +612,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       }
     }
 
-    console.log('📤 Sending message:', messageText);
-
     // Save user message to database first
     if (currentConversation) {
       const savedUserMessage = await chatDatabase.saveMessage(
@@ -521,6 +622,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         { message_length: messageText.length }
       );
 
+      if (!savedUserMessage) {
+        console.error('❌ Failed to save user message to database');
+      } else {
+        console.log('✅ User message saved to database:', savedUserMessage.id);
+      }
+
       if (savedUserMessage) {
         const userMessage: Message = {
           id: savedUserMessage.id,
@@ -528,8 +635,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           isBot: false,
           timestamp: new Date(savedUserMessage.created_at),
         };
-        
-        setMessages(prev => [...prev, userMessage]);
+
+        // Check if message already exists before adding
+        setMessages(prev => {
+          const exists = prev.find(msg => msg.id === savedUserMessage.id || (msg.text === messageText && !msg.isBot));
+          if (exists) {
+            console.log('⚠️ User message already exists, not adding duplicate');
+            return prev;
+          }
+          console.log('✅ Adding user message to UI');
+          return [...prev, userMessage];
+        });
       }
     }
 
@@ -573,19 +689,39 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 message.isBot ? styles.botBubble : styles.userBubble,
               ]}
             >
-              <Text
-                style={[
-                  styles.messageText,
-                  message.isBot ? styles.botText : styles.userText,
-                ]}
-              >
-                {message.text}
-              </Text>
+              {message.imageUri ? (
+                <View>
+                  <Image
+                    source={{ uri: message.imageUri }}
+                    style={styles.messageImage}
+                    resizeMode="cover"
+                  />
+                  {message.text && (
+                    <Text
+                      style={[
+                        styles.messageText,
+                        message.isBot ? styles.botText : styles.userText,
+                      ]}
+                    >
+                      {message.text}
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    styles.messageText,
+                    message.isBot ? styles.botText : styles.userText,
+                  ]}
+                >
+                  {message.text}
+                </Text>
+              )}
             </View>
             <Text style={styles.timestamp}>
-              {message.timestamp.toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              {message.timestamp.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
               })}
             </Text>
           </View>
@@ -625,7 +761,32 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             maxLength={10000}
             returnKeyType="send"
             blurOnSubmit={false}
-            onSubmitEditing={handleSend}
+            onSubmitEditing={Platform.OS !== 'web' ? handleSend : undefined}
+            onKeyPress={(e: any) => {
+              // Handle Enter key on web (without Shift)
+              if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                // Don't send if composing (IME) or if it's a repeated event
+                if (e.nativeEvent.isComposing || e.nativeEvent.repeat) {
+                  console.log('⚠️ Blocked Enter: composing or repeat event');
+                  return;
+                }
+                e.preventDefault();
+                // Prevent double-trigger from Enter key
+                if ((window as any).__lastEnterPress && Date.now() - (window as any).__lastEnterPress < 100) {
+                  console.log('⚠️ Blocked Enter: too soon after last Enter');
+                  return;
+                }
+                (window as any).__lastEnterPress = Date.now();
+
+                // Only send if not already sending and has text
+                if (!isSending && inputText.trim()) {
+                  console.log('⌨️ Enter key triggering send');
+                  handleSend();
+                } else {
+                  console.log('⚠️ Blocked Enter: isSending or no text');
+                }
+              }
+            }}
           />
           <TouchableOpacity
             style={[
@@ -757,5 +918,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 8,
   },
 });

@@ -940,10 +940,19 @@
                 const historyWindow = parseInt(document.getElementById('history-window').value) || 10;
                 const limitedHistory = conversationHistory.slice(-historyWindow);
 
+                // Use the same format as the actual app
+                const messages = [
+                    { role: 'system', content: "You are Cupido, an AI companion focused on meaningful self-discovery and relationships. Engage naturally and help users explore their thoughts and feelings." },
+                    ...limitedHistory.filter(msg => msg.text).map(msg => ({
+                        role: msg.sender === 'user' ? 'user' : 'assistant',
+                        content: msg.text || ''
+                    })),
+                    { role: 'user', content: userMessage || 'Hello' }
+                ];
+
                 const requestBody = {
-                    message: userMessage,
-                    userId: 'simulator_' + currentPersona.id,
-                    conversationHistory: limitedHistory
+                    messages: messages,
+                    modelType: 'sonnet'
                 };
 
                 if (selectedImage) {
@@ -965,7 +974,7 @@
                 stats.lastResponseTime = ((Date.now() - startTime) / 1000).toFixed(1);
                 updateStats();
 
-                return data.response;
+                return data.message || data.response;
             } catch (error) {
                 logToConsole(`Error: ${error.message}`, 'error');
                 return "I'm having trouble connecting right now. Let me try to help you anyway - tell me more about yourself!";
@@ -983,14 +992,22 @@
                 const historyWindow = Math.min(parseInt(document.getElementById('history-window').value) || 10, 4);
                 const limitedHistory = conversationHistory.slice(-historyWindow);
 
+                // Use the same format as the actual app for persona responses too
+                const messages = [
+                    { role: 'system', content: currentPersona.prompt || "You are a user engaging with Cupido." },
+                    ...limitedHistory.filter(msg => msg.text).map(msg => ({
+                        role: msg.sender === 'user' ? 'assistant' : 'user',  // Reverse roles for persona
+                        content: msg.text || ''
+                    })),
+                    { role: 'user', content: botMessage || 'Hello' }
+                ];
+
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        message: botMessage,
-                        userId: 'simulator_persona_' + currentPersona.id,
-                        systemPrompt: currentPersona.prompt,
-                        conversationHistory: limitedHistory
+                        messages: messages,
+                        modelType: 'sonnet'
                     })
                 });
 
@@ -1015,7 +1032,7 @@
                     updateProfileField('work', currentPersona.occupation);
                 }
 
-                return data.response;
+                return data.message || data.response;
             } catch (error) {
                 logToConsole(`Error: ${error.message}`, 'error');
                 return "That's interesting! Tell me more about that.";

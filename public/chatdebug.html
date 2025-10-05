@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido Chat Debug Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #007AFF;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #007AFF;
+            color: white;
+            border-top-right-radius: 4px;
+        }
+
+        .message.bot .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .typing-indicator {
+            padding: 10px 20px;
+            font-style: italic;
+            color: #999;
+        }
+
+        .input-area {
+            border-top: 1px solid #e0e0e0;
+            padding: 15px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #666;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            width: 400px;
+            background: #2a2a2a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .debug-tabs {
+            display: flex;
+            background: #1a1a1a;
+            border-bottom: 1px solid #444;
+        }
+
+        .debug-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .debug-tab.active {
+            color: white;
+            background: #2a2a2a;
+        }
+
+        .debug-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid transparent;
+            word-wrap: break-word;
+        }
+
+        .log-entry.info {
+            border-left-color: #4CAF50;
+            color: #81C784;
+        }
+
+        .log-entry.warning {
+            border-left-color: #FF9800;
+            color: #FFB74D;
+        }
+
+        .log-entry.error {
+            border-left-color: #F44336;
+            color: #E57373;
+        }
+
+        .log-entry.network {
+            border-left-color: #2196F3;
+            color: #64B5F6;
+        }
+
+        /* Test Controls */
+        .test-controls {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+
+        .test-controls h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .test-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #444;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .test-btn:hover {
+            background: #555;
+        }
+
+        .status-bar {
+            padding: 10px;
+            background: #1a1a1a;
+            border-top: 1px solid #444;
+            font-size: 11px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+
+        .status-indicator.online {
+            background: #4CAF50;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #444;
+        }
+
+        .stat-item {
+            background: #333;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            color: #fff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Cupido Chat Debug Interface</h1>
+        <div>
+            <span id="connection-status">⚡ Connecting...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="chat-section">
+            <div class="messages-area" id="messages-area">
+                <div class="message bot">
+                    <div class="message-bubble">
+                        Hey! I'm Cupido. What's your name?
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                Cupido is typing...
+            </div>
+
+            <div class="input-area">
+                <button class="btn btn-secondary" onclick="selectImage()">📷</button>
+                <input type="file" id="image-input" class="file-input" accept="image/*" onchange="handleImageSelect(event)">
+                <input
+                    type="text"
+                    id="message-input"
+                    placeholder="Type your message..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="btn" id="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div class="debug-panel">
+            <div class="debug-tabs">
+                <button class="debug-tab active" onclick="switchTab('console')">Console</button>
+                <button class="debug-tab" onclick="switchTab('network')">Network</button>
+                <button class="debug-tab" onclick="switchTab('state')">State</button>
+                <button class="debug-tab" onclick="switchTab('tests')">Tests</button>
+            </div>
+
+            <div id="console-panel" class="debug-content">
+                <!-- Console logs will appear here -->
+            </div>
+
+            <div id="network-panel" class="debug-content" style="display: none;">
+                <!-- Network logs will appear here -->
+            </div>
+
+            <div id="state-panel" class="debug-content" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Messages</div>
+                        <div class="stat-value" id="message-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Images</div>
+                        <div class="stat-value" id="image-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">API Calls</div>
+                        <div class="stat-value" id="api-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Errors</div>
+                        <div class="stat-value" id="error-count">0</div>
+                    </div>
+                </div>
+                <div id="state-data" style="padding: 10px;">
+                    <!-- State data will appear here -->
+                </div>
+            </div>
+
+            <div id="tests-panel" class="debug-content" style="display: none;">
+                <div class="test-controls">
+                    <h3>Quick Tests</h3>
+                    <button class="test-btn" onclick="testMessage('Hi')">Send "Hi"</button>
+                    <button class="test-btn" onclick="testMessage('I work at HyperVerge')">Test Company Recognition</button>
+                    <button class="test-btn" onclick="testMessage('I\\'m 28 years old')">Test Age Input</button>
+                    <button class="test-btn" onclick="testMessage('I live in San Francisco')">Test Location</button>
+                    <button class="test-btn" onclick="testUploadSampleImage()">Upload Sample Image</button>
+                    <button class="test-btn" onclick="testRapidMessages()">Test Rapid Messages</button>
+                    <button class="test-btn" onclick="clearChat()">Clear Chat</button>
+                    <button class="test-btn" onclick="exportLogs()">Export Logs</button>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-indicator" id="api-status"></div>
+                    <span>API</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="proxy-status"></div>
+                    <span>Proxy</span>
+                </div>
+                <div class="status-item">
+                    <span id="timestamp">00:00:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const PROXY_URL = 'http://localhost:3001/api/chat';
+
+        // State
+        let conversationHistory = [];
+        let messageCount = 0;
+        let imageCount = 0;
+        let apiCount = 0;
+        let errorCount = 0;
+        let currentTab = 'console';
+        let isTyping = false;
+
+        // Console hijacking for debug
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        const logs = [];
+        const maxLogs = 1000;
+
+        function addLog(type, ...args) {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const message = args.map(arg =>
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' ');
+
+            const logEntry = { type, message, timestamp };
+            logs.push(logEntry);
+            if (logs.length > maxLogs) logs.shift();
+
+            // Add to console panel if visible
+            if (currentTab === 'console') {
+                const panel = document.getElementById('console-panel');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `[${timestamp}] ${message}`;
+                panel.appendChild(entry);
+                panel.scrollTop = panel.scrollHeight;
+            }
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('info', ...args);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('error', ...args);
+            errorCount++;
+            updateStats();
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('warning', ...args);
+        };
+
+        // Network logging
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const startTime = Date.now();
+            const [url, options] = args;
+
+            console.log(`🌐 API Call: ${options?.method || 'GET'} ${url}`);
+            apiCount++;
+            updateStats();
+
+            return originalFetch.apply(window, args)
+                .then(response => {
+                    const duration = Date.now() - startTime;
+                    const logType = response.ok ? 'network' : 'error';
+                    addLog(logType, `✅ Response: ${response.status} in ${duration}ms`);
+
+                    if (currentTab === 'network') {
+                        addNetworkLog(url, options, response, duration);
+                    }
+
+                    return response;
+                })
+                .catch(error => {
+                    const duration = Date.now() - startTime;
+                    addLog('error', `❌ Network Error: ${error.message} after ${duration}ms`);
+                    throw error;
+                });
+        };
+
+        function addNetworkLog(url, options, response, duration) {
+            const panel = document.getElementById('network-panel');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${response.ok ? 'network' : 'error'}`;
+            entry.innerHTML = `
+                <strong>${options?.method || 'GET'} ${url}</strong><br>
+                Status: ${response.status} ${response.statusText}<br>
+                Duration: ${duration}ms<br>
+                ${options?.body ? `Body: ${options.body.substring(0, 100)}...` : ''}
+            `;
+            panel.appendChild(entry);
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        // UI Functions
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.debug-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.debug-content').forEach(c => c.style.display = 'none');
+
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-panel`).style.display = 'block';
+
+            if (tab === 'state') {
+                updateStateDisplay();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('message-count').textContent = messageCount;
+            document.getElementById('image-count').textContent = imageCount;
+            document.getElementById('api-count').textContent = apiCount;
+            document.getElementById('error-count').textContent = errorCount;
+        }
+
+        function updateStateDisplay() {
+            const stateData = document.getElementById('state-data');
+            stateData.innerHTML = `
+                <pre style="color: #888; font-size: 10px;">
+Conversation History:
+${JSON.stringify(conversationHistory, null, 2)}
+
+Current State:
+- Is Typing: ${isTyping}
+- Messages: ${messageCount}
+- Images: ${imageCount}
+- API Calls: ${apiCount}
+- Errors: ${errorCount}
+                </pre>
+            `;
+        }
+
+        // Chat Functions
+        function addMessage(text, isBot, imageUrl = null) {
+            const messagesArea = document.getElementById('messages-area');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isBot ? 'bot' : 'user'}`;
+
+            let content = `<div class="message-bubble">${text}`;
+            if (imageUrl) {
+                content += `<img src="${imageUrl}" class="message-image" alt="Shared image">`;
+            }
+            content += '</div>';
+
+            messageDiv.innerHTML = content;
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+
+            if (!isBot) messageCount++;
+            updateStats();
+        }
+
+        function showTyping(show) {
+            isTyping = show;
+            document.getElementById('typing-indicator').style.display = show ? 'block' : 'none';
+        }
+
+        async function sendMessage(text = null) {
+            const input = document.getElementById('message-input');
+            const message = text || input.value.trim();
+
+            if (!message) return;
+
+            console.log(`📤 Sending message: ${message}`);
+
+            // Add user message
+            addMessage(message, false);
+            if (!text) input.value = '';
+
+            // Update conversation history
+            conversationHistory.push({ role: 'user', content: message });
+
+            // Show typing
+            showTyping(true);
+
+            // Call API
+            try {
+                const response = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: getSystemPrompt() },
+                            ...conversationHistory
+                        ],
+                        modelType: 'sonnet'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.message) {
+                    console.log(`📥 Received response: ${data.message}`);
+                    addMessage(data.message, true);
+                    conversationHistory.push({ role: 'assistant', content: data.message });
+                } else {
+                    throw new Error('Invalid response');
+                }
+            } catch (error) {
+                console.error('Failed to get response:', error);
+                addMessage('Sorry, I had trouble processing that. Let me try again.', true);
+            } finally {
+                showTyping(false);
+            }
+        }
+
+        function getSystemPrompt() {
+            return `You are Cupido, helping someone build a meaningful dating profile while discovering themselves. Balance learning their basics with exploring who they are.
+
+CRITICAL RULES:
+1. Keep responses to 2-3 SHORT sentences (under 60 words total)
+2. End with EXACTLY ONE simple question
+3. Be conversational and curious about their actual life
+4. When they mention companies: Share what you know if familiar
+
+PROFILE BASICS TO LEARN (prioritize early):
+- Name, Age, Location, Work, Education, Family, Hobbies
+- What they're looking for in dating
+
+Remember: You're building a dating profile AND facilitating discovery`;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function selectImage() {
+            document.getElementById('image-input').click();
+        }
+
+        async function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log(`📷 Image selected: ${file.name}`);
+            imageCount++;
+            updateStats();
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageUrl = e.target.result;
+                addMessage('Photo shared', false, imageUrl);
+
+                // Convert to base64 for API
+                const base64 = imageUrl.split(',')[1];
+
+                // Send with image context
+                conversationHistory.push({
+                    role: 'user',
+                    content: 'I just shared a photo with you. What can you see?',
+                    includeImage: true
+                });
+
+                showTyping(true);
+
+                try {
+                    const response = await fetch(PROXY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            messages: [
+                                { role: 'system', content: getSystemPrompt() },
+                                ...conversationHistory
+                            ],
+                            modelType: 'sonnet',
+                            imageData: { base64, mimeType: file.type }
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.message) {
+                        console.log(`📥 Image analysis response: ${data.message}`);
+                        addMessage(data.message, true);
+                        conversationHistory.push({ role: 'assistant', content: data.message });
+                    }
+                } catch (error) {
+                    console.error('Failed to analyze image:', error);
+                    addMessage('I see your photo! Tell me more about it.', true);
+                } finally {
+                    showTyping(false);
+                }
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Test Functions
+        function testMessage(text) {
+            console.log(`🧪 Test: Sending "${text}"`);
+            sendMessage(text);
+        }
+
+        function testUploadSampleImage() {
+            console.log('🧪 Test: Uploading sample image');
+            // Create a sample image
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#007AFF';
+            ctx.fillRect(0, 0, 200, 200);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText('Sample Image', 30, 100);
+
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'sample.png', { type: 'image/png' });
+                const event = { target: { files: [file] } };
+                handleImageSelect(event);
+            });
+        }
+
+        function testRapidMessages() {
+            console.log('🧪 Test: Sending rapid messages');
+            const messages = ['Hello', 'How are you?', 'I live in NYC'];
+            let delay = 0;
+            messages.forEach(msg => {
+                setTimeout(() => testMessage(msg), delay);
+                delay += 2000;
+            });
+        }
+
+        function clearChat() {
+            console.log('🧹 Clearing chat');
+            document.getElementById('messages-area').innerHTML = `
+                <div class="message bot">
+                    <div class="message-bubble">
+                        Hey! I'm Cupido. What's your name?
+                    </div>
+                </div>
+            `;
+            conversationHistory = [];
+            messageCount = 0;
+            updateStats();
+        }
+
+        function exportLogs() {
+            const data = {
+                logs,
+                conversationHistory,
+                stats: {
+                    messages: messageCount,
+                    images: imageCount,
+                    apiCalls: apiCount,
+                    errors: errorCount
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-debug-${Date.now()}.json`;
+            a.click();
+            console.log('📥 Logs exported');
+        }
+
+        // Status checks
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                if (data.ok) {
+                    document.getElementById('proxy-status').classList.add('online');
+                    document.getElementById('api-status').classList.add('online');
+                    document.getElementById('connection-status').textContent = '✅ Connected';
+                }
+            } catch (error) {
+                document.getElementById('connection-status').textContent = '❌ Proxy Offline';
+                console.error('Proxy server not responding');
+            }
+        }
+
+        // Update timestamp
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('timestamp').textContent =
+                now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        // Initialize
+        window.addEventListener('load', () => {
+            console.log('🚀 Cupido Debug Interface Initialized');
+            console.log('📍 API Endpoint:', PROXY_URL);
+            checkStatus();
+            setInterval(checkStatus, 5000);
+            updateStats();
+        });
+    </script>
+</body>
+</html>

@@ -317,6 +317,17 @@ class PersonalityInsightsService {
       openness: opennessTrait?.percentage || 70
     };
   }
+
+  // Clear all personality data
+  async clearAllData(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(this.storageKey);
+      this.profile = null;
+      console.log('✅ Cleared all personality insights data');
+    } catch (error) {
+      console.error('Error clearing personality data:', error);
+    }
+  }
 }
 
 export const personalityInsightsService = new PersonalityInsightsService();

@@ -206,10 +206,21 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     return cupidoPrompt.system_prompt + nameContext;
   }
 
+  async generateResponseWithImage(
+    userMessage: string,
+    conversationHistory: ChatMessage[] = [],
+    conversationCount: number = 0,
+    imageData?: { base64: string; mimeType: string }
+  ): Promise<ChatAiResponse> {
+    // Call the main method with image data
+    return this.generateResponse(userMessage, conversationHistory, conversationCount, imageData);
+  }
+
   async generateResponse(
     userMessage: string,
     conversationHistory: ChatMessage[] = [],
-    conversationCount: number = 0
+    conversationCount: number = 0,
+    imageData?: { base64: string; mimeType: string }
   ): Promise<ChatAiResponse> {
 
     console.log('\n\n' + '='.repeat(80));
@@ -218,6 +229,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     console.log('📤 User message:', userMessage);
     console.log('📊 Conversation count:', conversationCount);
     console.log('📚 History length:', conversationHistory.length);
+    console.log('🖼️ Has image:', !!imageData);
     console.log('🕐 Timestamp:', new Date().toISOString());
     console.log('🌍 Environment check:', {
       nodeEnv: process.env.NODE_ENV,
@@ -233,16 +245,21 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
 
       console.log(`Using Claude 3.5 ${modelToUse.toUpperCase()} exclusively for all responses`);
 
+      // Mark the last user message to include image if available
+      const lastUserMessage = imageData
+        ? { role: 'user' as const, content: userMessage, includeImage: true }
+        : { role: 'user' as const, content: userMessage };
+
       const messages: ChatMessage[] = [
         { role: 'system', content: this.createSystemPrompt() },
         ...conversationHistory,
-        { role: 'user', content: userMessage }
+        lastUserMessage as ChatMessage
       ];
 
       let response;
 
       if (this.provider === 'anthropic') {
-        response = await this.callAnthropicAPI(messages, modelToUse);
+        response = await this.callAnthropicAPI(messages, modelToUse, imageData);
       } else {
         response = await this.callOpenAIAPI(messages);
       }
@@ -273,7 +290,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
   }
 
 
-  private async callAnthropicAPI(messages: ChatMessage[], modelType: 'haiku' | 'sonnet' = 'sonnet'): Promise<string> {
+  private async callAnthropicAPI(messages: ChatMessage[], modelType: 'haiku' | 'sonnet' = 'sonnet', imageData?: { base64: string; mimeType: string }): Promise<string> {
     console.log('='.repeat(60));
     console.log('🚀 PROXY CALL STARTING 🚀');
     console.log('='.repeat(60));
@@ -321,7 +338,8 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         },
         body: JSON.stringify({
           messages: messages,
-          modelType: modelType
+          modelType: modelType,
+          imageData: imageData // Include image data if available
         })
       });
       console.log('📥 FETCH COMPLETED - Response received:', {
