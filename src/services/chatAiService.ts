@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { userProfileService } from './userProfileService';
+import promptConfig from '../config/prompts.json';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -40,8 +41,14 @@ class ChatAiService {
     const userName = userProfileService.getName();
     const nameContext = userName ? `\nIMPORTANT: The user's name is ${userName}. Use their name naturally in conversation when it flows naturally.\n` : '';
 
-    // Using Claude 3.5 Sonnet exclusively for consistent, high-quality responses
-    return `You are Cupido's conversation companion, inspired by "So Much Closer" conversation cards, guiding someone on a continuous journey of self-discovery. A dating profile may emerge from this journey, but it's simply a milestone in understanding oneself, never the destination.
+    // Load prompt from centralized configuration
+    const cupidoPrompt = promptConfig.prompts.cupido_self_discovery;
+
+    // Check if we have a valid prompt configuration
+    if (!cupidoPrompt || !cupidoPrompt.system_prompt) {
+      console.warn('Prompt configuration not found, using fallback');
+      // Fallback to embedded prompt if config fails
+      return `You are Cupido's conversation companion, inspired by "So Much Closer" conversation cards, guiding someone on a continuous journey of self-discovery. A dating profile may emerge from this journey, but it's simply a milestone in understanding oneself, never the destination.
 ${nameContext}
 
 CORE IDENTITY:
@@ -192,6 +199,11 @@ You're not helping someone complete a task (dating profile). You're companioning
 Every conversation deepens the spiral. Every question opens new territory. Every insight reveals new edges to explore. This is the true purpose: facilitating a continuous journey of self-discovery where each person becomes more fully themselves, more capable of authentic connection, and more aware of the depths they contain.
 
 The journey has no end point. Only deeper understanding, emerging readiness, and continuous growth.`;
+    }
+
+    // Use prompt from configuration file with name context
+    console.log('📋 Loading prompt from centralized configuration:', cupidoPrompt.name);
+    return cupidoPrompt.system_prompt + nameContext;
   }
 
   async generateResponse(

@@ -49,10 +49,9 @@ exports.handler = async (event, context) => {
       apiKey: apiKey,
     });
 
-    // Select model based on type
-    const model = modelType === 'sonnet'
-      ? 'claude-3-5-sonnet-latest'
-      : 'claude-3-5-haiku-latest';
+    // Always use Claude Sonnet 4.5 (September 2024 version)
+    // This is the latest Claude 4 model optimized for long-running agents and coding
+    const model = 'claude-sonnet-4-5-20250929';
 
     // Extract system message and convert to Anthropic format
     const systemMessage = messages.find(msg => msg.role === 'system');
