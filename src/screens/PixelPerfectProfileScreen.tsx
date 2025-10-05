@@ -12,6 +12,7 @@ import { personalityInsightsService, PersonalityProfile } from '../services/pers
 import { useAuth } from '../contexts/AuthContext';
 import { useAppMode } from '../contexts/AppModeContext';
 import { chatDatabase } from '../services/chatDatabase';
+import { userProfileService } from '../services/userProfileService';
 
 export const PixelPerfectProfileScreen = () => {
   const [profile, setProfile] = useState<PersonalityProfile | null>(null);
@@ -97,6 +98,9 @@ export const PixelPerfectProfileScreen = () => {
 
                 // Clear personality insights
                 await personalityInsightsService.clearAllData();
+
+                // Clear user profile service
+                await userProfileService.clearProfile();
 
                 Alert.alert(
                   'Success',
