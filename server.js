@@ -24,7 +24,8 @@ app.use(cors({
     ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
     : true,
 }));
-app.use(express.json());
+// Increase body size limit to 10MB
+app.use(express.json({ limit: '10mb' }));
 
 app.get('/health', (req, res) => {
   res.json({
@@ -39,9 +40,15 @@ app.get('/health', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   try {
     console.log('🔥 PROXY REQUEST RECEIVED!');
-    console.log('Body:', req.body);
-    
-    const { messages, modelType = 'haiku' } = req.body;
+
+    if (!req.body) {
+      console.error('Request body is undefined');
+      return res.status(400).json({ error: 'Invalid request body', fallback: true });
+    }
+
+    console.log('Body keys:', Object.keys(req.body));
+
+    const { messages, modelType = 'haiku', imageData } = req.body;
     
     console.log(`🤖 Proxying to Claude ${modelType.toUpperCase()}`);
     
@@ -53,24 +60,51 @@ app.post('/api/chat', async (req, res) => {
     // Convert messages format for Anthropic
     const systemMessage = messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system');
-    
+
     // Always use Claude Sonnet 4.5 for consistent high-quality responses
     // Claude 4 models are more concise and better at following instructions
     const modelMap = {
       'haiku': 'claude-sonnet-4-5-20250929',  // Using Sonnet 4.5 for all requests
       'sonnet': 'claude-sonnet-4-5-20250929'   // Claude 4.5 Sonnet
     };
-    
-    const maxTokens = modelType === 'sonnet' ? 200 : 100;
-    
+
+    const maxTokens = modelType === 'sonnet' ? 250 : 150;
+
+    // Process messages - handle both text and images
+    const processedMessages = conversationMessages.map(msg => {
+      // Check if this message should have image data attached
+      if (msg.role === 'user' && imageData && msg.includeImage) {
+        // Claude expects images as part of content array
+        return {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: imageData.mimeType || 'image/jpeg',
+                data: imageData.base64
+              }
+            },
+            {
+              type: 'text',
+              text: msg.content
+            }
+          ]
+        };
+      }
+      // Regular text message
+      return {
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      };
+    });
+
     const requestBody = {
       model: modelMap[modelType],
       max_tokens: maxTokens,
       system: systemMessage,
-      messages: conversationMessages.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content
-      }))
+      messages: processedMessages
     };
     
     console.log(`Calling ${modelMap[modelType]} with ${maxTokens} max tokens`);
