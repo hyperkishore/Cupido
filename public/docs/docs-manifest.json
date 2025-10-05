@@ -56,15 +56,48 @@
     ]
   },
   {
-    "type": "file",
-    "name": "code.md",
-    "label": "Code Guide",
-    "path": "code.md"
-  },
-  {
-    "type": "file",
-    "name": "product.md",
-    "label": "Product Guide",
-    "path": "product.md"
+    "type": "category",
+    "name": "Other files",
+    "label": "Other files",
+    "children": [
+      {
+        "type": "folder",
+        "name": ".expo",
+        "label": ".expo",
+        "children": [
+          {
+            "type": "file",
+            "name": "README.md",
+            "label": "README",
+            "path": "Other files/.expo/README.md"
+          }
+        ]
+      },
+      {
+        "type": "folder",
+        "name": "backups",
+        "label": "backups",
+        "children": [
+          {
+            "type": "file",
+            "name": "BACKUP_README.md",
+            "label": "Cupido Backup Information",
+            "path": "Other files/backups/BACKUP_README.md"
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": "CONTRIBUTING.md",
+        "label": "Contributing to Cupido",
+        "path": "Other files/CONTRIBUTING.md"
+      },
+      {
+        "type": "file",
+        "name": "README.md",
+        "label": "Cupido - Privacy-First Dating App",
+        "path": "Other files/README.md"
+      }
+    ]
   }
 ]
