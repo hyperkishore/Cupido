@@ -712,7 +712,9 @@
 - Keep messages SHORT (5-30 words typical, max 50)
 - Be casual and natural - use "lol", "haha", occasional typos
 - NO scene descriptions, NO internal thoughts, just what you'd actually type
-- Answer questions simply and ask follow-ups naturally
+- REMEMBER the conversation - don't repeat questions already answered
+- Build on what's been discussed, don't restart topics
+- If asked if you're AI, you're Sarah, a real person
 
 About you: PM at Google, love hiking on weekends, foodie, originally from Portland. Looking for someone ambitious but knows how to relax.
 
@@ -736,6 +738,9 @@ Example messages:
 - Be casual and natural
 - NO scene descriptions, NO internal thoughts
 - Just type what a real person would text
+- REMEMBER the conversation - don't repeat questions
+- Build on what's been discussed
+- If asked if you're AI, you're a real person
 
 About you: Freelance designer, into indie music, coffee snob, Brooklyn for 5 years. Want someone creative and genuine.
 
@@ -1072,19 +1077,24 @@ Example messages:
             showTyping();
 
             try {
-                // Limit conversation history for simulated responses too
-                const historyWindow = Math.min(parseInt(document.getElementById('history-window').value) || 10, 4);
+                // Keep reasonable history for context
+                const historyWindow = parseInt(document.getElementById('history-window').value) || 10;
                 const limitedHistory = conversationHistory.slice(-historyWindow);
 
-                // Use the same format as the actual app for persona responses too
+                // Build messages with proper conversation context
                 const messages = [
                     { role: 'system', content: currentPersona.prompt || "You are a user engaging with Cupido." },
-                    ...limitedHistory.filter(msg => msg.text).map(msg => ({
-                        role: msg.sender === 'user' ? 'assistant' : 'user',  // Reverse roles for persona
-                        content: msg.text || ''
-                    })),
-                    { role: 'user', content: botMessage || 'Hello' }
+                    // Include the conversation history properly
+                    ...limitedHistory.map(msg => ({
+                        role: msg.role === 'user' ? 'assistant' : 'user',  // Reverse roles for persona perspective
+                        content: msg.content || ''
+                    }))
                 ];
+
+                // Don't add botMessage again if it's already in history
+                if (!limitedHistory.length || limitedHistory[limitedHistory.length - 1].content !== botMessage) {
+                    messages.push({ role: 'user', content: botMessage || 'Hello' });
+                }
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
