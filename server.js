@@ -68,8 +68,8 @@ app.post('/api/chat', async (req, res) => {
       'sonnet': 'claude-sonnet-4-5-20250929'   // Claude 4.5 Sonnet
     };
 
-    // Keep responses short for realistic dating app conversations
-    const maxTokens = modelType === 'sonnet' ? 100 : 80;
+    // Token limit for realistic but complete messages
+    const maxTokens = modelType === 'sonnet' ? 150 : 120;
 
     // Process messages - handle both text and images
     const processedMessages = conversationMessages.map(msg => {
