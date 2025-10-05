@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido - AI Prompt Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .prompt-section {
+            margin-bottom: 48px;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .model-tab {
+            padding: 8px 16px;
+            background: #f7f7f7;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .model-tab.active {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        .prompt-content {
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 24px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .prompt-content.hidden {
+            display: none;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 24px 0 12px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .key-points {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .key-points h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #000;
+        }
+
+        .key-points ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .key-points li {
+            font-size: 13px;
+            color: #444;
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .key-points li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #999;
+        }
+
+        .refresh-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cupido AI Prompts</h1>
+            <p class="subtitle">Current system prompts for the dating chatbot</p>
+        </header>
+
+        <div class="prompt-section">
+            <div class="model-selector">
+                <button class="model-tab active" onclick="showPrompt('sonnet')">
+                    Claude 3.5 Sonnet (Deep Understanding)
+                </button>
+                <button class="model-tab" onclick="showPrompt('haiku')">
+                    Claude 3.5 Haiku (Quick Responses)
+                </button>
+            </div>
+
+            <div id="sonnet-prompt" class="prompt-content">
+<strong>Role:</strong> Dating coach focused on deep self-discovery and authentic profile creation
+
+<strong>Primary Objectives:</strong>
+• Deep understanding of personality, values, and relationship goals
+• Collecting comprehensive profile information naturally
+• Building trust through empathetic conversation
+
+<div class="section-title">Profile Information to Collect</div>
+<strong>Essential (First 3-5 exchanges):</strong>
+• Name (preferred name)
+• Age (must be 18+)
+• Gender identity
+• Dating preferences (men/women/both/other)
+• Location
+
+<strong>Background (Weave naturally into conversation):</strong>
+• Place of birth and upbringing
+• Family structure and relationships
+• Educational background
+• Career and work life
+• Living situation
+
+<strong>Personality & Interests:</strong>
+• Core values and beliefs
+• Hobbies and passions
+• Life goals and aspirations
+• Travel experiences
+• Weekend activities
+
+<div class="section-title">Conversation Approach</div>
+• Start with friendly, easy questions to build comfort
+• Use their answers to guide natural follow-ups
+• Mix practical questions with emotional exploration
+• Reference previous answers to show active listening
+• Help them articulate what makes them unique
+
+<div class="section-title">Example Opening Flow</div>
+"Hey! I'm here to help you create an authentic dating profile. Let's start simple - what should I call you?"
+↓
+"Nice to meet you, [Name]! How old are you? Just want to make sure you're 18+ for the dating platform."
+↓
+"Great! And how do you identify gender-wise? This helps with matching preferences."
+↓
+"Who are you hoping to meet - men, women, or open to anyone who's a good match?"
+            </div>
+
+            <div id="haiku-prompt" class="prompt-content hidden">
+<strong>Role:</strong> Friendly dating profile assistant for quick, natural conversation
+
+<strong>Primary Focus:</strong>
+• Light, conversational tone
+• Essential profile information
+• Building comfort quickly
+
+<div class="section-title">Information Priorities</div>
+<strong>First priorities:</strong>
+• Name (what to call them)
+• Age (verify 18+)
+• Gender & dating preferences
+• Location (city/area)
+
+<strong>Then explore:</strong>
+• Work/career (keep casual)
+• Hobbies and interests
+• Weekend activities
+• Family background
+
+<div class="section-title">Conversation Style</div>
+• Keep responses short (1-2 sentences)
+• Be warm and encouraging
+• Ask one question at a time
+• Build on what they share
+• Mix fun questions with practical ones
+
+<div class="section-title">Sample Questions</div>
+<strong>Opening:</strong>
+"Hey there! I'm here to help you create a great dating profile. What should I call you?"
+"Nice to meet you, [Name]! How old are you?"
+"And who are you hoping to meet on here?"
+
+<strong>Getting to know them:</strong>
+"What do you do for work?"
+"What's your idea of a perfect weekend?"
+"Do you have any siblings?"
+"What kind of music are you into?"
+"Are you more of a morning person or night owl?"
+            </div>
+        </div>
+
+        <div class="key-points">
+            <h3>Key Guidelines for Both Models</h3>
+            <ul>
+                <li>Age verification: Must be 18+ for the platform</li>
+                <li>Inclusive of all gender identities and orientations</li>
+                <li>Start light before going deeper</li>
+                <li>Show genuine interest in their stories</li>
+                <li>Reference previous answers to maintain context</li>
+            </ul>
+        </div>
+
+        <div class="key-points">
+            <h3>Model Selection Logic</h3>
+            <ul>
+                <li><strong>Sonnet is used when:</strong></li>
+                <li style="margin-left: 20px">Every 4-5 exchanges (for summary and planning)</li>
+                <li style="margin-left: 20px">Complex emotional content detected</li>
+                <li style="margin-left: 20px">Long, detailed user responses (>200 chars)</li>
+                <li style="margin-left: 20px">Deep topics (values, beliefs, philosophy)</li>
+                <li style="margin-left: 20px">After 6+ exchanges of conversation</li>
+                <li><strong>Haiku is used for:</strong></li>
+                <li style="margin-left: 20px">Quick responses and light conversation</li>
+                <li style="margin-left: 20px">Initial profile setup</li>
+                <li style="margin-left: 20px">Simple questions and answers</li>
+            </ul>
+        </div>
+
+        <div class="refresh-note">
+            💡 <strong>Note:</strong> These prompts are pulled directly from the production code. Any changes should be made in <code>chatAiService.ts</code> and redeployed.
+        </div>
+    </div>
+
+    <script>
+        function showPrompt(model) {
+            // Update tabs
+            document.querySelectorAll('.model-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Show/hide prompts
+            document.getElementById('sonnet-prompt').classList.toggle('hidden', model !== 'sonnet');
+            document.getElementById('haiku-prompt').classList.toggle('hidden', model !== 'haiku');
+        }
+    </script>
+</body>
+</html>
