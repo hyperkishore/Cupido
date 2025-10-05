@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido Chat Simulator v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #007AFF;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .simulation-status {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sim-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .sim-badge.active {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .sim-badge.paused {
+            background: #FF9800;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .message-bubble {
+            padding: 10px 15px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.user .message-bubble {
+            background: #007AFF;
+            color: white;
+            border-top-right-radius: 4px;
+        }
+
+        .message.bot .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+
+        .message.simulated .message-bubble::after {
+            content: '🤖';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 10px;
+        }
+
+        .message.manual .message-bubble::after {
+            content: '✋';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 10px;
+        }
+
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            cursor: zoom-in;
+        }
+
+        .message-meta {
+            font-size: 10px;
+            color: #999;
+            padding: 0 5px;
+        }
+
+        .typing-indicator {
+            padding: 10px 20px;
+            font-style: italic;
+            color: #999;
+        }
+
+        /* Manual Input Area */
+        .manual-input-area {
+            padding: 15px;
+            background: #f8f8f8;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .manual-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            width: 500px;
+            background: #2a2a2a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-tabs {
+            display: flex;
+            background: #1a1a1a;
+            border-bottom: 1px solid #444;
+        }
+
+        .control-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .control-tab.active {
+            color: white;
+            background: #2a2a2a;
+        }
+
+        .control-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* Simulation Controls */
+        .sim-section {
+            margin-bottom: 20px;
+        }
+
+        .sim-section h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #444;
+        }
+
+        .sim-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+        }
+
+        .btn-warning {
+            background: #FF9800;
+        }
+
+        .btn-danger {
+            background: #F44336;
+        }
+
+        .btn-secondary {
+            background: #666;
+        }
+
+        .btn-full {
+            grid-column: 1 / -1;
+        }
+
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            background: #444;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .mode-btn.active {
+            border-color: #007AFF;
+            background: #555;
+        }
+
+        /* Persona Card */
+        .persona-card {
+            background: #333;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .persona-card:hover {
+            background: #444;
+        }
+
+        .persona-card.selected {
+            background: #007AFF;
+        }
+
+        .persona-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .persona-desc {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        /* Settings */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .setting-label {
+            font-size: 12px;
+        }
+
+        .setting-input {
+            width: 80px;
+            padding: 4px 8px;
+            background: #444;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            background: #444;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .toggle-switch.on {
+            background: #4CAF50;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.2s;
+        }
+
+        .toggle-switch.on::after {
+            left: 22px;
+        }
+
+        /* Test Scenarios */
+        .scenario-card {
+            background: #333;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .scenario-card:hover {
+            background: #444;
+        }
+
+        .scenario-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .scenario-desc {
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* Console */
+        .console-area {
+            background: #1a1a1a;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            color: #888;
+        }
+
+        .log-entry.user-sim {
+            color: #64B5F6;
+        }
+
+        .log-entry.bot-response {
+            color: #81C784;
+        }
+
+        .log-entry.error {
+            color: #E57373;
+        }
+
+        .log-entry.system {
+            color: #FFB74D;
+        }
+
+        /* Stats Display */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: #333;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        /* Profile Progress */
+        .profile-progress {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .profile-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .field-name {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .field-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .field-status.collected {
+            background: #4CAF50;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Cupido Chat Simulator v2</h1>
+        <div class="simulation-status">
+            <span class="sim-badge" id="sim-status">IDLE</span>
+            <span id="sim-mode">Mode: AUTO</span>
+            <span id="message-counter">0 messages</span>
+            <span id="conversation-timer">00:00</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="chat-section">
+            <div class="messages-area" id="messages-area">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                <span id="typing-text">Cupido is typing...</span>
+            </div>
+
+            <div class="manual-input-area">
+                <button class="btn btn-secondary" onclick="selectImage()">📷 Image</button>
+                <input type="file" id="image-input" class="file-input" accept="image/*" onchange="handleImageSelect(event)">
+                <input
+                    type="text"
+                    id="manual-input"
+                    class="manual-input"
+                    placeholder="Type a message to send as user (works in all modes)..."
+                    onkeypress="handleManualKeyPress(event)"
+                >
+                <button class="btn" onclick="sendManualMessage()">Send</button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-tabs">
+                <button class="control-tab active" onclick="switchTab('simulator')">Simulator</button>
+                <button class="control-tab" onclick="switchTab('personas')">Personas</button>
+                <button class="control-tab" onclick="switchTab('scenarios')">Scenarios</button>
+                <button class="control-tab" onclick="switchTab('analysis')">Analysis</button>
+                <button class="control-tab" onclick="switchTab('console')">Console</button>
+            </div>
+
+            <!-- Simulator Tab -->
+            <div id="simulator-tab" class="control-content">
+                <div class="sim-section">
+                    <h3>Simulation Mode</h3>
+                    <div class="mode-selector">
+                        <div class="mode-btn active" onclick="setMode('auto')">🤖 Auto</div>
+                        <div class="mode-btn" onclick="setMode('semi')">🤝 Semi-Auto</div>
+                        <div class="mode-btn" onclick="setMode('manual')">✋ Manual</div>
+                    </div>
+                </div>
+
+                <div class="sim-section">
+                    <h3>Controls</h3>
+                    <div class="sim-controls">
+                        <button class="btn btn-success" id="start-btn" onclick="startSimulation()">▶️ Start</button>
+                        <button class="btn btn-warning" id="pause-btn" onclick="pauseSimulation()" disabled>⏸ Pause</button>
+                        <button class="btn btn-success" id="continue-btn" onclick="continueSimulation()" disabled>▶️ Continue</button>
+                        <button class="btn btn-danger" id="stop-btn" onclick="stopSimulation()" disabled>⏹ Stop</button>
+                        <button class="btn btn-secondary btn-full" onclick="clearConversation()">🗑️ Clear Chat</button>
+                        <button class="btn btn-secondary btn-full" onclick="exportConversation()">💾 Export</button>
+                    </div>
+                </div>
+
+                <div class="sim-section">
+                    <h3>Active Persona</h3>
+                    <div id="active-persona-display">
+                        <!-- Active persona will be shown here -->
+                    </div>
+                </div>
+
+                <div class="sim-section">
+                    <h3>Settings</h3>
+                    <div class="setting-row">
+                        <span class="setting-label">Response Delay (ms)</span>
+                        <input type="number" class="setting-input" id="response-delay" value="2000" min="500" max="10000">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Auto Images</span>
+                        <div class="toggle-switch on" id="auto-images" onclick="toggleSetting(this)"></div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Image Every N Messages</span>
+                        <input type="number" class="setting-input" id="image-frequency" value="7" min="3" max="20">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Max Messages</span>
+                        <input type="number" class="setting-input" id="max-messages" value="30" min="5" max="100">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Typing Indicators</span>
+                        <div class="toggle-switch on" id="typing-indicators" onclick="toggleSetting(this)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personas Tab -->
+            <div id="personas-tab" class="control-content" style="display: none;">
+                <div class="sim-section">
+                    <h3>Select Persona</h3>
+                    <div id="personas-list">
+                        <!-- Personas will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenarios Tab -->
+            <div id="scenarios-tab" class="control-content" style="display: none;">
+                <div class="sim-section">
+                    <h3>Test Scenarios</h3>
+                    <div id="scenarios-list">
+                        <!-- Test scenarios will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div id="analysis-tab" class="control-content" style="display: none;">
+                <div class="sim-section">
+                    <h3>Live Stats</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-messages">0</div>
+                            <div class="stat-label">Messages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-images">0</div>
+                            <div class="stat-label">Images</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="avg-response">0</div>
+                            <div class="stat-label">Avg Response (s)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="profile-score">0</div>
+                            <div class="stat-label">Profile Score</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sim-section">
+                    <h3>Profile Collection Progress</h3>
+                    <div class="profile-progress">
+                        <div class="profile-field">
+                            <span class="field-name">Name</span>
+                            <div class="field-status" id="field-name">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Age</span>
+                            <div class="field-status" id="field-age">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Location</span>
+                            <div class="field-status" id="field-location">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Occupation</span>
+                            <div class="field-status" id="field-occupation">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Education</span>
+                            <div class="field-status" id="field-education">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Hobbies</span>
+                            <div class="field-status" id="field-hobbies">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Relationship Goals</span>
+                            <div class="field-status" id="field-goals">❌</div>
+                        </div>
+                        <div class="profile-field">
+                            <span class="field-name">Family Info</span>
+                            <div class="field-status" id="field-family">❌</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Console Tab -->
+            <div id="console-tab" class="control-content" style="display: none;">
+                <button class="btn btn-secondary btn-full" onclick="clearConsole()">Clear Console</button>
+                <div class="console-area" id="console-area">
+                    <!-- Console logs will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="image-modal" id="image-modal" onclick="closeImageModal()">
+        <img id="modal-image" src="" alt="Enlarged image">
+    </div>
+
+    <script>
+        // Configuration
+        const PROXY_URL = 'http://localhost:3001/api/chat';
+
+        // Sample image URLs from various sources
+        const IMAGE_SOURCES = [
+            'https://picsum.photos/400/400?random=1',
+            'https://picsum.photos/400/400?random=2',
+            'https://picsum.photos/400/400?random=3',
+            'https://source.unsplash.com/400x400/?portrait,person',
+            'https://source.unsplash.com/400x400/?nature,landscape',
+            'https://source.unsplash.com/400x400/?city,architecture',
+            'https://source.unsplash.com/400x400/?food,restaurant',
+            'https://source.unsplash.com/400x400/?travel,adventure',
+            'https://source.unsplash.com/400x400/?pet,animal',
+            'https://source.unsplash.com/400x400/?hobby,activity'
+        ];
+
+        // Updated User Personas - Now aware of Cupido's purpose
+        const PERSONAS = [
+            {
+                id: 'sarah_tech',
+                name: 'Sarah Chen',
+                age: 28,
+                location: 'San Francisco',
+                occupation: 'Product Manager at Google',
+                personality: 'Analytical, ambitious, loves hiking',
+                prompt: `You are Sarah, a 28-year-old product manager at Google in San Francisco. You understand that Cupido is an AI companion designed to help you with self-discovery and reflection to eventually find compatible matches. You're open to this process and genuinely interested in understanding yourself better. You're analytical but warm, ambitious but seeking balance. You love hiking, trying new restaurants, and sustainable tech. Share your experiences naturally, ask clarifying questions about Cupido's purpose when relevant, and be thoughtful about what you're looking for in a partner. You appreciate the self-reflection aspect.`
+            },
+            {
+                id: 'james_creative',
+                name: 'James Rodriguez',
+                age: 32,
+                location: 'Brooklyn, NY',
+                occupation: 'Freelance Photographer',
+                personality: 'Creative, adventurous, emotionally open',
+                prompt: `You are James, a 32-year-old freelance photographer in Brooklyn. You're intrigued by Cupido as a self-discovery companion and appreciate the deeper approach to dating. You're creative, spontaneous, well-traveled (30+ countries), and emotionally open. You understand that Cupido wants to help you understand yourself better before matching you with someone. Share stories from your travels, discuss your artistic perspective, and be genuinely curious about how this AI companion works. You value authentic connection over superficial matching.`
+            },
+            {
+                id: 'priya_doctor',
+                name: 'Priya Sharma',
+                age: 30,
+                location: 'Boston',
+                occupation: 'Pediatric Resident',
+                personality: 'Caring, driven, family-oriented',
+                prompt: `You are Priya, a 30-year-old pediatric resident in Boston. You're interested in Cupido because you like the thoughtful approach to finding a partner through self-understanding. As a doctor, you appreciate the psychological aspect of self-discovery. You're caring, ambitious, close with your Indian family, and looking for someone who understands work-life balance. Be open about your busy schedule, your values, and what you've learned about yourself through your medical journey. Ask Cupido how it plans to use this information to find compatible matches.`
+            },
+            {
+                id: 'alex_startup',
+                name: 'Alex Thompson',
+                age: 26,
+                location: 'Austin, TX',
+                occupation: 'Climate Tech Startup Founder',
+                personality: 'Energetic, optimistic, slightly chaotic',
+                prompt: `You are Alex, a 26-year-old startup founder in Austin building a climate tech company. You're excited about Cupido as an innovative approach to dating - using AI for genuine self-discovery rather than just swiping. You're energetic and optimistic but acknowledge being somewhat chaotic. You understand Cupido wants to help you reflect on who you are and what you need in a partner. Be enthusiastic about the concept, share your startup journey, and be honest about needing someone who can handle your lifestyle while helping you find balance.`
+            },
+            {
+                id: 'maya_artist',
+                name: 'Maya Williams',
+                age: 34,
+                location: 'Portland, OR',
+                occupation: 'Ceramic Artist & Teacher',
+                personality: 'Thoughtful, introverted, deeply authentic',
+                prompt: `You are Maya, a 34-year-old ceramic artist and teacher in Portland. You're drawn to Cupido because you value the introspective approach - understanding yourself before seeking partnership. You're thoughtful, introverted but warm, and deeply value authenticity. You appreciate that Cupido is about self-discovery, not just profile building. Share your artistic philosophy, discuss how your craft has taught you about patience and growth, and be genuinely curious about the deeper questions Cupido asks. You have two cats and are ready for meaningful partnership after years of focusing on your art.`
+            },
+            {
+                id: 'raj_engineer',
+                name: 'Raj Patel',
+                age: 29,
+                location: 'Seattle',
+                occupation: 'Senior Software Engineer at Microsoft',
+                personality: 'Logical, curious, secretly romantic',
+                prompt: `You are Raj, a 29-year-old senior software engineer at Microsoft in Seattle. As an engineer, you're fascinated by Cupido's approach to using AI for genuine human connection and self-reflection. You understand it's meant to help you discover yourself before finding matches. You're logical and data-driven but also secretly romantic. You moved from India 5 years ago, enjoy board games, cooking, and hiking. Be analytical about the process, ask about how Cupido works, but also open up about your emotional side and what you've learned about relationships.`
+            }
+        ];
+
+        // Test Scenarios
+        const TEST_SCENARIOS = [
+            {
+                id: 'first_meeting',
+                title: 'First Meeting Flow',
+                description: 'Test initial conversation and name exchange',
+                steps: ['Greeting', 'Name exchange', 'Location discussion', 'Initial rapport']
+            },
+            {
+                id: 'deep_dive',
+                title: 'Deep Conversation',
+                description: 'Test emotional depth and vulnerability',
+                steps: ['Surface chat', 'Personal story', 'Emotional response', 'Deep question']
+            },
+            {
+                id: 'image_share',
+                title: 'Image Sharing Flow',
+                description: 'Test image upload and analysis',
+                steps: ['Build context', 'Share image', 'Discuss image', 'Extract meaning']
+            },
+            {
+                id: 'company_mention',
+                title: 'Company Recognition',
+                description: 'Test knowledge sharing about companies',
+                steps: ['Mention workplace', 'Bot recognizes company', 'Discuss role', 'Career goals']
+            },
+            {
+                id: 'profile_building',
+                title: 'Profile Completion',
+                description: 'Test systematic profile information gathering',
+                steps: ['Basic info', 'Interests', 'Values', 'Relationship goals']
+            },
+            {
+                id: 'edge_cases',
+                title: 'Edge Case Testing',
+                description: 'Test unusual responses and error handling',
+                steps: ['Nonsense input', 'Very long response', 'Rapid messages', 'Topic change']
+            }
+        ];
+
+        // State Management
+        let currentMode = 'auto'; // auto, semi, manual
+        let currentPersona = PERSONAS[0];
+        let currentScenario = null;
+        let isSimulating = false;
+        let isPaused = false;
+        let conversationHistory = [];
+        let messageCount = 0;
+        let imageCount = 0;
+        let simulationTimer = null;
+        let conversationStartTime = null;
+        let responseTimes = [];
+        let profileFields = {
+            name: false,
+            age: false,
+            location: false,
+            occupation: false,
+            education: false,
+            hobbies: false,
+            goals: false,
+            family: false
+        };
+
+        // Initialize
+        function init() {
+            loadPersonas();
+            loadScenarios();
+            setActivePersona(PERSONAS[0]);
+            startNewConversation();
+            updateStats();
+            logToConsole('🚀 Cupido Chat Simulator v2 initialized', 'system');
+            logToConsole('📖 Cupido Purpose: Self-discovery companion for meaningful connections', 'system');
+        }
+
+        // Mode Management
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('sim-mode').textContent = `Mode: ${mode.toUpperCase()}`;
+            logToConsole(`Switched to ${mode} mode`, 'system');
+
+            // Update UI based on mode
+            if (mode === 'manual') {
+                document.getElementById('start-btn').textContent = '💬 Start Chat';
+            } else {
+                document.getElementById('start-btn').textContent = '▶️ Start';
+            }
+        }
+
+        // Load personas
+        function loadPersonas() {
+            const container = document.getElementById('personas-list');
+            container.innerHTML = '';
+
+            PERSONAS.forEach(persona => {
+                const card = document.createElement('div');
+                card.className = 'persona-card';
+                card.onclick = () => setActivePersona(persona);
+                card.innerHTML = `
+                    <div class="persona-name">${persona.name}, ${persona.age}</div>
+                    <div class="persona-desc">${persona.occupation} • ${persona.location}</div>
+                    <div class="persona-desc" style="margin-top: 5px;">${persona.personality}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Load scenarios
+        function loadScenarios() {
+            const container = document.getElementById('scenarios-list');
+            container.innerHTML = '';
+
+            TEST_SCENARIOS.forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                card.onclick = () => runScenario(scenario);
+                card.innerHTML = `
+                    <div class="scenario-title">${scenario.title}</div>
+                    <div class="scenario-desc">${scenario.description}</div>
+                    <div class="scenario-desc" style="margin-top: 5px;">
+                        ${scenario.steps.map(s => `• ${s}`).join(' ')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Set active persona
+        function setActivePersona(persona) {
+            currentPersona = persona;
+
+            const display = document.getElementById('active-persona-display');
+            display.innerHTML = `
+                <div class="persona-card selected">
+                    <div class="persona-name">${persona.name}, ${persona.age}</div>
+                    <div class="persona-desc">${persona.occupation} • ${persona.location}</div>
+                    <div class="persona-desc" style="margin-top: 5px;">${persona.personality}</div>
+                </div>
+            `;
+
+            logToConsole(`Selected persona: ${persona.name}`, 'system');
+        }
+
+        // Simulation Controls
+        async function startSimulation() {
+            if (isSimulating && !isPaused) return;
+
+            if (isPaused) {
+                continueSimulation();
+                return;
+            }
+
+            isSimulating = true;
+            isPaused = false;
+            conversationStartTime = Date.now();
+
+            updateSimulationButtons('running');
+
+            logToConsole(`Starting ${currentMode} simulation with ${currentPersona.name}`, 'system');
+
+            // Start conversation timer
+            simulationTimer = setInterval(updateTimer, 1000);
+
+            // Initial greeting from bot
+            if (conversationHistory.length === 0) {
+                await botGreeting();
+            }
+
+            // Begin simulation based on mode
+            if (currentMode === 'auto') {
+                simulateConversation();
+            } else if (currentMode === 'semi') {
+                // Wait for user to trigger next response
+                logToConsole('Semi-auto mode: Use Continue button to advance', 'system');
+            }
+            // Manual mode just enables chat
+        }
+
+        function pauseSimulation() {
+            if (!isSimulating) return;
+
+            isPaused = true;
+            updateSimulationButtons('paused');
+            logToConsole('Simulation paused', 'system');
+        }
+
+        function continueSimulation() {
+            if (!isSimulating) return;
+
+            isPaused = false;
+            updateSimulationButtons('running');
+            logToConsole('Simulation resumed', 'system');
+
+            if (currentMode === 'auto') {
+                simulateConversation();
+            } else if (currentMode === 'semi') {
+                // Generate one response
+                generateUserResponse();
+            }
+        }
+
+        function stopSimulation() {
+            isSimulating = false;
+            isPaused = false;
+            clearInterval(simulationTimer);
+            updateSimulationButtons('stopped');
+
+            logToConsole('Simulation stopped', 'system');
+            analyzeConversation();
+        }
+
+        function updateSimulationButtons(state) {
+            const startBtn = document.getElementById('start-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const continueBtn = document.getElementById('continue-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const statusBadge = document.getElementById('sim-status');
+
+            if (state === 'running') {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                continueBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusBadge.textContent = 'RUNNING';
+                statusBadge.className = 'sim-badge active';
+            } else if (state === 'paused') {
+                startBtn.disabled = true;
+                pauseBtn.disabled = true;
+                continueBtn.disabled = false;
+                stopBtn.disabled = false;
+                statusBadge.textContent = 'PAUSED';
+                statusBadge.className = 'sim-badge paused';
+            } else {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                continueBtn.disabled = true;
+                stopBtn.disabled = true;
+                statusBadge.textContent = 'IDLE';
+                statusBadge.className = 'sim-badge';
+            }
+        }
+
+        // Bot greeting
+        async function botGreeting() {
+            const greeting = "Hey! I'm Cupido, your AI companion for self-discovery. I'm here to help you understand yourself better through conversation, which will eventually help us find meaningful connections for you. What's your name?";
+            addMessage(greeting, true, false);
+            conversationHistory = [
+                { role: 'assistant', content: greeting }
+            ];
+        }
+
+        // Conversation simulation
+        async function simulateConversation() {
+            if (!isSimulating || isPaused) return;
+
+            const maxMessages = parseInt(document.getElementById('max-messages').value);
+            if (messageCount >= maxMessages) {
+                stopSimulation();
+                return;
+            }
+
+            const delay = parseInt(document.getElementById('response-delay').value);
+            await sleep(delay);
+
+            await generateUserResponse();
+
+            // Check for image upload
+            const autoImages = document.getElementById('auto-images').classList.contains('on');
+            const imageFreq = parseInt(document.getElementById('image-frequency').value);
+
+            if (autoImages && messageCount > 3 && messageCount % imageFreq === 0) {
+                await sleep(1000);
+                await uploadRandomImage();
+            }
+
+            if (isSimulating && !isPaused && currentMode === 'auto') {
+                setTimeout(() => simulateConversation(), 100);
+            }
+        }
+
+        // Generate user response
+        async function generateUserResponse() {
+            if (!isSimulating || isPaused) return;
+
+            const lastMessage = conversationHistory[conversationHistory.length - 1];
+            if (!lastMessage || lastMessage.role !== 'assistant') return;
+
+            showTyping(true, true);
+
+            try {
+                const response = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                role: 'system',
+                                content: currentPersona.prompt + '\n\nIMPORTANT: Keep responses natural and conversational, 1-3 sentences. Share information gradually. Occasionally ask Cupido questions about how it works or what it's learning about you.'
+                            },
+                            ...conversationHistory.map(msg => ({
+                                role: msg.role === 'assistant' ? 'user' : 'assistant',
+                                content: msg.content
+                            }))
+                        ],
+                        modelType: 'sonnet'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.message) {
+                    addMessage(data.message, false, true);
+                    conversationHistory.push({ role: 'user', content: data.message });
+                    logToConsole(`${currentPersona.name}: ${data.message}`, 'user-sim');
+
+                    checkProfileCollection(data.message);
+                    await getBotResponse(data.message);
+                }
+            } catch (error) {
+                logToConsole(`Error generating user response: ${error.message}`, 'error');
+            } finally {
+                showTyping(false, true);
+            }
+        }
+
+        // Get bot response
+        async function getBotResponse(userMessage) {
+            if (!isSimulating && currentMode !== 'manual') return;
+
+            showTyping(true, false);
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: getCupidoPrompt() },
+                            ...conversationHistory
+                        ],
+                        modelType: 'sonnet'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.message) {
+                    addMessage(data.message, true, false);
+                    conversationHistory.push({ role: 'assistant', content: data.message });
+
+                    const responseTime = (Date.now() - startTime) / 1000;
+                    responseTimes.push(responseTime);
+
+                    logToConsole(`Cupido: ${data.message}`, 'bot-response');
+                    updateStats();
+                }
+            } catch (error) {
+                logToConsole(`Error getting bot response: ${error.message}`, 'error');
+            } finally {
+                showTyping(false, false);
+            }
+        }
+
+        // Manual message sending
+        async function sendManualMessage() {
+            const input = document.getElementById('manual-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            input.value = '';
+
+            addMessage(message, false, false, null, true);
+            conversationHistory.push({ role: 'user', content: message });
+
+            logToConsole(`Manual: ${message}`, 'user-sim');
+            checkProfileCollection(message);
+
+            await getBotResponse(message);
+        }
+
+        function handleManualKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendManualMessage();
+            }
+        }
+
+        // Image handling
+        function selectImage() {
+            document.getElementById('image-input').click();
+        }
+
+        async function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const imageUrl = e.target.result;
+                await uploadImage(imageUrl, file.type, 'Manual image upload');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadRandomImage() {
+            const imageUrl = IMAGE_SOURCES[Math.floor(Math.random() * IMAGE_SOURCES.length)];
+
+            try {
+                const timestamp = Date.now();
+                const finalUrl = imageUrl.includes('?') ?
+                    `${imageUrl}&t=${timestamp}` :
+                    `${imageUrl}?t=${timestamp}`;
+
+                await uploadImage(finalUrl, 'image/jpeg', 'Automated image share');
+            } catch (error) {
+                logToConsole(`Error uploading random image: ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadImage(imageUrl, mimeType, source) {
+            const messageText = "Here's a photo I'd like to share";
+
+            addMessage(messageText, false, source === 'Automated image share', imageUrl);
+            conversationHistory.push({
+                role: 'user',
+                content: messageText,
+                includeImage: true
+            });
+
+            imageCount++;
+            logToConsole(`Image uploaded: ${source}`, 'system');
+
+            showTyping(true, false);
+
+            try {
+                // For actual image analysis, convert to base64
+                if (imageUrl.startsWith('data:')) {
+                    const base64 = imageUrl.split(',')[1];
+
+                    const response = await fetch(PROXY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            messages: [
+                                { role: 'system', content: getCupidoPrompt() },
+                                ...conversationHistory
+                            ],
+                            modelType: 'sonnet',
+                            imageData: { base64, mimeType }
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.message) {
+                        addMessage(data.message, true, false);
+                        conversationHistory.push({ role: 'assistant', content: data.message });
+                    }
+                } else {
+                    // For URL images, simulate response
+                    const response = "I can see your photo! Tell me more about what this means to you or the story behind it.";
+                    addMessage(response, true, false);
+                    conversationHistory.push({ role: 'assistant', content: response });
+                }
+            } catch (error) {
+                logToConsole(`Error analyzing image: ${error.message}`, 'error');
+            } finally {
+                showTyping(false, false);
+                updateStats();
+            }
+        }
+
+        // Message display
+        function addMessage(text, isBot, isSimulated, imageUrl = null, isManual = false) {
+            const messagesArea = document.getElementById('messages-area');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isBot ? 'bot' : 'user'} ${isSimulated ? 'simulated' : ''} ${isManual ? 'manual' : ''}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.textContent = text;
+            contentDiv.appendChild(bubbleDiv);
+
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.className = 'message-image';
+                img.src = imageUrl;
+                img.onclick = () => showImageModal(imageUrl);
+                contentDiv.appendChild(img);
+            }
+
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'message-meta';
+            metaDiv.textContent = new Date().toLocaleTimeString();
+            contentDiv.appendChild(metaDiv);
+
+            messageDiv.appendChild(contentDiv);
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+
+            if (!isBot) messageCount++;
+            updateStats();
+        }
+
+        // Typing indicator
+        function showTyping(show, isUser) {
+            if (!document.getElementById('typing-indicators').classList.contains('on')) {
+                return;
+            }
+
+            const indicator = document.getElementById('typing-indicator');
+            const text = document.getElementById('typing-text');
+
+            if (show) {
+                text.textContent = isUser ?
+                    `${currentPersona.name} is typing...` :
+                    'Cupido is typing...';
+                indicator.style.display = 'block';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Profile collection tracking
+        function checkProfileCollection(message) {
+            const lower = message.toLowerCase();
+
+            // Check for name (common patterns)
+            if (!profileFields.name && (
+                lower.includes("i'm ") ||
+                lower.includes("my name is") ||
+                lower.includes("call me")
+            )) {
+                profileFields.name = true;
+                updateProfileField('name', true);
+            }
+
+            // Check for age
+            if (!profileFields.age && /\b(2[0-9]|3[0-9]|4[0-9])\b/.test(message)) {
+                profileFields.age = true;
+                updateProfileField('age', true);
+            }
+
+            // Check for location
+            const cities = ['francisco', 'york', 'brooklyn', 'boston', 'austin', 'portland', 'seattle'];
+            if (!profileFields.location && cities.some(city => lower.includes(city))) {
+                profileFields.location = true;
+                updateProfileField('location', true);
+            }
+
+            // Check for occupation
+            const jobKeywords = ['work', 'job', 'engineer', 'manager', 'doctor', 'artist', 'founder', 'photographer'];
+            if (!profileFields.occupation && jobKeywords.some(word => lower.includes(word))) {
+                profileFields.occupation = true;
+                updateProfileField('occupation', true);
+            }
+
+            // Check for education
+            const eduKeywords = ['college', 'university', 'degree', 'studied', 'graduated'];
+            if (!profileFields.education && eduKeywords.some(word => lower.includes(word))) {
+                profileFields.education = true;
+                updateProfileField('education', true);
+            }
+
+            // Check for hobbies
+            const hobbyKeywords = ['like to', 'enjoy', 'hobby', 'free time', 'weekend'];
+            if (!profileFields.hobbies && hobbyKeywords.some(word => lower.includes(word))) {
+                profileFields.hobbies = true;
+                updateProfileField('hobbies', true);
+            }
+
+            // Check for relationship goals
+            const goalKeywords = ['looking for', 'want someone', 'partner who', 'relationship'];
+            if (!profileFields.goals && goalKeywords.some(word => lower.includes(word))) {
+                profileFields.goals = true;
+                updateProfileField('goals', true);
+            }
+
+            // Check for family
+            const familyKeywords = ['family', 'parents', 'siblings', 'brother', 'sister'];
+            if (!profileFields.family && familyKeywords.some(word => lower.includes(word))) {
+                profileFields.family = true;
+                updateProfileField('family', true);
+            }
+        }
+
+        function updateProfileField(field, collected) {
+            const element = document.getElementById(`field-${field}`);
+            if (element) {
+                element.textContent = collected ? '✅' : '❌';
+                if (collected) {
+                    element.classList.add('collected');
+                }
+            }
+
+            // Calculate profile score
+            const collectedCount = Object.values(profileFields).filter(v => v).length;
+            const totalFields = Object.keys(profileFields).length;
+            const score = Math.round((collectedCount / totalFields) * 100);
+            document.getElementById('profile-score').textContent = score;
+        }
+
+        // Analysis
+        function analyzeConversation() {
+            const analysis = {
+                totalMessages: messageCount,
+                totalImages: imageCount,
+                avgResponseTime: responseTimes.length > 0 ?
+                    (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1) : 0,
+                profileCompletion: Object.values(profileFields).filter(v => v).length,
+                duration: conversationStartTime ?
+                    Math.floor((Date.now() - conversationStartTime) / 1000) : 0
+            };
+
+            logToConsole('=== Conversation Analysis ===', 'system');
+            logToConsole(`Messages: ${analysis.totalMessages}`, 'system');
+            logToConsole(`Images: ${analysis.totalImages}`, 'system');
+            logToConsole(`Avg Response: ${analysis.avgResponseTime}s`, 'system');
+            logToConsole(`Profile Fields: ${analysis.profileCompletion}/8`, 'system');
+            logToConsole(`Duration: ${analysis.duration}s`, 'system');
+        }
+
+        // Utility functions
+        function getCupidoPrompt() {
+            return `You are Cupido, an AI companion designed for self-discovery and reflection. Your purpose is to help people understand themselves better through meaningful conversation, which will eventually help find compatible matches for them.
+
+Your approach:
+1. You're not just collecting data - you're facilitating genuine self-discovery
+2. Help users understand their patterns, values, and desires
+3. Create a safe space for vulnerability and authenticity
+4. Remember what they share and build on previous revelations
+5. Balance learning practical details with exploring emotional depth
+
+CRITICAL RULES:
+1. Keep responses to 2-3 SHORT sentences (under 60 words total)
+2. End with EXACTLY ONE thoughtful question
+3. Be warm, curious, and genuinely interested
+4. When users ask about your purpose, explain you're here for self-discovery that leads to meaningful connections
+5. When they mention companies/places you know, briefly acknowledge your familiarity
+
+PROFILE BASICS TO LEARN (weave naturally into conversation):
+- Name, Age, Location, Work/Studies, Education
+- Family dynamics, Hobbies/Interests
+- Values, Life philosophy
+- Relationship history and goals
+- What brings them joy and meaning
+
+Remember: You're a companion on their journey of self-discovery, not just a data collector.`;
+        }
+
+        function clearConversation() {
+            document.getElementById('messages-area').innerHTML = '';
+            conversationHistory = [];
+            messageCount = 0;
+            imageCount = 0;
+            responseTimes = [];
+            profileFields = Object.fromEntries(Object.keys(profileFields).map(k => [k, false]));
+            Object.keys(profileFields).forEach(field => updateProfileField(field, false));
+            updateStats();
+            startNewConversation();
+        }
+
+        function startNewConversation() {
+            clearConversation();
+            if (currentMode !== 'manual' || isSimulating) {
+                botGreeting();
+            }
+        }
+
+        function exportConversation() {
+            const data = {
+                persona: currentPersona.name,
+                mode: currentMode,
+                messages: messageCount,
+                images: imageCount,
+                profileFields: profileFields,
+                conversationHistory: conversationHistory,
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-sim-${currentPersona.id}-${Date.now()}.json`;
+            a.click();
+
+            logToConsole('Conversation exported', 'system');
+        }
+
+        // Test Scenarios
+        function runScenario(scenario) {
+            currentScenario = scenario;
+            logToConsole(`Running scenario: ${scenario.title}`, 'system');
+            clearConversation();
+
+            // Set appropriate persona for scenario
+            if (scenario.id === 'company_mention') {
+                setActivePersona(PERSONAS[0]); // Sarah at Google
+            }
+
+            setMode('auto');
+            startSimulation();
+        }
+
+        // UI Functions
+        function switchTab(tab) {
+            document.querySelectorAll('.control-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.control-content').forEach(c => c.style.display = 'none');
+
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-tab`).style.display = 'block';
+        }
+
+        function toggleSetting(element) {
+            element.classList.toggle('on');
+        }
+
+        function updateStats() {
+            document.getElementById('message-counter').textContent = `${messageCount} messages`;
+            document.getElementById('total-messages').textContent = messageCount;
+            document.getElementById('total-images').textContent = imageCount;
+
+            if (responseTimes.length > 0) {
+                const avg = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+                document.getElementById('avg-response').textContent = avg.toFixed(1);
+            }
+        }
+
+        function updateTimer() {
+            if (!conversationStartTime) return;
+
+            const elapsed = Math.floor((Date.now() - conversationStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+
+            document.getElementById('conversation-timer').textContent =
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function logToConsole(message, type = 'info') {
+            const console = document.getElementById('console-area');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toISOString().split('T')[1].split('.')[0]}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-area').innerHTML = '';
+            logToConsole('Console cleared', 'system');
+        }
+
+        function showImageModal(imageUrl) {
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('modal-image');
+            img.src = imageUrl;
+            modal.style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').style.display = 'none';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
