@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Analysis</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+        }
+
+        .analysis-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .conversation {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #007AFF;
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .user-message {
+            margin-left: 30px;
+            background: #e3f2fd;
+        }
+
+        .bot-message {
+            background: #f5f5f5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .recommendation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .recommendation h3 {
+            color: #856404;
+            margin-top: 0;
+        }
+
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .pattern-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pattern-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pattern-list li:last-child {
+            border-bottom: none;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cupido Chat Conversation Analysis</h1>
+
+    <div class="analysis-section">
+        <h2>Analysis Controls</h2>
+        <button onclick="analyzeAllConversations()">Analyze All Conversations</button>
+        <button onclick="checkLocalStorage()">Check Local Storage</button>
+        <button onclick="simulateConversations()">Load Sample Data</button>
+    </div>
+
+    <div id="stats" class="analysis-section stats"></div>
+    <div id="patterns" class="analysis-section"></div>
+    <div id="conversations" class="analysis-section"></div>
+    <div id="recommendations" class="analysis-section"></div>
+
+    <script>
+        // Function to check localStorage for conversation data
+        function checkLocalStorage() {
+            const stats = document.getElementById('stats');
+            const conversations = document.getElementById('conversations');
+
+            let foundConversations = [];
+            let totalMessages = 0;
+            let users = new Set();
+
+            // Look for all keys that might contain chat data
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('chat') || key.includes('cupido') || key.includes('conversation'))) {
+                    try {
+                        const data = localStorage.getItem(key);
+                        const parsed = JSON.parse(data);
+
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            // Extract user ID from key if present
+                            const userMatch = key.match(/user_(\w+)|(\w+)_chat/);
+                            const userId = userMatch ? (userMatch[1] || userMatch[2]) : 'Unknown';
+                            users.add(userId);
+
+                            foundConversations.push({
+                                key: key,
+                                userId: userId,
+                                messages: parsed,
+                                messageCount: parsed.length
+                            });
+                            totalMessages += parsed.length;
+                        }
+                    } catch (e) {
+                        console.log('Could not parse:', key);
+                    }
+                }
+            }
+
+            // Display statistics
+            stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${foundConversations.length}</div>
+                    <div class="stat-label">Total Conversations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${users.size}</div>
+                    <div class="stat-label">Unique Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalMessages}</div>
+                    <div class="stat-label">Total Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalMessages > 0 ? Math.round(totalMessages / foundConversations.length) : 0}</div>
+                    <div class="stat-label">Avg Messages/Conversation</div>
+                </div>
+            `;
+
+            // Display conversations
+            let conversationsHTML = '<h2>Found Conversations</h2>';
+
+            if (foundConversations.length === 0) {
+                conversationsHTML += '<p>No conversations found in localStorage. Try using the app first or load sample data.</p>';
+            } else {
+                foundConversations.forEach(conv => {
+                    conversationsHTML += `
+                        <div class="conversation">
+                            <h3>User: ${conv.userId}</h3>
+                            <p>Messages: ${conv.messageCount}</p>
+                            <p>Storage Key: <code>${conv.key}</code></p>
+                            <details>
+                                <summary>View Messages</summary>
+                                ${conv.messages.slice(0, 10).map(msg => `
+                                    <div class="message ${msg.role === 'user' ? 'user-message' : 'bot-message'}">
+                                        <strong>${msg.role}:</strong> ${msg.content || msg.text || JSON.stringify(msg).substring(0, 200)}
+                                    </div>
+                                `).join('')}
+                                ${conv.messages.length > 10 ? '<p>...and ' + (conv.messages.length - 10) + ' more messages</p>' : ''}
+                            </details>
+                        </div>
+                    `;
+                });
+            }
+
+            conversations.innerHTML = conversationsHTML;
+            analyzePatterns(foundConversations);
+        }
+
+        // Analyze conversation patterns
+        function analyzePatterns(conversations) {
+            const patterns = document.getElementById('patterns');
+
+            if (conversations.length === 0) {
+                patterns.innerHTML = '<h2>Patterns & Insights</h2><p>No data to analyze yet.</p>';
+                return;
+            }
+
+            // Analyze patterns
+            let questionTypes = {};
+            let userTopics = {};
+            let dropoffPoints = [];
+            let engagementLevels = [];
+
+            conversations.forEach(conv => {
+                conv.messages.forEach((msg, index) => {
+                    if (msg.role === 'assistant' || msg.role === 'bot') {
+                        // Categorize bot questions
+                        const content = msg.content || msg.text || '';
+                        if (content.includes('name') || content.includes('call you')) {
+                            questionTypes['name'] = (questionTypes['name'] || 0) + 1;
+                        }
+                        if (content.includes('age') || content.includes('old')) {
+                            questionTypes['age'] = (questionTypes['age'] || 0) + 1;
+                        }
+                        if (content.includes('work') || content.includes('career')) {
+                            questionTypes['work'] = (questionTypes['work'] || 0) + 1;
+                        }
+                        if (content.includes('hobby') || content.includes('interest')) {
+                            questionTypes['interests'] = (questionTypes['interests'] || 0) + 1;
+                        }
+                    }
+
+                    if (msg.role === 'user') {
+                        // Analyze user responses
+                        const content = msg.content || msg.text || '';
+                        const wordCount = content.split(' ').length;
+                        engagementLevels.push(wordCount);
+
+                        // Track where users drop off
+                        if (index === conv.messages.length - 1 && conv.messages.length < 10) {
+                            dropoffPoints.push(index);
+                        }
+                    }
+                });
+            });
+
+            const avgEngagement = engagementLevels.length > 0
+                ? Math.round(engagementLevels.reduce((a, b) => a + b, 0) / engagementLevels.length)
+                : 0;
+
+            patterns.innerHTML = `
+                <h2>Patterns & Insights</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value">${avgEngagement}</div>
+                        <div class="stat-label">Avg Words per User Response</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${dropoffPoints.length}</div>
+                        <div class="stat-label">Early Dropoffs</div>
+                    </div>
+                </div>
+                <h3>Common Question Types</h3>
+                <ul class="pattern-list">
+                    ${Object.entries(questionTypes).map(([type, count]) =>
+                        `<li><strong>${type}:</strong> ${count} occurrences</li>`
+                    ).join('')}
+                </ul>
+            `;
+
+            generateRecommendations(conversations, avgEngagement, dropoffPoints);
+        }
+
+        // Generate recommendations based on analysis
+        function generateRecommendations(conversations, avgEngagement, dropoffPoints) {
+            const recommendations = document.getElementById('recommendations');
+
+            let recs = [];
+
+            // Analyze engagement
+            if (avgEngagement < 10) {
+                recs.push({
+                    title: "Low User Engagement",
+                    desc: "Users are giving short responses. Consider:",
+                    suggestions: [
+                        "Ask more open-ended questions",
+                        "Show more enthusiasm and interest",
+                        "Provide examples to encourage elaboration"
+                    ]
+                });
+            }
+
+            // Analyze dropoffs
+            if (dropoffPoints.length > conversations.length * 0.3) {
+                recs.push({
+                    title: "High Early Dropout Rate",
+                    desc: "Many users stop engaging early. Consider:",
+                    suggestions: [
+                        "Make the opening more engaging and less formal",
+                        "Reduce the number of 'data collection' questions upfront",
+                        "Add more personality and warmth to responses"
+                    ]
+                });
+            }
+
+            // Always add prompt improvements
+            recs.push({
+                title: "Prompt Optimization Suggestions",
+                desc: "Based on current patterns:",
+                suggestions: [
+                    "Add more personality - make the bot feel less like an interviewer",
+                    "Use humor and empathy to build rapport",
+                    "Reference local culture/events when location is known",
+                    "Offer to skip sections if users seem uninterested",
+                    "Provide value (dating tips, profile suggestions) during conversation"
+                ]
+            });
+
+            recommendations.innerHTML = `
+                <h2>Recommendations for Prompt Improvements</h2>
+                ${recs.map(rec => `
+                    <div class="recommendation">
+                        <h3>${rec.title}</h3>
+                        <p>${rec.desc}</p>
+                        <ul>
+                            ${rec.suggestions.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('')}
+
+                <div class="recommendation" style="background: #d1f2eb; border-color: #5cb85c;">
+                    <h3>Suggested Prompt Additions</h3>
+                    <pre>Add to system prompt:
+
+PERSONALITY & TONE:
+- Be playful and use appropriate humor
+- Mirror the user's energy level
+- Use emojis sparingly but effectively (💫 ✨ 😊)
+- Share "observations" about what makes them interesting
+- Occasionally offer dating tips or profile advice
+
+CONVERSATION FLOW:
+- After 3-4 data questions, share something valuable
+  Example: "Based on what you've shared, here's a profile tip..."
+- If responses are short, acknowledge it:
+  "I can tell you're more of a straight-to-the-point person!"
+- Offer shortcuts: "Want to skip ahead to the fun questions?"
+
+RAPPORT BUILDING:
+- Celebrate unique answers: "Oh that's actually really cool!"
+- Find connections: "You know, that reminds me of..."
+- Be encouraging: "That would definitely catch someone's attention!"</pre>
+                </div>
+            `;
+        }
+
+        // Load sample conversation data for demo
+        function simulateConversations() {
+            // Sample conversations to analyze
+            const sampleConversations = {
+                'cupido_chat_session_demo1': [
+                    {role: 'assistant', content: "Hey! I'm here to help you create an authentic dating profile. Let's start simple - what should I call you?"},
+                    {role: 'user', content: "Sarah"},
+                    {role: 'assistant', content: "Nice to meet you, Sarah! How old are you? Just want to make sure you're 18+ for the dating platform."},
+                    {role: 'user', content: "25"},
+                    {role: 'assistant', content: "Perfect! And how do you identify gender-wise? This helps with matching preferences."},
+                    {role: 'user', content: "Female"},
+                    {role: 'assistant', content: "Great! And who are you hoping to meet - men, women, or open to anyone who's a good match?"},
+                    {role: 'user', content: "Men"},
+                    {role: 'assistant', content: "Got it! Where are you based, Sarah?"},
+                    {role: 'user', content: "San Francisco"},
+                    {role: 'assistant', content: "San Francisco - great city! What do you do for work?"},
+                    {role: 'user', content: "I work in tech"},
+                    {role: 'assistant', content: "Tech in SF - you're right in the heart of it! What kind of tech work specifically?"}
+                ],
+                'cupido_chat_session_demo2': [
+                    {role: 'assistant', content: "Hey there! I'm here to help you create a great dating profile. What should I call you?"},
+                    {role: 'user', content: "Mike"},
+                    {role: 'assistant', content: "Nice to meet you, Mike! How old are you?"},
+                    {role: 'user', content: "28"},
+                    {role: 'assistant', content: "Perfect! And who are you hoping to meet on here?"},
+                    {role: 'user', content: "Women"},
+                    {role: 'assistant', content: "Got it! What do you do for work, Mike?"},
+                    {role: 'user', content: "I'm a teacher"}
+                ],
+                'cupido_chat_session_demo3': [
+                    {role: 'assistant', content: "Hey! I'm here to help you create an authentic dating profile. Let's start simple - what should I call you?"},
+                    {role: 'user', content: "Alex"},
+                    {role: 'assistant', content: "Nice to meet you, Alex! How old are you? Just want to make sure you're 18+ for the dating platform."},
+                    {role: 'user', content: "22"},
+                    {role: 'assistant', content: "Great! And how do you identify gender-wise?"},
+                    {role: 'user', content: "Non-binary"},
+                    {role: 'assistant', content: "Thanks for sharing! Who are you hoping to meet - men, women, or open to anyone who's a good match?"},
+                    {role: 'user', content: "Open to anyone"},
+                    {role: 'assistant', content: "Love that openness! Where are you located?"},
+                    {role: 'user', content: "NYC"}
+                ]
+            };
+
+            // Save to localStorage
+            Object.entries(sampleConversations).forEach(([key, messages]) => {
+                localStorage.setItem(key, JSON.stringify(messages));
+            });
+
+            alert('Sample conversations loaded! Click "Check Local Storage" to analyze them.');
+        }
+
+        // Analyze all conversations
+        function analyzeAllConversations() {
+            checkLocalStorage();
+        }
+
+        // Auto-run analysis on load
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>
