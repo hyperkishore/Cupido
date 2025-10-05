@@ -54,10 +54,11 @@ app.post('/api/chat', async (req, res) => {
     const systemMessage = messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system');
     
-    // Choose the specific model based on type
+    // Always use Claude Sonnet 4.5 for consistent high-quality responses
+    // Claude 4 models are more concise and better at following instructions
     const modelMap = {
-      'haiku': 'claude-3-5-haiku-20241022',
-      'sonnet': 'claude-3-5-sonnet-20241022'
+      'haiku': 'claude-sonnet-4-5-20250929',  // Using Sonnet 4.5 for all requests
+      'sonnet': 'claude-sonnet-4-5-20250929'   // Claude 4.5 Sonnet
     };
     
     const maxTokens = modelType === 'sonnet' ? 200 : 100;
