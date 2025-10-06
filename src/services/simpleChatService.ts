@@ -10,8 +10,15 @@ function resolveProxyUrl(): string {
     return `${envProxyUrl}/api/chat`;
   }
 
-  // Web platform - use localhost
+  // Web platform
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Check if we're on Netlify production
+    if (window.location.hostname === 'cupido-dating-app.netlify.app' ||
+        window.location.hostname.includes('netlify.app')) {
+      // Use Netlify function for production
+      return '/.netlify/functions/chat';
+    }
+    // Use localhost for development
     return 'http://localhost:3001/api/chat';
   }
 

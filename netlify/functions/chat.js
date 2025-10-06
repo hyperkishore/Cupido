@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
 
     const response = await anthropic.messages.create({
       model: model,
-      max_tokens: 1000,
+      max_tokens: 150,  // Match the server.js setting for consistency
       temperature: 0.7,
       system: systemMessage?.content || '',
       messages: conversationMessages,
