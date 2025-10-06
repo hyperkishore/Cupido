@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:disabled {
+            background: #ccc;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4f4dd;
+            color: #2e7d32;
+        }
+        .error {
+            background: #fdd;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mobile API Test</h1>
+
+    <div id="status"></div>
+
+    <button onclick="testDirectAPI()">Test Direct API Call</button>
+    <button onclick="testSimpleChat()">Test Simple Chat Service</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+
+    <div id="log" class="log"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toISOString().substr(11, 8);
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function setStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function clearLogs() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        async function testDirectAPI() {
+            log('Starting direct API test...');
+
+            // Determine the correct API URL based on hostname
+            const hostname = window.location.hostname;
+            let apiUrl;
+
+            if (hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+                apiUrl = `http://${hostname}:3001/api/chat`;
+                log(`Using IP-based URL: ${apiUrl}`);
+            } else {
+                apiUrl = 'http://localhost:3001/api/chat';
+                log(`Using localhost URL: ${apiUrl}`);
+            }
+
+            try {
+                log('Sending request...');
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: 'Reply in exactly 5 words' },
+                            { role: 'user', content: 'Test message from mobile browser' }
+                        ],
+                        modelType: 'haiku'
+                    })
+                });
+
+                log(`Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                log(`SUCCESS! Response: ${data.message}`, 'success');
+                setStatus('✅ API call successful!', 'success');
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+                setStatus(`❌ API call failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSimpleChat() {
+            log('Loading SimpleChatService module...');
+
+            try {
+                // Import the service dynamically
+                const module = await import('/src/services/simpleChatService.js');
+                log('Module loaded, calling service...');
+
+                const result = await module.callClaudeDirectly('Test from mobile browser');
+
+                if (result.success) {
+                    log(`SUCCESS! Response: ${result.message}`, 'success');
+                    setStatus('✅ Simple chat service works!', 'success');
+                } else {
+                    log(`Service returned failure: ${result.message}`, 'error');
+                    setStatus('❌ Service call failed', 'error');
+                }
+            } catch (error) {
+                log(`ERROR loading/calling service: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+                setStatus(`❌ Service error: ${error.message}`, 'error');
+            }
+        }
+
+        // Log initial page load info
+        log('Page loaded');
+        log(`Hostname: ${window.location.hostname}`);
+        log(`User Agent: ${navigator.userAgent}`);
+    </script>
+</body>
+</html>

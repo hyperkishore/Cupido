@@ -24,9 +24,19 @@ function resolveProxyUrl(): string {
       debugLog('Production environment detected - using Netlify function');
       return '/.netlify/functions/chat';
     }
-    // Use localhost for development
-    debugLog('Development environment detected - using localhost');
-    return 'http://localhost:3001/api/chat'; // Allow localhost
+    // Use appropriate host for development
+    debugLog('Development environment detected');
+    // If accessed via IP address (mobile on same network), use that IP
+    // Otherwise use localhost for desktop development
+    if (hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      // Accessed via IP address (e.g., 192.168.0.101)
+      debugLog('Accessed via IP address:', hostname);
+      return `http://${hostname}:3001/api/chat`;
+    } else {
+      // Accessed via localhost
+      debugLog('Accessed via localhost');
+      return 'http://localhost:3001/api/chat'; // Allow localhost
+    }
   }
 
   // Fallback for React Native environments

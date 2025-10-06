@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Debug Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            border: 2px solid #007AFF;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .panel h2 {
+            margin-top: 0;
+            color: #007AFF;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        button {
+            padding: 8px 15px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4f4dd;
+            color: #2e7d32;
+        }
+        .error {
+            background: #fdd;
+            color: #c62828;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cupido Chat Debug Tool</h1>
+
+    <div class="container">
+        <div class="panel">
+            <h2>App Frame (Mobile View)</h2>
+            <div id="status" class="status info">Loading app...</div>
+            <iframe id="appFrame" src="http://localhost:8080"></iframe>
+        </div>
+
+        <div class="panel">
+            <h2>Console Output</h2>
+            <div class="controls">
+                <button onclick="clearLogs()">Clear Logs</button>
+                <button onclick="testChat()">Test Send Message</button>
+                <button onclick="inspectState()">Inspect State</button>
+                <button onclick="checkNetwork()">Check Network</button>
+            </div>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+        const appFrame = document.getElementById('appFrame');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString().substr(11, 12);
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : type === 'warning' ? 'orange' : 'black';
+            logDiv.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function setStatus(message, type = 'info') {
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function clearLogs() {
+            logDiv.innerHTML = '';
+            log('Logs cleared');
+        }
+
+        // Listen to messages from the iframe
+        window.addEventListener('message', (event) => {
+            if (event.origin === 'http://localhost:8080') {
+                log(`IFRAME: ${JSON.stringify(event.data)}`, 'info');
+            }
+        });
+
+        // Inject monitoring script into iframe
+        appFrame.onload = function() {
+            log('App loaded successfully', 'success');
+            setStatus('App loaded - Ready for testing', 'success');
+
+            try {
+                // Try to access iframe content
+                const iframeDoc = appFrame.contentDocument || appFrame.contentWindow.document;
+
+                // Inject monitoring script
+                const script = iframeDoc.createElement('script');
+                script.textContent = `
+                    // Override console methods to capture logs
+                    const originalLog = console.log;
+                    const originalError = console.error;
+                    const originalWarn = console.warn;
+
+                    console.log = function(...args) {
+                        originalLog.apply(console, args);
+                        window.parent.postMessage({type: 'log', level: 'info', args: args.map(a => String(a))}, '*');
+                    };
+
+                    console.error = function(...args) {
+                        originalError.apply(console, args);
+                        window.parent.postMessage({type: 'log', level: 'error', args: args.map(a => String(a))}, '*');
+                    };
+
+                    console.warn = function(...args) {
+                        originalWarn.apply(console, args);
+                        window.parent.postMessage({type: 'log', level: 'warning', args: args.map(a => String(a))}, '*');
+                    };
+
+                    // Monitor network requests
+                    const originalFetch = window.fetch;
+                    window.fetch = function(...args) {
+                        const url = args[0];
+                        window.parent.postMessage({type: 'network', method: 'fetch', url: url}, '*');
+
+                        return originalFetch.apply(this, args)
+                            .then(response => {
+                                window.parent.postMessage({
+                                    type: 'network-response',
+                                    url: url,
+                                    status: response.status,
+                                    ok: response.ok
+                                }, '*');
+                                return response;
+                            })
+                            .catch(error => {
+                                window.parent.postMessage({
+                                    type: 'network-error',
+                                    url: url,
+                                    error: error.message
+                                }, '*');
+                                throw error;
+                            });
+                    };
+
+                    // Notify parent that monitoring is active
+                    window.parent.postMessage({type: 'monitoring-active'}, '*');
+                `;
+                iframeDoc.head.appendChild(script);
+
+                log('Monitoring script injected', 'success');
+            } catch (e) {
+                log(`Cannot access iframe content (cross-origin): ${e.message}`, 'warning');
+                log('App is running but detailed monitoring is limited', 'warning');
+            }
+        };
+
+        // Enhanced message handler
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+
+            if (data.type === 'log') {
+                const level = data.level || 'info';
+                const message = data.args ? data.args.join(' ') : 'Unknown log';
+                log(`[APP ${level.toUpperCase()}] ${message}`, level);
+            } else if (data.type === 'network') {
+                log(`[NETWORK] ${data.method} ${data.url}`, 'info');
+            } else if (data.type === 'network-response') {
+                const status = data.ok ? 'success' : 'error';
+                log(`[RESPONSE] ${data.url} - Status: ${data.status}`, status);
+            } else if (data.type === 'network-error') {
+                log(`[NET ERROR] ${data.url} - ${data.error}`, 'error');
+            } else if (data.type === 'monitoring-active') {
+                log('Real-time monitoring active', 'success');
+            }
+        });
+
+        function testChat() {
+            log('Attempting to send test message...', 'info');
+            try {
+                // Try to interact with the iframe
+                const iframeWindow = appFrame.contentWindow;
+                iframeWindow.postMessage({
+                    type: 'test-chat',
+                    message: 'Test message from debugger'
+                }, '*');
+                log('Test message command sent', 'success');
+            } catch (e) {
+                log(`Cannot send test: ${e.message}`, 'error');
+            }
+        }
+
+        function inspectState() {
+            log('Inspecting app state...', 'info');
+            try {
+                const iframeWindow = appFrame.contentWindow;
+                // Try to access localStorage
+                const localStorage = iframeWindow.localStorage;
+                log('LocalStorage keys:', 'info');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.includes('cupido')) {
+                        const value = localStorage.getItem(key);
+                        log(`  ${key}: ${value.substring(0, 100)}...`, 'info');
+                    }
+                }
+            } catch (e) {
+                log(`Cannot inspect state: ${e.message}`, 'error');
+            }
+        }
+
+        function checkNetwork() {
+            log('Checking network connectivity...', 'info');
+
+            // Test API endpoint
+            fetch('http://localhost:3001/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: 'Reply in 5 words' },
+                        { role: 'user', content: 'Debug test' }
+                    ],
+                    modelType: 'haiku'
+                })
+            })
+            .then(response => {
+                log(`API Test: ${response.status} ${response.ok ? 'OK' : 'FAILED'}`, response.ok ? 'success' : 'error');
+                return response.json();
+            })
+            .then(data => {
+                log(`API Response: ${data.message || data.error}`, 'success');
+            })
+            .catch(error => {
+                log(`API Error: ${error.message}`, 'error');
+            });
+        }
+
+        // Initial log
+        log('Debug tool started', 'success');
+        log('Waiting for app to load...', 'info');
+    </script>
+</body>
+</html>
