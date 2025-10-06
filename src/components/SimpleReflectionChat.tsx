@@ -236,15 +236,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       }
 
       setUserId(user.id);
-      
+      console.log('[MOBILE DEBUG] User ID set:', user.id);
+
       // Get or create conversation
       const conversation = await chatDatabase.getOrCreateConversation(user.id);
       if (!conversation) {
         console.error('Failed to create conversation');
         return;
       }
-      
+
       setCurrentConversation(conversation);
+      console.log('[MOBILE DEBUG] Conversation created/retrieved:', conversation.id);
       
       // Load chat history (increased limit to load more messages)
       const history = await chatDatabase.getChatHistory(conversation.id, 200);
@@ -347,34 +349,40 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }, 100);
   }, [messages]);
 
-  const generateResponse = async (userMessage: string) => {
+  const generateResponse = async (userMessage: string, conversationId?: string) => {
+    console.log('[MOBILE DEBUG] generateResponse called with:', userMessage);
+    console.log('[MOBILE DEBUG] currentConversation in generateResponse:', currentConversation);
+    console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
     setIsTyping(true);
-    
+
     try {
       // Update conversation history to include the new user message BEFORE calling AI
       const updatedHistory = [
         ...conversationHistory,
         { role: 'user' as const, content: userMessage }
       ];
-      
+
       console.log('💬 Sending to AI:', {
         userMessage,
         historyLength: updatedHistory.length,
         fullHistory: updatedHistory
       });
 
+      console.log('[MOBILE DEBUG] Calling chatAiService.generateResponse');
       // Call the AI service with UPDATED conversation history
       const aiResponse = await chatAiService.generateResponse(
         userMessage,
         updatedHistory,
         conversationCount
       );
+      console.log('[MOBILE DEBUG] AI Response received:', aiResponse);
 
       // Add natural delay to feel more human
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
 
       // Save bot message to database
-      if (currentConversation) {
+      const activeConversationId = conversationId || currentConversation?.id;
+      if (activeConversationId) {
         console.log('AI Response received:', {
           message: aiResponse.message,
           model: aiResponse.usedModel,
@@ -382,7 +390,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         });
 
         const savedBotMessage = await chatDatabase.saveMessage(
-          currentConversation.id,
+          activeConversationId,
           aiResponse.message,
           true, // is_bot
           aiResponse.usedModel, // ai_model used (was aiResponse.model)
@@ -433,11 +441,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       
       // Fallback to a friendly error message
       const fallbackText = "Sorry, I'm having trouble connecting right now! But I'm still here - what else would you like to chat about?";
-      
+
       // Save fallback message to database
-      if (currentConversation) {
+      if (activeConversationId) {
         const savedFallback = await chatDatabase.saveMessage(
-          currentConversation.id,
+          activeConversationId,
           fallbackText,
           true, // is_bot
           undefined, // no AI model for fallback
@@ -576,8 +584,28 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   const handleSend = async () => {
     if (!inputText.trim() || isSending) {
-      console.log('⚠️ Blocked send: empty text or already sending');
       return;
+    }
+
+    // Check if conversation exists and get or create it
+    let activeConversation = currentConversation;
+    if (!activeConversation) {
+      console.error('❌ [MOBILE DEBUG] No currentConversation! userId:', userId);
+      // Try to initialize conversation
+      if (userId) {
+        const conversation = await chatDatabase.getOrCreateConversation(userId);
+        if (conversation) {
+          console.log('✅ [MOBILE DEBUG] Created conversation:', conversation);
+          setCurrentConversation(conversation);
+          activeConversation = conversation; // Use the newly created conversation
+        } else {
+          console.error('❌ [MOBILE DEBUG] Failed to create conversation');
+          return;
+        }
+      } else {
+        console.error('❌ [MOBILE DEBUG] No userId available');
+        return;
+      }
     }
 
     // Enhanced duplicate prevention with message hash
@@ -620,9 +648,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
 
     // Save user message to database first
-    if (currentConversation) {
+    if (activeConversation) {
       const savedUserMessage = await chatDatabase.saveMessage(
-        currentConversation.id,
+        activeConversation.id,
         messageText,
         false, // is_bot = false for user
         undefined, // no AI model for user messages
@@ -658,9 +686,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
     // Generate response
     try {
-      await generateResponse(messageText);
+      console.log('[MOBILE DEBUG] About to call generateResponse');
+      await generateResponse(messageText, activeConversation.id);
+      console.log('[MOBILE DEBUG] generateResponse completed');
+    } catch (error) {
+      console.error('[MOBILE DEBUG] generateResponse failed:', error);
     } finally {
       setIsSending(false);
+      console.log('[MOBILE DEBUG] handleSend completed, isSending set to false');
     }
   };
 
