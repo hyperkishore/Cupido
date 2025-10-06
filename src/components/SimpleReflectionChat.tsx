@@ -202,6 +202,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         sessionUserId = authUser.phoneNumber || authUser.id;
         userName = authUser.name || `User ${sessionUserId.slice(-6)}`;
         console.log('🔑 Using authenticated user:', sessionUserId);
+
+        // Check if this user has a stored session
+        const storedSessionId = await getStoredSessionUserId(sessionUserId);
+        if (!storedSessionId) {
+          // Store the session ID for this user
+          await setStoredSessionUserId(sessionUserId, sessionUserId);
+        }
       } else {
         // Demo mode: Generate or retrieve user-specific session ID
         const demoUserId = 'demo_user';

@@ -90,10 +90,21 @@ export const PixelPerfectProfileScreen = () => {
               const success = await chatDatabase.deleteAllUserData(userId);
 
               if (success) {
-                // Clear local storage
+                // Clear local storage - remove all cupido_chat_session keys
                 if (Platform.OS === 'web') {
-                  window.localStorage.removeItem('cupido_chat_session_demo_user');
-                  window.localStorage.clear();
+                  // Clear specific session keys for this user
+                  const keysToRemove = [];
+                  for (let i = 0; i < window.localStorage.length; i++) {
+                    const key = window.localStorage.key(i);
+                    if (key && key.startsWith('cupido_chat_session')) {
+                      keysToRemove.push(key);
+                    }
+                  }
+                  keysToRemove.forEach(key => window.localStorage.removeItem(key));
+
+                  // Also clear any other Cupido-related data
+                  window.localStorage.removeItem('cupido_demo_user');
+                  window.localStorage.removeItem('cupido_errors');
                 }
 
                 // Clear personality insights

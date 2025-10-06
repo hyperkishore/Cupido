@@ -12,7 +12,7 @@ export const DebugButton: React.FC = () => {
       const testWithXHR = () => {
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', 'http://localhost:3001/api/chat');
+          xhr.open('POST', 'http://localhost:3001/api/chat'); // Allow localhost - debug only
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.onload = () => {
             if (xhr.status === 200) {
@@ -34,7 +34,7 @@ export const DebugButton: React.FC = () => {
       
       // First try regular fetch
       console.log('Trying regular fetch...');
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch('http://localhost:3001/api/chat', { // Allow localhost - debug only
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
