@@ -1,28 +1,36 @@
 // Simple direct chat service that works exactly like the HTML test
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { debugLog, debugError } from '../config/environment';
 
 function resolveProxyUrl(): string {
   const expoExtra = Constants?.expoConfig?.extra ?? Constants?.manifest?.extra ?? {};
   const envProxyUrl = process.env.EXPO_PUBLIC_AI_PROXY_URL || expoExtra?.aiProxyUrl;
 
   if (envProxyUrl) {
+    debugLog('Using environment proxy URL:', envProxyUrl);
     return `${envProxyUrl}/api/chat`;
   }
 
-  // Web platform
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  // Check if we're in a web browser environment (works for both desktop and mobile browsers)
+  if (typeof window !== 'undefined' && typeof window.location !== 'undefined') {
+    const hostname = window.location.hostname;
+    debugLog('Browser detected - hostname:', hostname);
+
     // Check if we're on Netlify production
-    if (window.location.hostname === 'cupido-dating-app.netlify.app' ||
-        window.location.hostname.includes('netlify.app')) {
+    if (hostname === 'cupido-dating-app.netlify.app' ||
+        hostname.includes('netlify.app')) {
       // Use Netlify function for production
+      debugLog('Production environment detected - using Netlify function');
       return '/.netlify/functions/chat';
     }
     // Use localhost for development
-    return 'http://localhost:3001/api/chat';
+    debugLog('Development environment detected - using localhost');
+    return 'http://localhost:3001/api/chat'; // Allow localhost
   }
 
-  // Android emulator
+  // Fallback for React Native environments
+  debugLog('React Native environment detected - Platform.OS:', Platform.OS);
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:3001/api/chat';
   }
@@ -32,9 +40,9 @@ function resolveProxyUrl(): string {
 }
 
 export async function callClaudeDirectly(userMessage: string, conversationHistory: any[] = []) {
-  console.log('🎯🎯🎯 SIMPLE DIRECT CLAUDE CALL 🎯🎯🎯');
-  console.log('📨 User sent:', userMessage);
-  console.log('🕐 Time:', new Date().toISOString());
+  debugLog('🎯🎯🎯 SIMPLE DIRECT CLAUDE CALL 🎯🎯🎯');
+  debugLog('📨 User sent:', userMessage);
+  debugLog('🕐 Time:', new Date().toISOString());
   
   const messages = [
     {
@@ -57,7 +65,7 @@ Be natural and engaging:
   const proxyUrl = resolveProxyUrl();
   
   try {
-    console.log('📡 Calling proxy at:', proxyUrl);
+    debugLog('📡 Calling proxy at:', proxyUrl);
     
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -70,14 +78,14 @@ Be natural and engaging:
       })
     });
     
-    console.log('📥 Response status:', response.status);
-    
+    debugLog('📥 Response status:', response.status);
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const data = await response.json();
-    console.log('✅ Got Claude response:', data.message);
+    debugLog('✅ Got Claude response:', data.message);
     
     return {
       message: data.message,
@@ -86,11 +94,11 @@ Be natural and engaging:
     };
     
   } catch (error: any) {
-    console.error('❌❌❌ SIMPLE SERVICE FAILED ❌❌❌');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Full error:', error);
+    debugError('❌❌❌ SIMPLE SERVICE FAILED ❌❌❌');
+    debugError('Error name:', error.name);
+    debugError('Error message:', error.message);
+    debugError('Error stack:', error.stack);
+    debugError('Full error:', error);
     return {
       message: "I'm having trouble connecting right now. What would you like to talk about?",
       usedModel: undefined,

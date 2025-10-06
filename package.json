@@ -16,6 +16,7 @@
     "deploy": "npm run build:production && npm run serve",
     "lint": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
+    "test": "npm run test:unit",
     "test:unit": "node tests/reflectionAiService.test.js && node tests/homeExperienceService.test.js && node tests/intelligentQuestionService.test.js"
   },
   "dependencies": {
