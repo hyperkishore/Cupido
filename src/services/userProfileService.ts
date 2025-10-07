@@ -110,7 +110,7 @@ class UserProfileService {
         for (let i = nameStart; i < Math.min(nameStart + 2, words.length); i++) {
           const word = words[i];
           // Check if it's a valid name (not a location)
-          if (word && word.match(/^[A-Z][a-z]+$/) && !commonLocations.includes(word.toLowerCase())) {
+          if (word && word.match(/^[A-Z][a-z]+$/) && !this.commonLocations.includes(word.toLowerCase())) {
             nameWords.push(word);
           } else {
             break; // Stop if we hit non-name word
@@ -121,7 +121,7 @@ class UserProfileService {
         }
       } else if (words.length <= 3 && words[0].match(/^[A-Z][a-z]+$/) && !isLocationContext) {
         // Message is just a name (1-3 words starting with capitals)
-        const nameWords = words.filter(w => w.match(/^[A-Z][a-z]+$/) && !commonLocations.includes(w.toLowerCase()));
+        const nameWords = words.filter(w => w.match(/^[A-Z][a-z]+$/) && !this.commonLocations.includes(w.toLowerCase()));
         if (nameWords.length === words.length && nameWords.length > 0) {
           updates.name = nameWords.join(' ');
         }

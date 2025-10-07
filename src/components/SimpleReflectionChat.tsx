@@ -166,6 +166,29 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
+  // Refs for test message handler to avoid race conditions
+  const messagesRef = useRef<Message[]>([]);
+  const isTypingRef = useRef(false);
+  const conversationIdRef = useRef<string | undefined>(undefined);
+  const userIdRef = useRef<string>('');
+
+  // Update refs when state changes
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    isTypingRef.current = isTyping;
+  }, [isTyping]);
+
+  useEffect(() => {
+    conversationIdRef.current = currentConversation?.id;
+  }, [currentConversation]);
+
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+
   // Initialize chat with database - reinitialize when user changes
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -185,6 +208,65 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       unsubscribe?.();
     };
   }, [authUser?.id]); // Re-initialize when user changes
+
+  // Listen for test commands from test dashboard
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleTestMessage = async (event: MessageEvent) => {
+      const { type, message } = event.data;
+
+      switch (type) {
+        case 'test-send-message':
+          // Simulate sending a message from test dashboard
+          console.log('[TEST] Received test message command:', message);
+          setInputText(message);
+          // Auto-send after a short delay
+          setTimeout(() => {
+            handleSend();
+          }, 100);
+          break;
+
+        case 'test-clear-session':
+          // Clear session for testing new user flow
+          console.log('[TEST] Clearing session for new user test');
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const keys = Object.keys(window.localStorage);
+            keys.forEach(key => {
+              if (key.startsWith('cupido_')) {
+                window.localStorage.removeItem(key);
+              }
+            });
+          }
+          // Reinitialize chat
+          initializeChat();
+          break;
+
+        case 'test-get-state':
+          // Return current state to test dashboard using refs to avoid race conditions
+          const state = {
+            messageCount: messagesRef.current.length,
+            isTyping: isTypingRef.current,
+            conversationId: conversationIdRef.current,
+            userId: userIdRef.current,
+          };
+          // Send response back to parent window
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'test-state-response',
+              state
+            }, '*');
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleTestMessage);
+
+    return () => {
+      window.removeEventListener('message', handleTestMessage);
+    };
+  }, []); // Empty dependency array - listener stays active and uses refs
 
   const initializeChat = async (): Promise<(() => void) | undefined> => {
     try {
@@ -355,6 +437,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
     setIsTyping(true);
 
+    // Define activeConversationId in function scope so it's available in catch block
+    const activeConversationId = conversationId || currentConversation?.id;
+
     try {
       // Update conversation history to include the new user message BEFORE calling AI
       const updatedHistory = [
@@ -381,7 +466,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
 
       // Save bot message to database
-      const activeConversationId = conversationId || currentConversation?.id;
+      console.log('🔍 Active conversation ID for saving bot message:', activeConversationId);
+
       if (activeConversationId) {
         console.log('AI Response received:', {
           message: aiResponse.message,
@@ -403,6 +489,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
         if (!savedBotMessage) {
           console.error('❌ Failed to save AI message to database');
+          // Still show the message even if database save fails
+          const tempBotMessage: Message = {
+            id: `temp_${Date.now()}`,
+            text: aiResponse.message,
+            isBot: true,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, tempBotMessage]);
         } else {
           console.log('✅ AI message saved to database:', savedBotMessage.id);
         }
@@ -415,9 +509,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             timestamp: new Date(savedBotMessage.created_at),
           };
 
-          // Check if message already exists before adding
+          // Check if message already exists before adding (only check ID, not text)
           setMessages(prev => {
-            const exists = prev.find(msg => msg.id === savedBotMessage.id || msg.text === aiResponse.message);
+            const exists = prev.find(msg => msg.id === savedBotMessage.id);
             if (exists) {
               console.log('⚠️ Bot message already exists, not adding duplicate');
               return prev;
@@ -426,8 +520,18 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             return [...prev, botMessage];
           });
         }
+      } else {
+        console.error('❌ No conversation ID available - showing message anyway');
+        // No conversation ID, but still show the message
+        const tempBotMessage: Message = {
+          id: `temp_no_conv_${Date.now()}`,
+          text: aiResponse.message,
+          isBot: true,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, tempBotMessage]);
       }
-      
+
       setConversationCount(prev => prev + 1);
       
       // Update conversation history for context (use the updated history we passed to AI)
@@ -459,11 +563,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             isBot: true,
             timestamp: new Date(savedFallback.created_at),
           };
-          
+
           setMessages(prev => [...prev, fallbackMessage]);
         }
+      } else {
+        // Still show fallback even without conversation ID
+        const fallbackMessage: Message = {
+          id: `fallback_${Date.now()}`,
+          text: fallbackText,
+          isBot: true,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, fallbackMessage]);
       }
-      
+
       setConversationCount(prev => prev + 1);
     } finally {
       setIsTyping(false);
@@ -635,45 +748,55 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     setInputText('');
     setIsSending(true);
 
-    // Extract profile information from user messages
-    const previousMessages = messages.filter(m => !m.isBot).map(m => m.text);
-    const profileUpdates = userProfileService.extractProfileFromMessage(messageText, previousMessages);
-    if (Object.keys(profileUpdates).length > 0) {
-      await userProfileService.updateProfile(profileUpdates);
+    // Wrap everything in try/finally to ensure isSending always gets reset
+    try {
+      // Extract profile information from user messages
+      const previousMessages = messages.filter(m => !m.isBot).map(m => m.text);
+      const profileUpdates = userProfileService.extractProfileFromMessage(messageText, previousMessages);
+      if (Object.keys(profileUpdates).length > 0) {
+        await userProfileService.updateProfile(profileUpdates);
 
-      // If we just got the user's name, log it
-      if (profileUpdates.name) {
-        console.log('User name collected:', profileUpdates.name);
-      }
-    }
-
-    // Save user message to database first
-    if (activeConversation) {
-      const savedUserMessage = await chatDatabase.saveMessage(
-        activeConversation.id,
-        messageText,
-        false, // is_bot = false for user
-        undefined, // no AI model for user messages
-        { message_length: messageText.length }
-      );
-
-      if (!savedUserMessage) {
-        console.error('❌ Failed to save user message to database');
-      } else {
-        console.log('✅ User message saved to database:', savedUserMessage.id);
+        // If we just got the user's name, log it
+        if (profileUpdates.name) {
+          console.log('User name collected:', profileUpdates.name);
+        }
       }
 
-      if (savedUserMessage) {
-        const userMessage: Message = {
-          id: savedUserMessage.id,
-          text: messageText,
-          isBot: false,
-          timestamp: new Date(savedUserMessage.created_at),
-        };
+      // Save user message to database first
+      if (activeConversation) {
+        const savedUserMessage = await chatDatabase.saveMessage(
+          activeConversation.id,
+          messageText,
+          false, // is_bot = false for user
+          undefined, // no AI model for user messages
+          { message_length: messageText.length }
+        );
 
-        // Check if message already exists before adding
+        // Always show the user message in UI, even if database save fails
+        let userMessage: Message;
+
+        if (!savedUserMessage) {
+          console.error('❌ Failed to save user message to database - showing in UI anyway');
+          // Create temporary message for UI
+          userMessage = {
+            id: `temp_user_${Date.now()}`,
+            text: messageText,
+            isBot: false,
+            timestamp: new Date(),
+          };
+        } else {
+          console.log('✅ User message saved to database:', savedUserMessage.id);
+          userMessage = {
+            id: savedUserMessage.id,
+            text: messageText,
+            isBot: false,
+            timestamp: new Date(savedUserMessage.created_at),
+          };
+        }
+
+        // Check if message already exists before adding (only check ID, not text)
         setMessages(prev => {
-          const exists = prev.find(msg => msg.id === savedUserMessage.id || (msg.text === messageText && !msg.isBot));
+          const exists = prev.find(msg => msg.id === userMessage.id);
           if (exists) {
             console.log('⚠️ User message already exists, not adding duplicate');
             return prev;
@@ -681,16 +804,23 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           console.log('✅ Adding user message to UI');
           return [...prev, userMessage];
         });
-      }
-    }
 
-    // Generate response
-    try {
-      console.log('[MOBILE DEBUG] About to call generateResponse');
-      await generateResponse(messageText, activeConversation.id);
-      console.log('[MOBILE DEBUG] generateResponse completed');
+        // Add small delay to ensure UI renders before proceeding (prevents message disappearing)
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // Generate response
+      try {
+        console.log('[MOBILE DEBUG] About to call generateResponse');
+        await generateResponse(messageText, activeConversation.id);
+        console.log('[MOBILE DEBUG] generateResponse completed');
+      } catch (error) {
+        console.error('[MOBILE DEBUG] generateResponse failed:', error);
+      }
     } catch (error) {
-      console.error('[MOBILE DEBUG] generateResponse failed:', error);
+      console.error('❌ [CRITICAL] Error in handleSend:', error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     } finally {
       setIsSending(false);
       console.log('[MOBILE DEBUG] handleSend completed, isSending set to false');
