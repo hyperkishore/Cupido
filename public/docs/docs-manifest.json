@@ -57,6 +57,25 @@
   },
   {
     "type": "category",
+    "name": "Guides",
+    "label": "Guides",
+    "children": [
+      {
+        "type": "file",
+        "name": "code.md",
+        "label": "Cupido Code Guide",
+        "path": "Guides/code.md"
+      },
+      {
+        "type": "file",
+        "name": "product.md",
+        "label": "Cupido Product Guide",
+        "path": "Guides/product.md"
+      }
+    ]
+  },
+  {
+    "type": "category",
     "name": "Other files",
     "label": "Other files",
     "children": [

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard Console Check</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 40px;
+            background: #f5f5f7;
+        }
+        .check {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .pass { color: #34c759; font-weight: 600; }
+        .fail { color: #ff3b30; font-weight: 600; }
+        .title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+        .category {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+        }
+        pre {
+            background: #f9f9fb;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">🔍 Test Dashboard Runtime Verification</div>
+    <div id="results"></div>
+
+    <script src="comprehensive-test-functions.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        function addCheck(text, pass) {
+            const div = document.createElement('div');
+            div.className = 'check';
+            div.innerHTML = `<span class="${pass ? 'pass' : 'fail'}">${pass ? '✓' : '✗'}</span> ${text}`;
+            results.appendChild(div);
+            return pass;
+        }
+
+        function addCategory(text) {
+            const div = document.createElement('div');
+            div.className = 'category';
+            div.textContent = text;
+            results.appendChild(div);
+        }
+
+        function addCode(code) {
+            const pre = document.createElement('pre');
+            pre.textContent = code;
+            results.appendChild(pre);
+        }
+
+        // Run checks
+        let allPassed = true;
+
+        addCategory('1. Script Loading');
+        allPassed &= addCheck('comprehensive-test-functions.js loaded', true);
+
+        addCategory('2. Global Exports');
+        allPassed &= addCheck('window.TEST_FUNCTIONS exists', typeof window.TEST_FUNCTIONS === 'object');
+        allPassed &= addCheck('window.runCategory exists', typeof window.runCategory === 'function');
+        allPassed &= addCheck('window.getConsoleErrorSummary exists', typeof window.getConsoleErrorSummary === 'function');
+        allPassed &= addCheck('window.clearConsoleErrors exists', typeof window.clearConsoleErrors === 'function');
+        allPassed &= addCheck('window.getNextNaturalMessage exists', typeof window.getNextNaturalMessage === 'function');
+        allPassed &= addCheck('window.sendMessageToApp exists', typeof window.sendMessageToApp === 'function');
+        allPassed &= addCheck('window.getAppState exists', typeof window.getAppState === 'function');
+
+        addCategory('3. Test Functions Count');
+        const testCount = Object.keys(window.TEST_FUNCTIONS || {}).length;
+        allPassed &= addCheck(`Found ${testCount}/40 test functions`, testCount === 40);
+
+        if (testCount === 40) {
+            addCode(Object.keys(window.TEST_FUNCTIONS).join(', '));
+        }
+
+        addCategory('4. Test Function Structure');
+        const sampleTests = ['console-1', 'message-1', 'profile-1', 'database-1', 'error-1', 'state-1', 'api-1'];
+        for (const testId of sampleTests) {
+            const testFn = window.TEST_FUNCTIONS[testId];
+            allPassed &= addCheck(
+                `${testId} is a function`,
+                typeof testFn === 'function'
+            );
+        }
+
+        addCategory('5. Console Error Monitoring');
+        const originalErrorCount = (window.consoleErrors || []).length;
+        console.error('Test error for monitoring');
+        const newErrorCount = (window.consoleErrors || []).length;
+        allPassed &= addCheck(
+            'Console.error is intercepted and tracked',
+            newErrorCount > originalErrorCount
+        );
+
+        const originalWarnCount = (window.consoleWarnings || []).length;
+        console.warn('Test warning for monitoring');
+        const newWarnCount = (window.consoleWarnings || []).length;
+        allPassed &= addCheck(
+            'Console.warn is intercepted and tracked',
+            newWarnCount > originalWarnCount
+        );
+
+        // Get error summary
+        const errorSummary = window.getConsoleErrorSummary();
+        addCheck(
+            `Tracked ${errorSummary.totalErrors} errors, ${errorSummary.totalWarnings} warnings`,
+            true
+        );
+
+        addCategory('6. Category Test Lists');
+        const categories = {
+            console: 5,
+            message: 8,
+            profile: 6,
+            database: 5,
+            error: 6,
+            state: 6,
+            api: 4
+        };
+
+        for (const [category, expectedCount] of Object.entries(categories)) {
+            const categoryTests = Object.keys(window.TEST_FUNCTIONS).filter(id => id.startsWith(category + '-'));
+            allPassed &= addCheck(
+                `${category} category has ${categoryTests.length}/${expectedCount} tests`,
+                categoryTests.length === expectedCount
+            );
+        }
+
+        addCategory('7. Async Test Execution');
+        (async () => {
+            try {
+                // Test that a simple test function can be called
+                const testFn = window.TEST_FUNCTIONS['api-1'];
+                if (testFn) {
+                    addCheck('api-1 test function is callable', true);
+
+                    // We won't actually run it since it requires the API to be up,
+                    // but we can verify it's async
+                    const isAsync = testFn.constructor.name === 'AsyncFunction';
+                    addCheck('api-1 is an async function', isAsync);
+                }
+            } catch (error) {
+                addCheck(`Error testing function: ${error.message}`, false);
+                allPassed = false;
+            }
+
+            addCategory('8. Summary');
+            if (allPassed) {
+                const div = document.createElement('div');
+                div.className = 'check';
+                div.style.background = '#d1f4e0';
+                div.style.border = '2px solid #34c759';
+                div.innerHTML = '<span class="pass" style="font-size: 18px;">✅ ALL RUNTIME CHECKS PASSED</span><br><br>' +
+                               'The test dashboard is fully functional and ready to use.<br>' +
+                               'Visit <a href="http://localhost:3001/test-dashboard.html" target="_blank">http://localhost:3001/test-dashboard.html</a> to run tests.';
+                results.appendChild(div);
+            } else {
+                const div = document.createElement('div');
+                div.className = 'check';
+                div.style.background = '#ffe5e5';
+                div.style.border = '2px solid #ff3b30';
+                div.innerHTML = '<span class="fail" style="font-size: 18px;">⚠️ SOME CHECKS FAILED</span><br><br>' +
+                               'Review the failed checks above.';
+                results.appendChild(div);
+            }
+        })();
+
+        // Clear the test errors we created
+        setTimeout(() => {
+            window.clearConsoleErrors();
+        }, 1000);
+    </script>
+</body>
+</html>

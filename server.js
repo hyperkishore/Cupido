@@ -1,5 +1,25 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+
+// ============================================
+// ENVIRONMENT LOADING WITH VALIDATION
+// ============================================
+// Load .env file BEFORE anything else
+require('dotenv').config();
+
+console.log('\n' + '='.repeat(80));
+console.log('🔧 SERVER STARTUP - ENVIRONMENT VALIDATION');
+console.log('='.repeat(80));
+
+// Log environment loading status
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  console.log('✓ .env file found at:', envPath);
+} else {
+  console.error('✗ .env file NOT FOUND at:', envPath);
+}
 
 // Ensure fetch is available in the Node runtime (Node < 18 support)
 if (typeof globalThis.fetch !== 'function') {
@@ -12,10 +32,33 @@ const PORT = Number(process.env.AI_PROXY_PORT || 3001);
 const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const CLAUDE_API_URL = process.env.ANTHROPIC_API_URL || 'https://api.anthropic.com/v1/messages';
 
+// ============================================
+// API KEY VALIDATION - FAIL FAST
+// ============================================
+console.log('\n📋 Environment Variables Status:');
+console.log('-'.repeat(80));
+console.log(`PORT: ${PORT}`);
+console.log(`ANTHROPIC_API_KEY: ${CLAUDE_API_KEY ? '✓ LOADED (length: ' + CLAUDE_API_KEY.length + ', starts with: ' + CLAUDE_API_KEY.substring(0, 15) + '...)' : '✗ NOT LOADED'}`);
+console.log(`CLAUDE_API_URL: ${CLAUDE_API_URL}`);
+console.log('-'.repeat(80));
+
 if (!CLAUDE_API_KEY) {
-  console.warn(
-    '[ClaudeProxy] ANTHROPIC_API_KEY is not set. Requests will fail until the key is configured.'
-  );
+  console.error('\n' + '⚠️ '.repeat(40));
+  console.error('❌ CRITICAL ERROR: ANTHROPIC_API_KEY is not set!');
+  console.error('⚠️ '.repeat(40));
+  console.error('\nThe server will NOT function properly without the API key.');
+  console.error('All API requests will return canned/fallback responses.');
+  console.error('\nTo fix this issue:');
+  console.error('1. Verify .env file exists and contains ANTHROPIC_API_KEY');
+  console.error('2. Restart the server using: node server.js');
+  console.error('3. Check the startup logs to confirm the key is loaded');
+  console.error('\n' + '⚠️ '.repeat(40) + '\n');
+
+  // DO NOT exit - let it run but warn heavily
+  // This allows health checks to report the issue
+} else {
+  console.log('\n✅ API KEY VALIDATION PASSED');
+  console.log('✓ ANTHROPIC_API_KEY is properly loaded and ready to use\n');
 }
 
 // Enable CORS for all routes
@@ -24,8 +67,8 @@ app.use(cors({
     ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
     : true,
 }));
-// Increase body size limit to 10MB
-app.use(express.json({ limit: '10mb' }));
+// Increase body size limit to 50MB to handle large conversation histories
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/health', (req, res) => {
   res.json({
@@ -49,14 +92,24 @@ app.post('/api/chat', async (req, res) => {
     console.log('Body keys:', Object.keys(req.body));
 
     const { messages, modelType = 'haiku', imageData } = req.body;
-    
+
+    // Validate messages array
+    if (!messages || !Array.isArray(messages)) {
+      console.error('❌ Invalid messages array:', messages);
+      return res.status(400).json({
+        error: 'Messages must be an array',
+        fallback: true,
+        message: "I'm having trouble understanding. Could you try again?"
+      });
+    }
+
     console.log(`🤖 Proxying to Claude ${modelType.toUpperCase()}`);
-    
+
     // Claude API configuration
     if (!CLAUDE_API_KEY) {
       throw new Error('Missing ANTHROPIC_API_KEY');
     }
-    
+
     // Convert messages format for Anthropic
     const systemMessage = messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system');
@@ -155,7 +208,105 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Test results storage (in-memory for simplicity)
+let latestTestResults = null;
+const testResultsHistory = [];
+const MAX_HISTORY = 50;
+
+// POST endpoint to receive test results from dashboard
+app.post('/api/test-results', (req, res) => {
+  try {
+    const testResults = req.body;
+    latestTestResults = {
+      ...testResults,
+      receivedAt: new Date().toISOString()
+    };
+
+    // Add to history
+    testResultsHistory.unshift(latestTestResults);
+    if (testResultsHistory.length > MAX_HISTORY) {
+      testResultsHistory.pop();
+    }
+
+    console.log(`📊 Test results received: ${testResults.summary?.passed}/${testResults.summary?.total} passed`);
+
+    res.json({ success: true, message: 'Test results saved' });
+  } catch (error) {
+    console.error('Error saving test results:', error);
+    res.status(500).json({ error: 'Failed to save test results' });
+  }
+});
+
+// GET endpoint to retrieve latest test results
+app.get('/api/test-results/latest', (req, res) => {
+  if (!latestTestResults) {
+    return res.status(404).json({ error: 'No test results available yet' });
+  }
+  res.json(latestTestResults);
+});
+
+// GET endpoint to retrieve test results history
+app.get('/api/test-results/history', (req, res) => {
+  res.json({
+    history: testResultsHistory,
+    count: testResultsHistory.length
+  });
+});
+
+// Serve test dashboard at /test-dashboard
+app.get('/test-dashboard', (req, res) => {
+  const dashboardPath = path.join(__dirname, 'test-dashboard.html');
+  if (fs.existsSync(dashboardPath)) {
+    res.sendFile(dashboardPath);
+  } else {
+    res.status(404).send('Test dashboard not found');
+  }
+});
+
+// Serve comprehensive test functions
+app.get('/comprehensive-test-functions.js', (req, res) => {
+  const functionsPath = path.join(__dirname, 'comprehensive-test-functions.js');
+  if (fs.existsSync(functionsPath)) {
+    res.sendFile(functionsPath);
+  } else {
+    res.status(404).send('Test functions not found');
+  }
+});
+
+// Serve test dashboard console check
+app.get('/test-dashboard-console-check.html', (req, res) => {
+  const checkPath = path.join(__dirname, 'test-dashboard-console-check.html');
+  if (fs.existsSync(checkPath)) {
+    res.sendFile(checkPath);
+  } else {
+    res.status(404).send('Console check not found');
+  }
+});
+
+// Serve new Cupido test dashboard
+app.get('/cupido-test-dashboard', (req, res) => {
+  const dashboardPath = path.join(__dirname, 'cupido-test-dashboard.html');
+  if (fs.existsSync(dashboardPath)) {
+    res.sendFile(dashboardPath);
+  } else {
+    res.status(404).send('Cupido test dashboard not found');
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Proxy server running on http://localhost:${PORT}`);
-  console.log(`✅ Ready to proxy Claude API calls to ${CLAUDE_API_URL}`);
+  console.log('\n' + '='.repeat(80));
+  console.log('🚀 SERVER STARTED SUCCESSFULLY');
+  console.log('='.repeat(80));
+  console.log(`\n📡 Server URL: http://localhost:${PORT}`);
+  console.log(`🎯 Claude API: ${CLAUDE_API_URL}`);
+  console.log(`🔑 API Key Status: ${CLAUDE_API_KEY ? '✅ LOADED & ACTIVE' : '❌ NOT LOADED - WILL FAIL'}`);
+  console.log(`\n📊 Test Dashboards:`);
+  console.log(`   • http://localhost:${PORT}/test-dashboard`);
+  console.log(`   • http://localhost:${PORT}/cupido-test-dashboard`);
+  console.log('\n' + '='.repeat(80) + '\n');
+
+  if (!CLAUDE_API_KEY) {
+    console.error('⚠️  WARNING: Server started but API key is missing!');
+    console.error('⚠️  Requests will return canned responses instead of real AI responses.\n');
+  }
 });

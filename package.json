@@ -29,6 +29,7 @@
     "@react-navigation/native": "^7.1.14",
     "@supabase/supabase-js": "^2.52.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "expo": "53.0.22",
     "expo-av": "^15.1.7",
     "expo-document-picker": "^14.0.7",
