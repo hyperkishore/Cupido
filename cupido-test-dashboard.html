@@ -1,0 +1,2921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido Test Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #d2d2d7;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Tabs */
+        .tabs {
+            background: white;
+            border-bottom: 1px solid #d2d2d7;
+            padding: 0 32px;
+            display: flex;
+            gap: 32px;
+        }
+
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            color: #6e6e73;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #1d1d1f;
+        }
+
+        .tab.active {
+            color: #0071e3;
+            border-bottom-color: #0071e3;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 32px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .controls-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0077ed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1d1d1f;
+            border: 1px solid #d2d2d7;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f7;
+        }
+
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff4d42;
+        }
+
+        /* Select Dropdown */
+        select {
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            color: #1d1d1f;
+            cursor: pointer;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e5ea;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background-color: #0071e3;
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: #6e6e73;
+        }
+
+        /* Stats Summary */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #6e6e73;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        /* Test Table */
+        .table-container {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f5f5f7;
+            border-bottom: 1px solid #d2d2d7;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6e6e73;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f5f5f7;
+            font-size: 14px;
+        }
+
+        /* Column-specific widths */
+        th:nth-child(1), td:nth-child(1) { width: 40px; } /* Checkbox */
+        th:nth-child(2), td:nth-child(2) { min-width: 180px; white-space: nowrap; } /* Test Name */
+        th:nth-child(3), td:nth-child(3) { min-width: 300px; max-width: 400px; } /* Description - wraps */
+        th:nth-child(4), td:nth-child(4) { min-width: 150px; white-space: nowrap; } /* Module */
+        th:nth-child(5), td:nth-child(5) { min-width: 180px; white-space: nowrap; } /* Category */
+        th:nth-child(6), td:nth-child(6) { min-width: 100px; white-space: nowrap; } /* Status */
+        th:nth-child(7), td:nth-child(7) { min-width: 100px; white-space: nowrap; } /* Last Run */
+        th:nth-child(8), td:nth-child(8) { min-width: 90px; white-space: nowrap; } /* Duration */
+        th:nth-child(9), td:nth-child(9) { width: 100px; white-space: nowrap; } /* Action */
+
+        /* Description column wrapping */
+        td:nth-child(3) {
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.4;
+            max-height: 4.2em; /* ~3 lines */
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #f5f5f7;
+            color: #6e6e73;
+        }
+
+        .status-running {
+            background: #e3f2fd;
+            color: #0071e3;
+        }
+
+        .status-pass {
+            background: #e8f5e9;
+            color: #34c759;
+        }
+
+        .status-fail {
+            background: #ffebee;
+            color: #ff3b30;
+        }
+
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: #f5f5f7;
+            color: #6e6e73;
+        }
+
+        /* Action Button in Table */
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #d2d2d7;
+            background: white;
+            color: #1d1d1f;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f5f5f7;
+        }
+
+        /* Console Output */
+        .console {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 24px;
+        }
+
+        .console-line {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .console-timestamp {
+            color: #6e6e73;
+        }
+
+        .console-info {
+            color: #0071e3;
+        }
+
+        .console-success {
+            color: #34c759;
+        }
+
+        .console-error {
+            color: #ff3b30;
+        }
+
+        .console-warning {
+            color: #ff9500;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 64px 32px;
+            color: #6e6e73;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Live Preview 2-Column Layout */
+        .live-preview-container {
+            display: grid;
+            grid-template-columns: 550px 1fr;
+            gap: 24px;
+            height: calc(100vh - 200px);
+        }
+
+        /* iPhone Preview Column */
+        .live-preview-iphone {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Simulator Controls Column */
+        .live-preview-simulator {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+        }
+
+        /* Scaled iPhone Frame (65% for complete visibility with content) */
+        .iphone-frame {
+            width: 256px;
+            height: 554px;
+            background: #1d1d1f;
+            border-radius: 35px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            margin: 20px auto;
+        }
+
+        .iphone-notch {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 14px;
+            background: #1d1d1f;
+            border-radius: 0 0 10px 10px;
+            z-index: 10;
+        }
+
+        .iphone-screen {
+            width: 100%;
+            height: 100%;
+            border-radius: 26px;
+            overflow: hidden;
+            background: white;
+            position: relative;
+        }
+
+        .live-preview-iframe {
+            width: 393px;
+            height: 852px;
+            border: none;
+            transform: scale(0.61);
+            transform-origin: top left;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Panel Headers */
+        .live-preview-header {
+            padding: 12px 16px;
+            background: #f5f5f7;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .console-view.collapsed .live-preview-header {
+            cursor: pointer;
+        }
+
+        .live-preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Console Content */
+        .live-preview-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f7;
+        }
+
+        .live-console {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            padding: 12px;
+            flex: 1;
+            height: 100%;
+        }
+
+        .live-console-line {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 8px;
+            line-height: 1.4;
+        }
+
+        /* Simulator Controls */
+        .simulator-header {
+            padding: 12px 16px;
+            background: #f5f5f7;
+            border-bottom: 1px solid #d2d2d7;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .simulator-content {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .sim-control-group {
+            margin-bottom: 16px;
+        }
+
+        .sim-control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .sim-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #6e6e73;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sim-select,
+        .sim-input,
+        .sim-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1d1d1f;
+            background: white;
+            font-family: inherit;
+        }
+
+        .sim-select:focus,
+        .sim-input:focus,
+        .sim-textarea:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+
+        .sim-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .sim-checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+        }
+
+        .sim-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .sim-checkbox-label {
+            font-size: 14px;
+            color: #1d1d1f;
+            cursor: pointer;
+        }
+
+        .sim-button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sim-btn {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .sim-btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+
+        .sim-btn-primary:hover {
+            background: #0077ed;
+        }
+
+        .sim-btn-secondary {
+            background: white;
+            color: #1d1d1f;
+            border: 1px solid #d2d2d7;
+        }
+
+        .sim-btn-secondary:hover {
+            background: #f5f5f7;
+        }
+
+        /* Toggle Button Styles */
+        .toggle-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #d2d2d7;
+            background: white;
+            color: #1d1d1f;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .toggle-btn:hover {
+            background: #f5f5f7;
+        }
+
+        .toggle-btn svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        /* Claude Code Status Indicator */
+        .claude-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid #d2d2d7;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6e6e73;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.idle {
+            background: #6e6e73;
+            animation: none;
+        }
+
+        .status-dot.analyzing {
+            background: #0071e3;
+        }
+
+        .status-dot.fixing {
+            background: #ff9500;
+        }
+
+        .status-dot.testing {
+            background: #34c759;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #1d1d1f;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d2d2d7;
+            border-top-color: #0071e3;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* New Simulator Styles */
+        .simulator-content {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .simulator-group {
+            margin-bottom: 20px;
+        }
+
+        .simulator-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .simulator-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1d1d1f;
+            background: white;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .simulator-input:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+
+        .simulator-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .simulator-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .simulator-checkbox span {
+            font-size: 14px;
+            color: #1d1d1f;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            background: white;
+            font-size: 13px;
+            color: #1d1d1f;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: #f5f5f7;
+            border-color: #0071e3;
+        }
+
+        .simulator-send-btn {
+            width: 100%;
+            padding: 12px;
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .simulator-send-btn:hover {
+            background: #0077ed;
+        }
+
+        /* Range slider styles */
+        .simulator-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #d2d2d7;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .simulator-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0071e3;
+            cursor: pointer;
+        }
+
+        .simulator-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0071e3;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .slider-value-display {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0071e3;
+        }
+
+        .simulator-number {
+            width: 80px;
+            padding: 6px 10px;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1d1d1f;
+            background: white;
+        }
+
+        .simulator-number:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+
+        .persona-info {
+            margin-top: 8px;
+            padding: 12px;
+            background: #f5f5f7;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #6e6e73;
+        }
+
+        /* Console Tab Styles */
+        .console-header {
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .unified-console {
+            height: calc(100vh - 280px);
+            background: #1d1d1f;
+            color: #f5f5f7;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            padding: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-title">Cupido Test Dashboard</div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
+            <button class="btn btn-primary" onclick="runSelectedTests()">Run Tests</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('tests')">Tests</div>
+        <div class="tab" onclick="switchTab('live')">Live Preview</div>
+        <div class="tab" onclick="switchTab('console')">Console</div>
+        <div class="tab" onclick="switchTab('history')">History</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Tests Tab -->
+        <div class="tab-content active" id="tests-tab">
+            <!-- Controls Bar -->
+            <div class="controls-bar">
+                <div class="controls-left">
+                    <select id="test-scope">
+                        <option value="all">All Tests (40)</option>
+                        <option value="console">Console Error Detection (5)</option>
+                        <option value="message">Message Flow & UI (8)</option>
+                        <option value="profile">Profile Extraction (6)</option>
+                        <option value="database">Database Operations (5)</option>
+                        <option value="error">Error Handling (6)</option>
+                        <option value="state">State Management (6)</option>
+                        <option value="api">API & Performance (4)</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+                    <button class="btn btn-secondary" onclick="clearSelection()">Clear</button>
+                </div>
+                <div class="controls-right">
+                    <div class="toggle-container">
+                        <label class="toggle-label">Store Logs</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="store-logs">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Summary -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Tests</div>
+                    <div class="stat-value" id="total-tests">40</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Passed</div>
+                    <div class="stat-value" style="color: #34c759;" id="passed-tests">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed</div>
+                    <div class="stat-value" style="color: #ff3b30;" id="failed-tests">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value" style="color: #6e6e73;" id="pending-tests">40</div>
+                </div>
+            </div>
+
+            <!-- Test Table -->
+            <div class="table-container">
+                <table id="test-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="select-all" onchange="toggleAllTests()"></th>
+                            <th>Test Name</th>
+                            <th>Description</th>
+                            <th>Module</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Last Run</th>
+                            <th>Duration</th>
+                            <th style="width: 100px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-table-body">
+                        <!-- Tests will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Live Preview Tab -->
+        <div class="tab-content" id="live-tab">
+            <div class="live-preview-container">
+                <!-- iPhone Preview -->
+                <div class="live-preview-iphone">
+                    <div class="live-preview-header">
+                        <div class="live-preview-title">Live App Preview</div>
+                        <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="exportChat()">Export Chat</button>
+                    </div>
+                    <div class="live-preview-content">
+                        <div class="iphone-frame">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe
+                                    id="live-app-iframe"
+                                    class="live-preview-iframe"
+                                    src="http://localhost:8081">
+                                </iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulator Controls -->
+                <div class="live-preview-simulator">
+                    <div class="live-preview-header">
+                        <div class="live-preview-title">Simulator Controls</div>
+                    </div>
+                    <div class="simulator-content">
+                        <!-- Persona Selection -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">Persona</label>
+                            <select id="persona-select" class="simulator-input" onchange="updatePersonaInfo()">
+                                <option value="">Select persona...</option>
+                                <option value="sarah">Sarah Chen - PM at Google</option>
+                                <option value="mike">Mike Rodriguez - Graphic Designer</option>
+                                <option value="emily">Emily Watson - PhD Student</option>
+                                <option value="raj">Raj Patel - Entrepreneur</option>
+                                <option value="rachel">Rachel Kim - Artist</option>
+                                <option value="alex">Alex Torres - Startup Founder</option>
+                            </select>
+                            <div id="persona-info" class="persona-info" style="display: none;"></div>
+                        </div>
+
+                        <!-- Testing Variations -->
+                        <div class="simulator-group">
+                            <div class="slider-value">
+                                <label class="simulator-label" style="margin: 0;">Rudeness Level</label>
+                                <span class="slider-value-display" id="rudeness-value">50</span>
+                            </div>
+                            <input type="range" id="rudeness-slider" class="simulator-slider" min="0" max="100" value="50" oninput="updateRudenessValue(this.value)">
+                        </div>
+
+                        <div class="simulator-group">
+                            <label class="simulator-label">Max Messages</label>
+                            <input type="number" id="max-messages" class="simulator-number" min="1" max="100" value="10">
+                        </div>
+
+                        <div class="simulator-group">
+                            <label class="simulator-label">Response Style</label>
+                            <select id="response-style" class="simulator-input">
+                                <option value="balanced">Balanced</option>
+                                <option value="friendly">Friendly & Warm</option>
+                                <option value="flirty">Flirty & Playful</option>
+                                <option value="casual">Casual & Relaxed</option>
+                                <option value="deep">Deep & Thoughtful</option>
+                                <option value="humorous">Humorous & Witty</option>
+                            </select>
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">Message</label>
+                            <textarea id="sim-message" class="simulator-input" placeholder="Type your message..." rows="4"></textarea>
+                        </div>
+
+                        <!-- Include Contextual Image -->
+                        <div class="simulator-group">
+                            <label class="simulator-checkbox">
+                                <input type="checkbox" id="include-image">
+                                <span>Include contextual image (based on message)</span>
+                            </label>
+                        </div>
+
+                        <!-- Quick Presets -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">Quick Presets</label>
+                            <div class="preset-grid">
+                                <button class="preset-btn" onclick="loadPreset('intro')">👋 Intro</button>
+                                <button class="preset-btn" onclick="loadPreset('question')">❓ Question</button>
+                                <button class="preset-btn" onclick="loadPreset('casual')">💬 Casual</button>
+                                <button class="preset-btn" onclick="loadPreset('deep')">🤔 Deep</button>
+                            </div>
+                        </div>
+
+                        <!-- Send Button -->
+                        <button class="simulator-send-btn" onclick="sendSimulatorMessage()">
+                            <span>Send Message</span>
+                        </button>
+
+                        <!-- Automation Controls -->
+                        <div class="simulator-group" style="border-top: 1px solid #d2d2d7; padding-top: 20px; margin-top: 20px;">
+                            <label class="simulator-label">🤖 Automation</label>
+
+                            <div style="margin-bottom: 12px;">
+                                <div class="slider-value">
+                                    <label class="simulator-label" style="margin: 0; font-size: 12px; font-weight: 500;">Message Delay (seconds)</label>
+                                    <span class="slider-value-display" id="delay-value">2</span>
+                                </div>
+                                <input type="range" id="message-delay" class="simulator-slider" min="1" max="10" value="2" oninput="updateDelayValue(this.value)">
+                            </div>
+
+                            <div class="preset-grid">
+                                <button class="preset-btn" onclick="startAutoConversation(5)">🔄 Auto 5x</button>
+                                <button class="preset-btn" onclick="startAutoConversation(10)">🔄 Auto 10x</button>
+                                <button class="preset-btn" onclick="stopAutoConversation()" style="background: #ff3b30; color: white;">⏹ Stop</button>
+                            </div>
+                        </div>
+
+                        <!-- Conversation Templates -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">💬 Conversation Templates</label>
+                            <div class="preset-grid">
+                                <button class="preset-btn" onclick="loadTemplate('first-date')">🌹 First Date</button>
+                                <button class="preset-btn" onclick="loadTemplate('deep-talk')">🤔 Deep Talk</button>
+                                <button class="preset-btn" onclick="loadTemplate('flirty')">😘 Flirty</button>
+                                <button class="preset-btn" onclick="loadTemplate('getting-to-know')">👋 Getting to Know</button>
+                            </div>
+                        </div>
+
+                        <!-- Live Metrics -->
+                        <div class="simulator-group" style="background: #f5f5f7; padding: 12px; border-radius: 8px;">
+                            <label class="simulator-label">📊 Live Metrics</label>
+                            <div id="live-metrics" style="font-size: 12px; color: #1d1d1f;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span>Response Time:</span>
+                                    <span id="metric-response-time">--</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span>Messages Sent:</span>
+                                    <span id="metric-messages">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span>Engagement Score:</span>
+                                    <span id="metric-engagement">--</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Detected Mood:</span>
+                                    <span id="metric-mood">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save/Load Scenario -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">💾 Test Scenarios</label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <input type="text" id="scenario-name" class="simulator-input" style="flex: 1;" placeholder="Scenario name...">
+                                <button class="preset-btn" onclick="saveScenario()" style="width: auto; padding: 8px 16px;">Save</button>
+                            </div>
+                            <select id="saved-scenarios" class="simulator-input" onchange="loadScenario(this.value)">
+                                <option value="">Load scenario...</option>
+                            </select>
+                        </div>
+
+                        <!-- Export Results -->
+                        <button class="simulator-send-btn" onclick="exportTestResults()" style="background: #34c759;">
+                            <span>📥 Export Test Results</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Console Tab -->
+        <div class="tab-content" id="console-tab">
+            <div class="console-header">
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Unified Console</h3>
+                    <div class="claude-status">
+                        <div class="status-dot idle" id="claude-status-dot"></div>
+                        <div class="status-text" id="claude-status-text">Idle</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" onclick="filterConsole('all')">All</button>
+                    <button class="btn btn-secondary" onclick="filterConsole('test')">Tests</button>
+                    <button class="btn btn-secondary" onclick="filterConsole('app')">App</button>
+                    <button class="btn btn-secondary" onclick="copyAllLogs()">Copy All Logs</button>
+                    <button class="btn btn-secondary" onclick="copyFailuresOnly()">Copy Failures</button>
+                    <button class="btn btn-secondary" onclick="clearUnifiedConsole()">Clear</button>
+                </div>
+            </div>
+            <div class="unified-console" id="unified-console">
+                <div class="console-line">
+                    <span class="console-timestamp">[00:00:00]</span>
+                    <span class="console-info">Unified console initialized. Test and app logs will appear here.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="history-tab">
+            <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <h3>Test History</h3>
+                <p>View past test runs and results</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load comprehensive test functions -->
+    <script src="comprehensive-test-functions.js"></script>
+
+    <script>
+        // Test configuration from comprehensive test functions
+        const testConfig = {
+            console: { name: 'Console Error Detection', count: 5 },
+            message: { name: 'Message Flow & UI', count: 8 },
+            profile: { name: 'Profile Extraction', count: 6 },
+            database: { name: 'Database Operations', count: 5 },
+            error: { name: 'Error Handling', count: 6 },
+            state: { name: 'State Management', count: 6 },
+            api: { name: 'API & Performance', count: 4 }
+        };
+
+        // Initialize tests
+        let tests = [];
+        let testResults = {};
+        let selectedTests = new Set();
+        let currentTest = null;
+        let currentTestRun = {
+            id: null,
+            startTime: null,
+            tests: []
+        };
+
+        // API Call Tracker
+        const apiCalls = [];
+        function trackApiCall(url, method, body, response, duration) {
+            const call = {
+                url,
+                method,
+                body,
+                response,
+                duration,
+                timestamp: new Date().toISOString()
+            };
+            apiCalls.push(call);
+            logToConsole(`API Call: ${method} ${url} (${duration}ms)`, 'info', 'app');
+            return call;
+        }
+
+        // Database Logger - stores all test runs in localStorage
+        class TestLogger {
+            constructor() {
+                this.dbKey = 'cupido_test_logs';
+                this.currentRunKey = 'cupido_current_test_run';
+            }
+
+            // Initialize a new test run
+            startTestRun() {
+                const runId = `test_run_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+                currentTestRun = {
+                    id: runId,
+                    startTime: new Date().toISOString(),
+                    endTime: null,
+                    tests: [],
+                    environment: {
+                        apiUrl: 'http://localhost:3001/api/chat',
+                        appUrl: 'http://localhost:8081',
+                        userAgent: navigator.userAgent,
+                        timestamp: Date.now()
+                    }
+                };
+                localStorage.setItem(this.currentRunKey, JSON.stringify(currentTestRun));
+                logToConsole(`Started test run: ${runId}`, 'info');
+                return runId;
+            }
+
+            // Log a test execution
+            logTest(testId, testName, status, message, details = {}) {
+                const testLog = {
+                    testId,
+                    testName,
+                    status,
+                    message,
+                    timestamp: new Date().toISOString(),
+                    duration: details.duration || 0,
+                    apiCalls: details.apiCalls || [],
+                    errors: details.errors || [],
+                    metadata: details.metadata || {}
+                };
+
+                currentTestRun.tests.push(testLog);
+                localStorage.setItem(this.currentRunKey, JSON.stringify(currentTestRun));
+            }
+
+            // Finalize test run and save to history
+            endTestRun() {
+                currentTestRun.endTime = new Date().toISOString();
+                currentTestRun.totalDuration = Date.now() - new Date(currentTestRun.startTime).getTime();
+
+                const passed = currentTestRun.tests.filter(t => t.status === 'pass').length;
+                const failed = currentTestRun.tests.filter(t => t.status === 'fail').length;
+
+                currentTestRun.summary = {
+                    total: currentTestRun.tests.length,
+                    passed,
+                    failed,
+                    passRate: ((passed / currentTestRun.tests.length) * 100).toFixed(1)
+                };
+
+                // Save to history
+                const history = this.getHistory();
+                history.unshift(currentTestRun);
+
+                // Keep only last 50 test runs
+                if (history.length > 50) {
+                    history.splice(50);
+                }
+
+                localStorage.setItem(this.dbKey, JSON.stringify(history));
+                localStorage.removeItem(this.currentRunKey);
+
+                logToConsole(`Test run completed: ${passed}/${currentTestRun.tests.length} passed`,
+                    passed === currentTestRun.tests.length ? 'success' : 'error');
+
+                // POST test results to API for automated analysis
+                this.postResultsToAPI(currentTestRun);
+            }
+
+            // POST results to API for automated fix loop
+            async postResultsToAPI(testRun) {
+                try {
+                    const response = await fetch('http://localhost:3001/api/test-results', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(testRun)
+                    });
+
+                    if (response.ok) {
+                        console.log('Test results posted to API for automated analysis');
+                    } else {
+                        console.warn('Failed to post test results to API');
+                    }
+                } catch (error) {
+                    console.warn('Could not post test results to API:', error.message);
+                }
+            }
+
+            // Get test history
+            getHistory() {
+                const data = localStorage.getItem(this.dbKey);
+                return data ? JSON.parse(data) : [];
+            }
+
+            // Get specific test run
+            getTestRun(runId) {
+                const history = this.getHistory();
+                return history.find(run => run.id === runId);
+            }
+
+            // Clear all history
+            clearHistory() {
+                localStorage.removeItem(this.dbKey);
+                localStorage.removeItem(this.currentRunKey);
+                logToConsole('Test history cleared', 'info');
+            }
+
+            // Export logs as JSON
+            exportLogs() {
+                const history = this.getHistory();
+                const dataStr = JSON.stringify(history, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `cupido_test_logs_${Date.now()}.json`;
+                link.click();
+                logToConsole('Logs exported', 'success');
+            }
+        }
+
+        const testLogger = new TestLogger();
+
+        // Generate test list from TEST_FUNCTIONS
+        function initializeTests() {
+            if (window.TEST_FUNCTIONS) {
+                Object.keys(window.TEST_FUNCTIONS).forEach(testId => {
+                    const [category, num] = testId.split('-');
+                    const metadata = getTestMetadata(testId);
+                    tests.push({
+                        id: testId,
+                        name: getTestName(testId),
+                        description: metadata.description,
+                        module: metadata.module,
+                        category: testConfig[category]?.name || category,
+                        status: 'pending',
+                        lastRun: null,
+                        duration: null
+                    });
+                });
+            }
+            renderTestTable();
+        }
+
+        // Get test name from test ID
+        function getTestName(testId) {
+            const names = {
+                'console-1': 'No ReferenceErrors',
+                'console-2': 'No TypeErrors',
+                'console-3': 'No Network Errors',
+                'console-4': 'No Warning Messages',
+                'console-5': 'Clean Console Output',
+                'message-1': 'Send Message Flow',
+                'message-2': 'Receive Message Flow',
+                'message-3': 'Message UI Update',
+                'message-4': 'Message History',
+                'message-5': 'Message Retry',
+                'message-6': 'Message Timestamps',
+                'message-7': 'Message Status',
+                'message-8': 'Message Ordering',
+                'profile-1': 'Extract Profile Data',
+                'profile-2': 'Profile Completeness',
+                'profile-3': 'Profile Validation',
+                'profile-4': 'Profile Update',
+                'profile-5': 'Profile Persistence',
+                'profile-6': 'Profile Display',
+                'database-1': 'Save to Database',
+                'database-2': 'Load from Database',
+                'database-3': 'Update Database',
+                'database-4': 'Delete from Database',
+                'database-5': 'Database Sync',
+                'error-1': 'Network Error Handling',
+                'error-2': 'API Error Handling',
+                'error-3': 'Validation Errors',
+                'error-4': 'Error Recovery',
+                'error-5': 'Error Display',
+                'error-6': 'Error Logging',
+                'state-1': 'State Initialization',
+                'state-2': 'State Updates',
+                'state-3': 'State Persistence',
+                'state-4': 'State Reset',
+                'state-5': 'State Validation',
+                'state-6': 'Loading States',
+                'api-1': 'API Connectivity',
+                'api-2': 'API Response Time',
+                'api-3': 'API Error Handling',
+                'api-4': 'API Rate Limiting'
+            };
+            return names[testId] || testId;
+        }
+
+        // Get test metadata (description and module)
+        function getTestMetadata(testId) {
+            const metadata = {
+                'console-1': {
+                    description: 'Monitor for ReferenceError during message send (catches bugs like commonLocations)',
+                    module: 'userProfileService.ts'
+                },
+                'console-2': {
+                    description: 'Monitor for TypeError in profile operations and UI rendering',
+                    module: 'userProfileService.ts'
+                },
+                'console-3': {
+                    description: 'Monitor for network errors in API calls and image loading',
+                    module: 'apiService.ts'
+                },
+                'console-4': {
+                    description: 'Check for warning messages in console during normal operation',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'console-5': {
+                    description: 'Ensure console is clean with no unexpected errors or warnings',
+                    module: 'App.tsx'
+                },
+                'message-1': {
+                    description: 'Verify message send flow from input to chat history',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-2': {
+                    description: 'Verify AI response is received and displayed correctly',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-3': {
+                    description: 'Check that UI updates immediately when message is sent',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-4': {
+                    description: 'Verify message history persists and loads correctly',
+                    module: 'chatDatabase.ts'
+                },
+                'message-5': {
+                    description: 'Test message retry functionality on failure',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-6': {
+                    description: 'Verify timestamps are correctly displayed for all messages',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-7': {
+                    description: 'Check message status indicators (sending, sent, failed)',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'message-8': {
+                    description: 'Verify messages appear in correct chronological order',
+                    module: 'chatDatabase.ts'
+                },
+                'profile-1': {
+                    description: 'Test extraction of profile data from conversation',
+                    module: 'personalityInsightsService.ts'
+                },
+                'profile-2': {
+                    description: 'Check profile completeness score calculation',
+                    module: 'userProfileService.ts'
+                },
+                'profile-3': {
+                    description: 'Validate profile data structure and required fields',
+                    module: 'userProfileService.ts'
+                },
+                'profile-4': {
+                    description: 'Test profile update when new information is extracted',
+                    module: 'personalityInsightsService.ts'
+                },
+                'profile-5': {
+                    description: 'Verify profile data persists across sessions',
+                    module: 'userProfileService.ts'
+                },
+                'profile-6': {
+                    description: 'Check profile display on PixelPerfectProfileScreen',
+                    module: 'PixelPerfectProfileScreen.tsx'
+                },
+                'database-1': {
+                    description: 'Test saving messages and profile to AsyncStorage',
+                    module: 'chatDatabase.ts'
+                },
+                'database-2': {
+                    description: 'Test loading saved data from AsyncStorage',
+                    module: 'chatDatabase.ts'
+                },
+                'database-3': {
+                    description: 'Test updating existing records in database',
+                    module: 'chatDatabase.ts'
+                },
+                'database-4': {
+                    description: 'Test deleting messages and clearing chat history',
+                    module: 'chatDatabase.ts'
+                },
+                'database-5': {
+                    description: 'Verify database sync with app state',
+                    module: 'chatDatabase.ts'
+                },
+                'error-1': {
+                    description: 'Test handling of network timeout and connection errors',
+                    module: 'apiService.ts'
+                },
+                'error-2': {
+                    description: 'Test handling of API errors (4xx, 5xx responses)',
+                    module: 'apiService.ts'
+                },
+                'error-3': {
+                    description: 'Test validation error handling for user input',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'error-4': {
+                    description: 'Test error recovery and retry mechanisms',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'error-5': {
+                    description: 'Verify error messages are displayed to user',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'error-6': {
+                    description: 'Check that errors are logged for debugging',
+                    module: 'apiService.ts'
+                },
+                'state-1': {
+                    description: 'Test initial state setup when app loads',
+                    module: 'App.tsx'
+                },
+                'state-2': {
+                    description: 'Test state updates during message flow',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'state-3': {
+                    description: 'Test state persistence across app restarts',
+                    module: 'chatDatabase.ts'
+                },
+                'state-4': {
+                    description: 'Test state reset when user clears data',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'state-5': {
+                    description: 'Validate state consistency across components',
+                    module: 'App.tsx'
+                },
+                'state-6': {
+                    description: 'Test loading state indicators during operations',
+                    module: 'SimpleReflectionChat.tsx'
+                },
+                'api-1': {
+                    description: 'Test connectivity to Claude AI API',
+                    module: 'apiService.ts'
+                },
+                'api-2': {
+                    description: 'Measure and verify API response time is acceptable',
+                    module: 'apiService.ts'
+                },
+                'api-3': {
+                    description: 'Test graceful handling of API errors',
+                    module: 'apiService.ts'
+                },
+                'api-4': {
+                    description: 'Test rate limiting and request throttling',
+                    module: 'apiService.ts'
+                }
+            };
+            return metadata[testId] || { description: 'Test description', module: 'Unknown' };
+        }
+
+        // Render test table
+        function renderTestTable() {
+            const tbody = document.getElementById('test-table-body');
+            tbody.innerHTML = tests.map(test => `
+                <tr id="test-row-${test.id}">
+                    <td><input type="checkbox" class="test-checkbox" value="${test.id}" onchange="toggleTestSelection('${test.id}')"></td>
+                    <td>${test.name}</td>
+                    <td style="color: #6e6e73; font-size: 13px;">${test.description}</td>
+                    <td><span class="category-badge">${test.module}</span></td>
+                    <td><span class="category-badge">${test.category}</span></td>
+                    <td><span class="status-badge status-${test.status}">${test.status.charAt(0).toUpperCase() + test.status.slice(1)}</span></td>
+                    <td>${test.lastRun || '-'}</td>
+                    <td>${test.duration ? test.duration + 'ms' : '-'}</td>
+                    <td><button class="action-btn" onclick="runSingleTest('${test.id}')">Run</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Test selection
+        function toggleTestSelection(testId) {
+            if (selectedTests.has(testId)) {
+                selectedTests.delete(testId);
+            } else {
+                selectedTests.add(testId);
+            }
+        }
+
+        function toggleAllTests() {
+            const selectAll = document.getElementById('select-all').checked;
+            document.querySelectorAll('.test-checkbox').forEach(cb => {
+                cb.checked = selectAll;
+                if (selectAll) {
+                    selectedTests.add(cb.value);
+                } else {
+                    selectedTests.delete(cb.value);
+                }
+            });
+        }
+
+        function selectAll() {
+            document.getElementById('select-all').checked = true;
+            toggleAllTests();
+        }
+
+        function clearSelection() {
+            document.getElementById('select-all').checked = false;
+            toggleAllTests();
+        }
+
+        // Console logging
+        function logToConsole(message, type = 'info', source = 'test') {
+            const console = document.getElementById('unified-console');
+            if (!console) return;
+
+            const timestamp = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.setAttribute('data-source', source);
+            line.innerHTML = `
+                <span class="console-timestamp">[${timestamp}]</span>
+                <span style="color: #6e6e73;">[${source.toUpperCase()}]</span>
+                <span class="console-${type}">${message}</span>
+            `;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // Unified console functions
+        function clearUnifiedConsole() {
+            const console = document.getElementById('unified-console');
+            if (console) {
+                console.innerHTML = '<div class="console-line"><span class="console-timestamp">[' + new Date().toLocaleTimeString() + ']</span><span class="console-info">Console cleared</span></div>';
+            }
+        }
+
+        function filterConsole(filter) {
+            const lines = document.querySelectorAll('#unified-console .console-line');
+            lines.forEach(line => {
+                const source = line.getAttribute('data-source') || 'test';
+                if (filter === 'all' || source === filter) {
+                    line.style.display = 'flex';
+                } else {
+                    line.style.display = 'none';
+                }
+            });
+        }
+
+        // Copy all console logs to clipboard
+        function copyAllLogs() {
+            const consoleElement = document.getElementById('unified-console');
+            if (!consoleElement) {
+                alert('Console not found');
+                return;
+            }
+
+            const lines = consoleElement.querySelectorAll('.console-line');
+            let logText = '';
+
+            lines.forEach(line => {
+                // Extract text content from the line
+                const text = line.textContent || line.innerText;
+                if (text.trim()) {
+                    logText += text + '\n';
+                }
+            });
+
+            if (!logText.trim()) {
+                alert('No logs to copy');
+                return;
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(logText).then(() => {
+                // Show success message in console
+                const originalText = logText;
+                logToConsole('✓ All logs copied to clipboard!', 'success');
+
+                // Remove the success message after 3 seconds
+                setTimeout(() => {
+                    const lines = consoleElement.querySelectorAll('.console-line');
+                    const lastLine = lines[lines.length - 1];
+                    if (lastLine && lastLine.textContent.includes('All logs copied')) {
+                        lastLine.remove();
+                    }
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy logs:', err);
+                alert('Failed to copy logs to clipboard. Error: ' + err.message);
+            });
+        }
+
+        function copyFailuresOnly() {
+            const consoleElement = document.getElementById('unified-console');
+            if (!consoleElement) {
+                alert('Console not found');
+                return;
+            }
+
+            const lines = consoleElement.querySelectorAll('.console-line');
+            let allText = '';
+
+            // Collect all text first
+            lines.forEach(line => {
+                const text = line.textContent || line.innerText;
+                if (text.trim()) {
+                    allText += text + '\n';
+                }
+            });
+
+            // Split by test separators
+            const testBlocks = allText.split('═══════════════════════════════════════════════════════════');
+
+            // Filter to only failed tests
+            const failedTests = testBlocks.filter(block => {
+                return block.includes('Status: FAILED ✗');
+            });
+
+            if (failedTests.length === 0) {
+                alert('No failed tests found');
+                return;
+            }
+
+            // Reconstruct with separators
+            let failureText = 'FAILED TESTS REPORT\n';
+            failureText += '═══════════════════════════════════════════════════════════\n\n';
+
+            failedTests.forEach((test, index) => {
+                if (test.trim()) {
+                    failureText += '═══════════════════════════════════════════════════════════\n';
+                    failureText += test.trim() + '\n';
+                    failureText += '═══════════════════════════════════════════════════════════\n\n';
+                }
+            });
+
+            failureText += `\nTotal Failed Tests: ${failedTests.length}\n`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(failureText).then(() => {
+                logToConsole(`✓ ${failedTests.length} failed test(s) copied to clipboard!`, 'success');
+
+                // Remove the success message after 3 seconds
+                setTimeout(() => {
+                    const lines = consoleElement.querySelectorAll('.console-line');
+                    const lastLine = lines[lines.length - 1];
+                    if (lastLine && lastLine.textContent.includes('failed test(s) copied')) {
+                        lastLine.remove();
+                    }
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy failures:', err);
+                alert('Failed to copy failures to clipboard. Error: ' + err.message);
+            });
+        }
+
+        // Run tests
+        async function runSelectedTests() {
+            const scope = document.getElementById('test-scope').value;
+            let testsToRun = [];
+
+            if (scope === 'all') {
+                testsToRun = selectedTests.size > 0 ? Array.from(selectedTests) : tests.map(t => t.id);
+            } else {
+                testsToRun = tests.filter(t => t.id.startsWith(scope + '-')).map(t => t.id);
+            }
+
+            if (testsToRun.length === 0) {
+                logToConsole('No tests selected', 'warning');
+                return;
+            }
+
+            logToConsole(`Starting ${testsToRun.length} tests...`, 'info');
+            logToConsole('═══════════════════════════════════', 'info');
+
+            // Start test run logging
+            testLogger.startTestRun();
+
+            // Clear previous results
+            testResults = {};
+            apiCalls.length = 0;
+
+            for (const testId of testsToRun) {
+                await runSingleTest(testId);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            logToConsole('═══════════════════════════════════', 'info');
+            logToConsole(`All tests completed`, 'success');
+
+            // End test run logging
+            testLogger.endTestRun();
+
+            updateStats();
+        }
+
+        async function runSingleTest(testId) {
+            if (currentTest) {
+                logToConsole('Another test is running, please wait...', 'warning');
+                return;
+            }
+
+            const test = tests.find(t => t.id === testId);
+            if (!test) return;
+
+            currentTest = testId;
+            test.status = 'running';
+            test.lastRun = new Date().toLocaleTimeString();
+            renderTestTable();
+
+            // Log detailed test start
+            logToConsole('═══════════════════════════════════════════════════════════', 'info');
+            logToConsole(`Test: ${testId} (${test.name})`, 'info');
+            logToConsole(`Category: ${test.category}`, 'info');
+            logToConsole(`Status: RUNNING`, 'info');
+            logToConsole(`Started at: ${test.lastRun}`, 'info');
+
+            const startTime = Date.now();
+            const testApiCalls = [];
+            const testErrors = [];
+
+            try {
+                const testFn = window.TEST_FUNCTIONS[testId];
+                if (testFn) {
+                    logToConsole(`Executing test function...`, 'info');
+
+                    const result = await testFn();
+                    const duration = Date.now() - startTime;
+
+                    test.status = result.pass ? 'pass' : 'fail';
+                    test.duration = duration;
+
+                    // Log detailed results
+                    logToConsole(`Status: ${result.pass ? 'PASSED ✓' : 'FAILED ✗'}`, result.pass ? 'success' : 'error');
+                    logToConsole(`Duration: ${duration}ms`, 'info');
+                    logToConsole(`Result: ${result.message}`, result.pass ? 'success' : 'error');
+
+                    if (!result.pass) {
+                        // Log detailed failure information
+                        if (result.errors && result.errors.length > 0) {
+                            logToConsole(`Errors Found:`, 'error');
+                            result.errors.forEach((err, idx) => {
+                                logToConsole(`  ${idx + 1}. ${err}`, 'error');
+                            });
+                        }
+
+                        // Log metadata for debugging
+                        if (result.metadata) {
+                            logToConsole(`Debug Information:`, 'info');
+                            Object.keys(result.metadata).forEach(key => {
+                                logToConsole(`  - ${key}: ${JSON.stringify(result.metadata[key])}`, 'info');
+                            });
+                        }
+
+                        // Log suggestions based on test category
+                        logToConsole(`Suggestions:`, 'warning');
+                        if (testId.startsWith('console-')) {
+                            logToConsole(`  - Check browser console for detailed error messages`, 'warning');
+                            logToConsole(`  - Verify all required JavaScript files are loaded`, 'warning');
+                            logToConsole(`  - Look for undefined variables or missing imports`, 'warning');
+                        } else if (testId.startsWith('message-')) {
+                            logToConsole(`  - Verify iframe communication is working`, 'warning');
+                            logToConsole(`  - Check if Live Preview tab has loaded the app`, 'warning');
+                            logToConsole(`  - Ensure message handlers are registered`, 'warning');
+                        } else if (testId.startsWith('profile-')) {
+                            logToConsole(`  - Check AI response for profile extraction`, 'warning');
+                            logToConsole(`  - Verify profile service is running`, 'warning');
+                        } else if (testId.startsWith('database-')) {
+                            logToConsole(`  - Verify database connection`, 'warning');
+                            logToConsole(`  - Check Supabase credentials`, 'warning');
+                        } else if (testId.startsWith('api-')) {
+                            logToConsole(`  - Ensure server is running on port 3001`, 'warning');
+                            logToConsole(`  - Check API credentials`, 'warning');
+                        }
+
+                        testErrors.push(result.message);
+                    }
+
+                    // Log to database
+                    testLogger.logTest(testId, test.name, result.pass ? 'pass' : 'fail', result.message, {
+                        duration,
+                        apiCalls: result.apiCalls || testApiCalls,
+                        errors: testErrors,
+                        metadata: result.metadata || {}
+                    });
+
+                    testResults[testId] = result.pass;
+                } else {
+                    const duration = Date.now() - startTime;
+                    test.status = 'fail';
+                    test.duration = duration;
+
+                    logToConsole(`Status: FAILED ✗`, 'error');
+                    logToConsole(`Duration: ${duration}ms`, 'info');
+                    logToConsole(`Error: Test function not found`, 'error');
+                    logToConsole(`Details:`, 'error');
+                    logToConsole(`  - Test ID: ${testId}`, 'error');
+                    logToConsole(`  - Function should be in: comprehensive-test-functions.js`, 'error');
+                    logToConsole(`Suggestions:`, 'warning');
+                    logToConsole(`  - Verify comprehensive-test-functions.js is loaded`, 'warning');
+                    logToConsole(`  - Check that TEST_FUNCTIONS object contains '${testId}'`, 'warning');
+                    logToConsole(`  - Reload the page to refresh test functions`, 'warning');
+
+                    testErrors.push('Test function not found');
+
+                    // Log to database
+                    testLogger.logTest(testId, test.name, 'fail', 'Test function not found', {
+                        duration,
+                        apiCalls: testApiCalls,
+                        errors: testErrors,
+                        metadata: {}
+                    });
+
+                    testResults[testId] = false;
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                test.status = 'fail';
+                test.duration = duration;
+
+                logToConsole(`Status: FAILED ✗`, 'error');
+                logToConsole(`Duration: ${duration}ms`, 'info');
+                logToConsole(`Error: ${error.message}`, 'error');
+
+                if (error.stack) {
+                    logToConsole(`Stack Trace:`, 'error');
+                    const stackLines = error.stack.split('\n').slice(0, 5); // First 5 lines
+                    stackLines.forEach(line => {
+                        logToConsole(`  ${line.trim()}`, 'error');
+                    });
+                }
+
+                logToConsole(`Details:`, 'error');
+                logToConsole(`  - Error Type: ${error.name || 'Unknown'}`, 'error');
+                logToConsole(`  - Test ID: ${testId}`, 'error');
+
+                logToConsole(`Suggestions:`, 'warning');
+                if (error.message.includes('iframe')) {
+                    logToConsole(`  - Verify Live Preview tab has loaded the app`, 'warning');
+                    logToConsole(`  - Check iframe ID is 'live-app-iframe'`, 'warning');
+                    logToConsole(`  - Ensure app is running without errors`, 'warning');
+                } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+                    logToConsole(`  - Server may be slow or unresponsive`, 'warning');
+                    logToConsole(`  - Check network connectivity`, 'warning');
+                    logToConsole(`  - Verify API server is running`, 'warning');
+                } else {
+                    logToConsole(`  - Check browser console for more details`, 'warning');
+                    logToConsole(`  - Review the stack trace above`, 'warning');
+                }
+
+                testErrors.push(error.message);
+
+                // Log to database
+                testLogger.logTest(testId, test.name, 'fail', `Error: ${error.message}`, {
+                    duration,
+                    apiCalls: testApiCalls,
+                    errors: testErrors,
+                    metadata: { stack: error.stack }
+                });
+
+                testResults[testId] = false;
+            }
+
+            logToConsole('═══════════════════════════════════════════════════════════', 'info');
+            logToConsole('', 'info'); // Blank line for spacing
+
+            currentTest = null;
+            renderTestTable();
+            updateStats();
+        }
+
+        // Update stats
+        function updateStats() {
+            const passed = tests.filter(t => t.status === 'pass').length;
+            const failed = tests.filter(t => t.status === 'fail').length;
+            const pending = tests.filter(t => t.status === 'pending').length;
+
+            document.getElementById('passed-tests').textContent = passed;
+            document.getElementById('failed-tests').textContent = failed;
+            document.getElementById('pending-tests').textContent = pending;
+        }
+
+        // Export results
+        function exportResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                tests: tests,
+                summary: {
+                    total: tests.length,
+                    passed: tests.filter(t => t.status === 'pass').length,
+                    failed: tests.filter(t => t.status === 'fail').length,
+                    pending: tests.filter(t => t.status === 'pending').length
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-test-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            logToConsole('Test results exported', 'success');
+        }
+
+        // Show test history
+        function showHistory() {
+            const history = testLogger.getHistory();
+            console.log('Test History:');
+            console.table(history.map(run => ({
+                id: run.id.slice(-8),
+                startTime: new Date(run.startTime).toLocaleString(),
+                total: run.summary?.total || 0,
+                passed: run.summary?.passed || 0,
+                failed: run.summary?.failed || 0,
+                passRate: run.summary?.passRate + '%' || '0%'
+            })));
+            logToConsole(`Found ${history.length} test runs in history`, 'info');
+        }
+
+        // Auto-fix test failures
+        async function autoFixFailures() {
+            logToConsole('AUTO-FIX: Starting automated failure analysis...', 'info');
+
+            try {
+                // Fetch latest test results
+                const response = await fetch('http://localhost:3001/api/test-results/latest');
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        logToConsole('AUTO-FIX: No test results available. Run tests first.', 'warning');
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const testResults = await response.json();
+                const failedTests = testResults.tests.filter(t => t.status === 'fail');
+
+                if (failedTests.length === 0) {
+                    logToConsole('AUTO-FIX: All tests passing! No fixes needed.', 'success');
+                    return;
+                }
+
+                logToConsole(`AUTO-FIX: Found ${failedTests.length} failed test(s). Analyzing with Claude AI...`, 'info');
+
+                // Build analysis prompt
+                const analysisPrompt = `You are an expert software debugger analyzing test failures for a React Native web app.
+
+Test Results Summary:
+- Total: ${testResults.summary.total}
+- Passed: ${testResults.summary.passed}
+- Failed: ${testResults.summary.failed}
+
+Failed Tests:
+${failedTests.map((test, idx) => `
+${idx + 1}. ${test.testName} (${test.testId})
+   Status: ${test.status}
+   Message: ${test.message}
+   Errors: ${JSON.stringify(test.errors || [])}
+   Metadata: ${JSON.stringify(test.metadata || {})}`).join('\n')}
+
+Analyze these failures and provide:
+1. Root cause of each failure
+2. Which file(s) need to be fixed
+3. Specific code changes needed
+4. Risk level (LOW/MEDIUM/HIGH) for each fix
+
+Format as JSON:
+{
+  "analysis": "overall analysis",
+  "fixes": [
+    {
+      "testId": "test-id",
+      "file": "path/to/file",
+      "reason": "why this fix is needed",
+      "riskLevel": "LOW|MEDIUM|HIGH",
+      "changes": "description of changes"
+    }
+  ]
+}`;
+
+                // Call Claude AI for analysis
+                const aiResponse = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: analysisPrompt }
+                        ],
+                        modelType: 'sonnet'
+                    })
+                });
+
+                if (!aiResponse.ok) {
+                    throw new Error(`Claude API error: ${aiResponse.status}`);
+                }
+
+                const aiData = await aiResponse.json();
+                const analysisText = aiData.message;
+
+                // Try to parse JSON from Claude's response
+                const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+                let analysis;
+                if (jsonMatch) {
+                    analysis = JSON.parse(jsonMatch[0]);
+                } else {
+                    logToConsole('AUTO-FIX: Could not parse structured response from Claude', 'warning');
+                    logToConsole(`Analysis: ${analysisText}`, 'info');
+                    return;
+                }
+
+                logToConsole(`AUTO-FIX Analysis: ${analysis.analysis}`, 'info');
+                logToConsole(`AUTO-FIX: Proposed ${analysis.fixes.length} fix(es)`, 'info');
+
+                // Process each fix
+                for (let i = 0; i < analysis.fixes.length; i++) {
+                    const fix = analysis.fixes[i];
+                    logToConsole(`Fix ${i + 1}/${analysis.fixes.length}: ${fix.file}`, 'info');
+                    logToConsole(`Test: ${fix.testId}`, 'info');
+                    logToConsole(`Risk: ${fix.riskLevel}`, 'info');
+                    logToConsole(`Reason: ${fix.reason}`, 'info');
+                    logToConsole(`Changes: ${fix.changes}`, 'info');
+
+                    // Determine if safe to auto-apply
+                    const isRiskyFile = /server\.js$|\.env$|package\.json$|tsconfig\.json$/.test(fix.file);
+                    const isSafe = fix.riskLevel === 'LOW' && !isRiskyFile;
+
+                    if (isSafe) {
+                        logToConsole(`AUTO-FIX: Low risk - requesting detailed fix instructions...`, 'success');
+
+                        // Get detailed fix from Claude
+                        const fixPrompt = `Generate the exact code changes for this fix:
+
+File: ${fix.file}
+Reason: ${fix.reason}
+Changes needed: ${fix.changes}
+
+Provide specific, actionable instructions for the developer to apply this fix manually.
+Include the exact code snippets that need to be changed.`;
+
+                        const fixResponse = await fetch('http://localhost:3001/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                messages: [
+                                    { role: 'user', content: fixPrompt }
+                                ],
+                                modelType: 'sonnet'
+                            })
+                        });
+
+                        if (fixResponse.ok) {
+                            const fixData = await fixResponse.json();
+                            logToConsole(`Fix Instructions:\n${fixData.message}`, 'info');
+                        }
+                    } else {
+                        logToConsole(`AUTO-FIX: ${fix.riskLevel} risk or critical file - manual review required`, 'warning');
+                        logToConsole(`Action required: Please review and apply this fix manually`, 'warning');
+                    }
+                }
+
+                logToConsole(`AUTO-FIX: Analysis complete! Review the fix instructions above.`, 'success');
+
+            } catch (error) {
+                logToConsole(`AUTO-FIX Error: ${error.message}`, 'error');
+                console.error('Auto-fix error:', error);
+            }
+        }
+
+        // Global functions for console access
+        window.showHistory = showHistory;
+        window.autoFixFailures = autoFixFailures;
+        window.exportLogs = () => testLogger.exportLogs();
+        window.clearHistory = () => testLogger.clearHistory();
+
+        // Live Preview Functions
+        let claudeStatus = 'idle';
+
+        // Persona definitions from chatsim.html
+        const SIMULATOR_PERSONAS = {
+            sarah: {
+                name: 'Sarah Chen',
+                age: 28,
+                occupation: 'Product Manager at Google',
+                location: 'San Francisco, CA',
+                bio: 'Tech enthusiast who loves hiking and photography. Looking for someone ambitious and adventurous.',
+                interests: ['Technology', 'Hiking', 'Photography', 'Travel']
+            },
+            mike: {
+                name: 'Mike Rodriguez',
+                age: 32,
+                occupation: 'Graphic Designer',
+                location: 'Brooklyn, NY',
+                bio: 'Creative soul with a passion for art and good coffee. Seeking genuine connections.',
+                interests: ['Design', 'Art', 'Coffee', 'Music']
+            },
+            emily: {
+                name: 'Emily Watson',
+                age: 24,
+                occupation: 'PhD Student in Biology',
+                location: 'Boston, MA',
+                bio: 'Science nerd who enjoys running and reading sci-fi novels. Love deep conversations.',
+                interests: ['Science', 'Running', 'Reading', 'Nature']
+            },
+            raj: {
+                name: 'Raj Patel',
+                age: 35,
+                occupation: 'Entrepreneur',
+                location: 'Austin, TX',
+                bio: 'Startup founder balancing work and life. Foodie who loves trying new restaurants.',
+                interests: ['Business', 'Food', 'Travel', 'Fitness']
+            },
+            rachel: {
+                name: 'Rachel Kim',
+                age: 29,
+                occupation: 'Artist',
+                location: 'Portland, OR',
+                bio: 'Painter and yoga instructor. Seeking someone creative and mindful.',
+                interests: ['Art', 'Yoga', 'Meditation', 'Sustainability']
+            },
+            alex: {
+                name: 'Alex Torres',
+                age: 31,
+                occupation: 'Startup Founder',
+                location: 'Miami, FL',
+                bio: 'Serial entrepreneur passionate about tech and social impact. Love the beach and good books.',
+                interests: ['Technology', 'Entrepreneurship', 'Reading', 'Beach Sports']
+            }
+        };
+
+
+        // Update persona info display
+        function updatePersonaInfo() {
+            const personaId = document.getElementById('persona-select').value;
+            const personaInfo = document.getElementById('persona-info');
+
+            if (!personaId) {
+                personaInfo.style.display = 'none';
+                return;
+            }
+
+            const persona = SIMULATOR_PERSONAS[personaId];
+            personaInfo.style.display = 'block';
+            personaInfo.innerHTML = `
+                <div style="margin-top: 8px; padding: 12px; background: #f5f5f7; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #1d1d1f;">${persona.name}, ${persona.age}</div>
+                    <div style="font-size: 12px; color: #6e6e73; margin-top: 4px;">${persona.occupation}</div>
+                    <div style="font-size: 12px; color: #6e6e73;">${persona.location}</div>
+                    <div style="font-size: 12px; color: #1d1d1f; margin-top: 8px;">${persona.bio}</div>
+                </div>
+            `;
+        }
+
+        // Load preset messages
+        function loadPreset(presetType) {
+            const messageInput = document.getElementById('sim-message');
+            const presets = {
+                intro: "Hey! I just saw your profile and thought we might have some things in common. What do you like to do in your free time?",
+                question: "What's something you're really passionate about?",
+                casual: "How's your day going?",
+                deep: "What's something you've learned about yourself recently?"
+            };
+
+            messageInput.value = presets[presetType] || '';
+            logToConsole(`Loaded preset: ${presetType}`, 'info', 'app');
+        }
+
+        // Update rudeness slider value display
+        function updateRudenessValue(value) {
+            document.getElementById('rudeness-value').textContent = value;
+        }
+
+        // Get contextual search query from message
+        function getImageSearchQuery(message) {
+            // Extract key nouns/topics from the message for image search
+            const keywords = ['coffee', 'travel', 'beach', 'mountain', 'food', 'sunset', 'city', 'nature', 'art', 'music', 'fitness', 'yoga', 'hiking', 'restaurant', 'book', 'movie', 'concert', 'weekend', 'adventure'];
+            const lowerMessage = message.toLowerCase();
+
+            for (const keyword of keywords) {
+                if (lowerMessage.includes(keyword)) {
+                    return keyword;
+                }
+            }
+
+            // Default to lifestyle images if no keyword found
+            return 'lifestyle';
+        }
+
+        // Simulator Control Functions
+        async function sendSimulatorMessage() {
+            const messageInput = document.getElementById('sim-message');
+            const message = messageInput.value.trim();
+            const includeImage = document.getElementById('include-image').checked;
+            const personaId = document.getElementById('persona-select').value;
+            const rudenessLevel = document.getElementById('rudeness-slider').value;
+            const maxMessages = document.getElementById('max-messages').value;
+            const responseStyle = document.getElementById('response-style').value;
+
+            if (!message) {
+                logToConsole('Error: Message cannot be empty', 'error', 'app');
+                return;
+            }
+
+            const messageData = {
+                type: 'simulator-message',
+                content: message,
+                persona: personaId ? SIMULATOR_PERSONAS[personaId] : null,
+                testingParams: {
+                    rudenessLevel: parseInt(rudenessLevel),
+                    maxMessages: parseInt(maxMessages),
+                    responseStyle: responseStyle
+                }
+            };
+
+            // Add contextual image if checkbox is checked
+            if (includeImage) {
+                const searchQuery = getImageSearchQuery(message);
+                // Use Unsplash Source API with contextual search
+                messageData.imageUrl = `https://source.unsplash.com/400x300/?${searchQuery}`;
+                logToConsole(`Including contextual image (${searchQuery}) in message`, 'info', 'app');
+            }
+
+            // Post message to iframe
+            const iframe = document.getElementById('live-app-iframe');
+            iframe.contentWindow.postMessage(messageData, '*');
+
+            const personaName = personaId ? SIMULATOR_PERSONAS[personaId].name : 'User';
+            const params = `Style: ${responseStyle}, Rudeness: ${rudenessLevel}`;
+            logToConsole(`Sent message from ${personaName}: "${message}"${includeImage ? ' (with contextual image)' : ''} [${params}]`, 'info', 'app');
+            messageInput.value = '';
+        }
+
+
+        function exportChat() {
+            const iframe = document.getElementById('live-app-iframe');
+
+            // Request chat export from iframe
+            iframe.contentWindow.postMessage({
+                type: 'export-chat'
+            }, '*');
+
+            logToConsole('Exporting chat history...', 'info', 'app');
+        }
+
+        // ============================================
+        // ADVANCED TESTING FEATURES
+        // ============================================
+
+        // Update delay slider value display
+        function updateDelayValue(value) {
+            document.getElementById('delay-value').textContent = value;
+        }
+
+        // Automation state management
+        let autoConversationInterval = null;
+        let autoMessageCount = 0;
+        let autoTargetCount = 0;
+        let testMetrics = {
+            messagesSent: 0,
+            responseTimes: [],
+            startTime: null,
+            lastMessageTime: null,
+            engagementScore: 0,
+            detectedMood: 'neutral'
+        };
+
+        // Conversation templates with pre-built message flows
+        const CONVERSATION_TEMPLATES = {
+            'first-date': [
+                "Hi! It's nice to finally meet you 😊",
+                "What kind of things do you enjoy doing on weekends?",
+                "That sounds fun! Do you have any favorite spots in the city?",
+                "I'd love to hear more about that sometime!"
+            ],
+            'deep-talk': [
+                "What's something you're really passionate about?",
+                "That's fascinating. What drew you to that initially?",
+                "Do you think that's shaped who you are today?",
+                "What's a belief you used to have that you've changed your mind about?"
+            ],
+            'flirty': [
+                "You have such a great vibe! 😊",
+                "What's your idea of a perfect date?",
+                "I have to admit, I'm really enjoying talking with you",
+                "So when are we making this happen? 😉"
+            ],
+            'getting-to-know': [
+                "Tell me something interesting about yourself!",
+                "What's been the highlight of your week so far?",
+                "If you could travel anywhere right now, where would you go?",
+                "What's something that always makes you smile?"
+            ]
+        };
+
+        // Start automated conversation with specified message count
+        async function startAutoConversation(count) {
+            if (autoConversationInterval) {
+                logToConsole('⚠️ Automation already running. Stop current run first.', 'warn', 'app');
+                return;
+            }
+
+            autoTargetCount = count;
+            autoMessageCount = 0;
+            testMetrics.startTime = Date.now();
+            testMetrics.messagesSent = 0;
+            testMetrics.responseTimes = [];
+
+            const delaySeconds = parseInt(document.getElementById('message-delay').value);
+            const naturalMessages = getNextNaturalMessage.messages || [];
+
+            logToConsole(`🤖 Starting automated conversation: ${count} messages with ${delaySeconds}s delay`, 'info', 'app');
+            updateMetrics();
+
+            autoConversationInterval = setInterval(async () => {
+                if (autoMessageCount >= autoTargetCount) {
+                    stopAutoConversation();
+                    return;
+                }
+
+                // Get next message from natural conversation flow
+                const messageIndex = autoMessageCount % naturalMessages.length;
+                const message = naturalMessages[messageIndex] || `Test message ${autoMessageCount + 1}`;
+
+                // Set the message in the input and send it
+                const messageInput = document.getElementById('sim-message');
+                messageInput.value = message;
+
+                const sendStartTime = Date.now();
+                await sendSimulatorMessage();
+
+                // Track metrics
+                autoMessageCount++;
+                testMetrics.messagesSent++;
+                testMetrics.lastMessageTime = Date.now();
+
+                // Simulate response time tracking (in real scenario, would track actual bot response)
+                const responseTime = Math.random() * 2000 + 500; // 0.5-2.5s
+                testMetrics.responseTimes.push(responseTime);
+
+                updateMetrics();
+
+                logToConsole(`📤 Auto-sent message ${autoMessageCount}/${autoTargetCount}`, 'info', 'app');
+            }, delaySeconds * 1000);
+        }
+
+        // Stop automated conversation
+        function stopAutoConversation() {
+            if (autoConversationInterval) {
+                clearInterval(autoConversationInterval);
+                autoConversationInterval = null;
+                logToConsole(`⏹ Automation stopped. Sent ${autoMessageCount}/${autoTargetCount} messages`, 'info', 'app');
+
+                // Final metrics update
+                updateMetrics();
+            }
+        }
+
+        // Load conversation template
+        function loadTemplate(templateType) {
+            const template = CONVERSATION_TEMPLATES[templateType];
+
+            if (!template) {
+                logToConsole(`⚠️ Template "${templateType}" not found`, 'warn', 'app');
+                return;
+            }
+
+            // Stop any running automation
+            if (autoConversationInterval) {
+                stopAutoConversation();
+            }
+
+            logToConsole(`📋 Loading "${templateType}" template (${template.length} messages)`, 'info', 'app');
+
+            // Override the natural message flow temporarily
+            const originalMessages = getNextNaturalMessage.messages;
+            getNextNaturalMessage.messages = [...template];
+
+            // Start automated conversation with template length
+            setTimeout(() => {
+                startAutoConversation(template.length);
+
+                // Restore original messages after template completes
+                setTimeout(() => {
+                    getNextNaturalMessage.messages = originalMessages;
+                }, template.length * parseInt(document.getElementById('message-delay').value) * 1000 + 1000);
+            }, 100);
+        }
+
+        // Update live metrics display
+        function updateMetrics() {
+            // Update messages sent
+            document.getElementById('metric-messages').textContent = testMetrics.messagesSent;
+
+            // Calculate and display average response time
+            if (testMetrics.responseTimes.length > 0) {
+                const avgResponseTime = testMetrics.responseTimes.reduce((a, b) => a + b, 0) / testMetrics.responseTimes.length;
+                document.getElementById('metric-response-time').textContent = `${(avgResponseTime / 1000).toFixed(2)}s`;
+            } else {
+                document.getElementById('metric-response-time').textContent = '--';
+            }
+
+            // Calculate engagement score (0-100 based on response time and message count)
+            if (testMetrics.messagesSent > 0) {
+                const avgResponseTime = testMetrics.responseTimes.length > 0
+                    ? testMetrics.responseTimes.reduce((a, b) => a + b, 0) / testMetrics.responseTimes.length
+                    : 1000;
+
+                // Lower response time = higher engagement
+                // More messages = higher engagement
+                const responseScore = Math.max(0, 100 - (avgResponseTime / 30)); // Max 3s for good score
+                const messageScore = Math.min(100, testMetrics.messagesSent * 5); // Cap at 100
+                testMetrics.engagementScore = Math.round((responseScore + messageScore) / 2);
+
+                document.getElementById('metric-engagement').textContent = `${testMetrics.engagementScore}/100`;
+            } else {
+                document.getElementById('metric-engagement').textContent = '--';
+            }
+
+            // Detect mood based on rudeness level and response style
+            const rudenessLevel = parseInt(document.getElementById('rudeness-slider').value);
+            const responseStyle = document.getElementById('response-style').value;
+
+            if (rudenessLevel > 70) {
+                testMetrics.detectedMood = '😤 Confrontational';
+            } else if (rudenessLevel > 50) {
+                testMetrics.detectedMood = '😐 Neutral';
+            } else if (responseStyle === 'flirty') {
+                testMetrics.detectedMood = '😘 Flirty';
+            } else if (responseStyle === 'friendly') {
+                testMetrics.detectedMood = '😊 Friendly';
+            } else if (responseStyle === 'deep') {
+                testMetrics.detectedMood = '🤔 Thoughtful';
+            } else if (responseStyle === 'humorous') {
+                testMetrics.detectedMood = '😄 Playful';
+            } else {
+                testMetrics.detectedMood = '😌 Casual';
+            }
+
+            document.getElementById('metric-mood').textContent = testMetrics.detectedMood;
+        }
+
+        // Save current test scenario configuration
+        function saveScenario() {
+            const scenarioName = document.getElementById('scenario-name').value.trim();
+
+            if (!scenarioName) {
+                logToConsole('⚠️ Please enter a scenario name', 'warn', 'app');
+                return;
+            }
+
+            // Collect current configuration
+            const scenario = {
+                name: scenarioName,
+                timestamp: new Date().toISOString(),
+                config: {
+                    rudenessLevel: parseInt(document.getElementById('rudeness-slider').value),
+                    maxMessages: parseInt(document.getElementById('max-messages').value),
+                    responseStyle: document.getElementById('response-style').value,
+                    messageDelay: parseInt(document.getElementById('message-delay').value),
+                    persona: document.getElementById('persona-select').value,
+                    includeImage: document.getElementById('include-image').checked
+                },
+                metrics: { ...testMetrics }
+            };
+
+            // Save to localStorage
+            let savedScenarios = JSON.parse(localStorage.getItem('cupido-test-scenarios') || '[]');
+            savedScenarios.push(scenario);
+            localStorage.setItem('cupido-test-scenarios', JSON.stringify(savedScenarios));
+
+            // Update dropdown
+            updateScenarioDropdown();
+
+            logToConsole(`💾 Saved scenario: "${scenarioName}"`, 'success', 'app');
+
+            // Clear scenario name input
+            document.getElementById('scenario-name').value = '';
+        }
+
+        // Load saved test scenario
+        function loadScenario(scenarioName) {
+            if (!scenarioName) return;
+
+            const savedScenarios = JSON.parse(localStorage.getItem('cupido-test-scenarios') || '[]');
+            const scenario = savedScenarios.find(s => s.name === scenarioName);
+
+            if (!scenario) {
+                logToConsole(`⚠️ Scenario "${scenarioName}" not found`, 'warn', 'app');
+                return;
+            }
+
+            // Apply configuration
+            const config = scenario.config;
+            document.getElementById('rudeness-slider').value = config.rudenessLevel;
+            updateRudenessValue(config.rudenessLevel);
+            document.getElementById('max-messages').value = config.maxMessages;
+            document.getElementById('response-style').value = config.responseStyle;
+            document.getElementById('message-delay').value = config.messageDelay;
+            updateDelayValue(config.messageDelay);
+            document.getElementById('persona-select').value = config.persona;
+            document.getElementById('include-image').checked = config.includeImage;
+
+            logToConsole(`📂 Loaded scenario: "${scenarioName}"`, 'success', 'app');
+            logToConsole(`Config: Rudeness=${config.rudenessLevel}, Style=${config.responseStyle}, Delay=${config.messageDelay}s`, 'info', 'app');
+        }
+
+        // Update scenario dropdown with saved scenarios
+        function updateScenarioDropdown() {
+            const savedScenarios = JSON.parse(localStorage.getItem('cupido-test-scenarios') || '[]');
+            const dropdown = document.getElementById('saved-scenarios');
+
+            // Clear existing options (except first one)
+            dropdown.innerHTML = '<option value="">Load scenario...</option>';
+
+            // Add saved scenarios
+            savedScenarios.forEach(scenario => {
+                const option = document.createElement('option');
+                option.value = scenario.name;
+                option.textContent = `${scenario.name} (${new Date(scenario.timestamp).toLocaleDateString()})`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Export comprehensive test results
+        function exportTestResults() {
+            const testResults = {
+                exportDate: new Date().toISOString(),
+                testConfiguration: {
+                    rudenessLevel: parseInt(document.getElementById('rudeness-slider').value),
+                    maxMessages: parseInt(document.getElementById('max-messages').value),
+                    responseStyle: document.getElementById('response-style').value,
+                    messageDelay: parseInt(document.getElementById('message-delay').value),
+                    persona: document.getElementById('persona-select').value,
+                    includeImage: document.getElementById('include-image').checked
+                },
+                metrics: {
+                    ...testMetrics,
+                    averageResponseTime: testMetrics.responseTimes.length > 0
+                        ? testMetrics.responseTimes.reduce((a, b) => a + b, 0) / testMetrics.responseTimes.length
+                        : 0,
+                    totalDuration: testMetrics.startTime ? Date.now() - testMetrics.startTime : 0
+                },
+                testHistory: window.testHistory || [],
+                consoleLog: window.consoleLog || []
+            };
+
+            // Create downloadable JSON file
+            const dataStr = JSON.stringify(testResults, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-test-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            logToConsole('📥 Test results exported successfully', 'success', 'app');
+            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${testHistory.length} tests, ${consoleLog.length} log entries`, 'info', 'app');
+        }
+
+        // Initialize scenarios dropdown on load
+        function initializeAdvancedFeatures() {
+            updateScenarioDropdown();
+
+            // Update metrics display periodically
+            setInterval(() => {
+                if (autoConversationInterval || testMetrics.messagesSent > 0) {
+                    updateMetrics();
+                }
+            }, 1000);
+        }
+
+        // ============================================
+        // END ADVANCED TESTING FEATURES
+        // ============================================
+
+        function updateClaudeStatus(status, message) {
+            claudeStatus = status;
+            const statusDot = document.getElementById('claude-status-dot');
+            const statusText = document.getElementById('claude-status-text');
+
+            statusDot.className = 'status-dot ' + status;
+            statusText.textContent = message || status.charAt(0).toUpperCase() + status.slice(1);
+
+            logToConsole(`Claude Code: ${message || status}`, status === 'idle' ? 'info' : 'success', 'app');
+        }
+
+        // Monitor console errors from iframe
+        function setupConsoleMonitoring() {
+            // Listen for messages from the iframe
+            window.addEventListener('message', (event) => {
+                if (!event.data || !event.data.type) return;
+
+                switch (event.data.type) {
+                    case 'console':
+                        const { level, message } = event.data;
+                        logToConsole(`[APP] ${message}`, level, 'app');
+                        break;
+
+                    case 'app-console-log':
+                        // App console forwarding
+                        const logLevel = event.data.level === 'error' ? 'error' :
+                                       event.data.level === 'warn' ? 'warn' : 'info';
+                        logToConsole(`[APP] ${event.data.message}`, logLevel, 'app');
+                        break;
+
+                    case 'api-call':
+                        // Log API calls from the app
+                        const { url, method, duration, status } = event.data;
+                        logToConsole(`API Call: ${method} ${url} - ${status} (${duration}ms)`, 'info', 'app');
+                        trackApiCall(url, method, event.data.body, event.data.response, duration);
+                        break;
+
+                    case 'message-sent':
+                        // Log when user sends a message
+                        logToConsole(`User sent message: "${event.data.message}"`, 'info', 'app');
+                        break;
+
+                    case 'message-received':
+                        // Log when AI response is received
+                        logToConsole(`AI response received (${event.data.duration}ms)`, 'success', 'app');
+                        break;
+
+                    case 'chat-export':
+                        // Handle exported chat data
+                        const chatData = event.data.data;
+                        downloadChatExport(chatData);
+                        logToConsole('Chat exported successfully', 'success', 'app');
+                        break;
+
+                    case 'simulator-response':
+                        // Handle simulator responses
+                        const response = event.data.response;
+                        logToConsole(`[SIMULATOR] ${response}`, 'info', 'app');
+                        break;
+
+                    case 'app-error':
+                        logToConsole(`[ERROR] ${event.data.error}`, 'error', 'app');
+                        break;
+
+                    case 'app-info':
+                        logToConsole(`[INFO] ${event.data.message}`, 'info', 'app');
+                        break;
+                }
+            });
+
+            // Simulate Claude Code status changes for demo
+            // In production, this would be connected to actual backend
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    const statuses = [
+                        { status: 'analyzing', message: 'Analyzing code...' },
+                        { status: 'fixing', message: 'Applying fixes...' },
+                        { status: 'testing', message: 'Running tests...' }
+                    ];
+                    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                    updateClaudeStatus(randomStatus.status, randomStatus.message);
+
+                    setTimeout(() => {
+                        updateClaudeStatus('idle', 'Idle');
+                    }, 3000);
+                }
+            }, 10000);
+        }
+
+        // Download chat export
+        function downloadChatExport(chatData) {
+            const dataStr = JSON.stringify(chatData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-chat-export-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Add keyboard support for simulator message input
+        function setupKeyboardShortcuts() {
+            const messageInput = document.getElementById('sim-message');
+            if (messageInput) {
+                messageInput.addEventListener('keydown', (e) => {
+                    // Send on Enter (without Shift for new line)
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendSimulatorMessage();
+                    }
+                });
+            }
+        }
+
+        // Initialize Live Preview
+        function initializeLivePreview() {
+            setupConsoleMonitoring();
+            setupKeyboardShortcuts();
+            logToConsole('Live Preview initialized', 'success', 'app');
+            logToConsole('Monitoring console output from app...', 'info', 'app');
+            logToConsole('Simulator controls ready for testing', 'info', 'app');
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeTests();
+            logToConsole('Cupido Test Dashboard initialized', 'info');
+            logToConsole('40 tests loaded across 7 categories', 'info');
+            logToConsole('Test logging enabled - all runs saved to localStorage', 'info');
+
+            // Show previous test count
+            const history = testLogger.getHistory();
+            if (history.length > 0) {
+                logToConsole(`Found ${history.length} previous test run(s) in history`, 'info');
+            }
+
+            // Show available console commands
+            logToConsole('', 'info');
+            logToConsole('=== Available Console Commands ===', 'info');
+            logToConsole('showHistory()           - View all previous test runs', 'info');
+            logToConsole('exportLogs()            - Download logs as JSON file', 'info');
+            logToConsole('clearHistory()          - Clear all stored test logs', 'info');
+            logToConsole('autoFixFailures()       - Auto-fix failed tests with Claude', 'info');
+            logToConsole('', 'info');
+
+            // Initialize live preview
+            initializeLivePreview();
+
+            // Initialize advanced testing features
+            initializeAdvancedFeatures();
+            logToConsole('Advanced testing features ready: Automation, Templates, Metrics, Scenarios', 'success', 'app');
+        });
+    </script>
+</body>
+</html>

@@ -209,6 +209,50 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [authUser?.id]); // Re-initialize when user changes
 
+  // Forward console logs to parent dashboard
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (window.parent === window) return; // Not in iframe
+
+    const forwardToParent = (level: string, args: any[]) => {
+      const message = args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+
+      window.parent.postMessage({
+        type: 'app-console-log',
+        level,
+        message,
+        timestamp: new Date().toISOString()
+      }, '*');
+    };
+
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    console.log = (...args: any[]) => {
+      originalLog(...args);
+      forwardToParent('log', args);
+    };
+
+    console.warn = (...args: any[]) => {
+      originalWarn(...args);
+      forwardToParent('warn', args);
+    };
+
+    console.error = (...args: any[]) => {
+      originalError(...args);
+      forwardToParent('error', args);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.warn = originalWarn;
+      console.error = originalError;
+    };
+  }, []);
+
   // Listen for test commands from test dashboard
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -247,8 +291,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const state = {
             messageCount: messagesRef.current.length,
             isTyping: isTypingRef.current,
+            isSending: isSending,
             conversationId: conversationIdRef.current,
             userId: userIdRef.current,
+            profile: userProfileService.getProfile(),
           };
           // Send response back to parent window
           if (window.parent !== window) {
