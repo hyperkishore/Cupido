@@ -1,0 +1,31 @@
+# Cupido Bug Log (compiled 2025-10-08 17:13:08 IST)
+
+## High Severity
+- Loading fallback never clears (`App.tsx:196`)
+  - Once the five-second timeout flips `loadingTimeout` to true, the fallback screen stays even after auth resolves, leaving users stuck unless they refresh manually.
+- Demo matches crash the screen (`src/screens/PixelPerfectMatchesScreen.tsx:24`)
+  - The demo `compatibilityScore` objects omit required fields like `overallScore` and `breakdown`, so rendering hits `undefined` and throws before any match cards appear in demo mode.
+- Profile extraction throws (`src/services/userProfileService.ts:113`)
+  - The method references `commonLocations` instead of `this.commonLocations`, causing a `ReferenceError` when trying to derive a name from chat text and blocking automatic profile enrichment.
+- Matches never persist (`src/services/matchingService.ts:430`)
+  - `generateMatches` returns a fresh array but never stores it in `this.matches`, so subsequent reads/interactions see an empty cache and user actions (likes/passes) are lost.
+- Demo matches disappear (`src/screens/PixelPerfectMatchesScreen.tsx:24,352`)
+  - Seeded demo entries use `status: 'pending'` but the UI only renders `status === 'suggested'`, so demo mode always shows an empty list.
+- Matching profile id collision (`src/services/matchingService.ts:101`)
+  - Every generated profile/key is stored under the literal id `current_user`, causing different sign-ins to overwrite each other’s persona data and matches.
+- Feature flags default to false (`src/config/environment.ts:50`)
+  - `getBooleanEnvVar` ignores its fallback parameter; unset env vars return `'' ⇒ false`, disabling features meant to default to true (e.g., voice input).
+- Proxy URL resolves to localhost in production (`src/services/chatAiService.ts:497-552`)
+  - Without explicit `EXPO_PUBLIC_AI_PROXY_URL`, the app falls back to `http://127.0.0.1:3001/api/chat`, breaking AI calls on real deployments.
+- Demo Supabase stub lacks `.maybeSingle()` (`src/services/supabase.ts:13`, `src/services/chatDatabase.ts:24`)
+  - The stub client used in demo mode doesn’t implement `.maybeSingle()`, so `chatDatabase.getOrCreateUser` throws and chat initialization fails as soon as demo mode is enabled.
+- Supabase client ignores demo mode toggles (`src/services/supabase.ts:12`, `src/config/demo.ts:7`)
+  - The Supabase client is created at module load using the initial `DEMO_MODE=false`; later calls to `setDemoMode(true)` don’t rebuild the client, so “demo” mode still hits the real backend with placeholder credentials and fails.
+- Native chat crashes on window reference (`src/components/SimpleReflectionChat.tsx:393,728`)
+  - `initializeChat` and `handleSend` write to `window.*` without guarding for React Native; on iOS/Android `window` is undefined, so the chat screen blows up as soon as it mounts.
+
+## Medium Severity
+- Chat subscriptions leak (`src/screens/ChatScreen.tsx:31-73`, `src/services/supabase.production.ts:501`)
+  - `ChatScreen` subscribes to message updates but never unsubscribes on unmount, so each visit stacks another listener and duplicate events.
+- Saved photo messages lose images on reload (`src/components/SimpleReflectionChat.tsx:338`, `src/services/chatDatabase.ts:120`)
+  - Photo uploads persist the URI inside `chat_messages.metadata`, but the hydrator drops that metadata, so previously shared images disappear when the conversation is reloaded.

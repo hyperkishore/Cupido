@@ -1,0 +1,557 @@
+
+            <!-- Console Error Detection -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">🔴</span>
+                    <span class="section-title">Console Error Detection</span>
+                    <span id="section-console-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="console-tests">
+
+                    <div class="test-card" data-test="console-1" onclick="runTest('console-1')">
+                        <div class="test-header">
+                            <div class="test-name">No ReferenceErrors</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Monitor for ReferenceError during message send (catches bugs like commonLocations)
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="console-2" onclick="runTest('console-2')">
+                        <div class="test-header">
+                            <div class="test-name">No TypeErrors</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Monitor for TypeError in state management and rendering
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="console-3" onclick="runTest('console-3')">
+                        <div class="test-header">
+                            <div class="test-name">No Uncaught Promises</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Detect unhandled promise rejections in async operations
+                        </div>
+                        <div class="test-module">Module: chatAiService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="console-4" onclick="runTest('console-4')">
+                        <div class="test-header">
+                            <div class="test-name">No Network Errors</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Monitor for failed API calls that aren't properly handled
+                        </div>
+                        <div class="test-module">Module: simpleChatService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="console-5" onclick="runTest('console-5')">
+                        <div class="test-header">
+                            <div class="test-name">No Database Errors</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Check for Supabase connection or query errors
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Flow & UI -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">💬</span>
+                    <span class="section-title">Message Flow & UI</span>
+                    <span id="section-message-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="message-tests">
+
+                    <div class="test-card" data-test="message-1" onclick="runTest('message-1')">
+                        <div class="test-header">
+                            <div class="test-name">User Message Appears</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Verify user message immediately appears in UI after send
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-2" onclick="runTest('message-2')">
+                        <div class="test-header">
+                            <div class="test-name">Message Persistence</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            User message persists even if DB save fails
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-3" onclick="runTest('message-3')">
+                        <div class="test-header">
+                            <div class="test-name">Message Order</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Messages display in correct chronological order
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-4" onclick="runTest('message-4')">
+                        <div class="test-header">
+                            <div class="test-name">Duplicate Prevention</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Prevent duplicate messages from rapid clicking
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-5" onclick="runTest('message-5')">
+                        <div class="test-header">
+                            <div class="test-name">Input Field Clears</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Input field clears immediately after send
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-6" onclick="runTest('message-6')">
+                        <div class="test-header">
+                            <div class="test-name">Scroll to Bottom</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Auto-scroll to latest message after send
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-7" onclick="runTest('message-7')">
+                        <div class="test-header">
+                            <div class="test-name">Long Message Support</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Handle messages over 500 characters without breaking UI
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="message-8" onclick="runTest('message-8')">
+                        <div class="test-header">
+                            <div class="test-name">Special Characters</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Handle emojis and Unicode characters correctly
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Extraction -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">👤</span>
+                    <span class="section-title">Profile Extraction</span>
+                    <span id="section-profile-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="profile-tests">
+
+                    <div class="test-card" data-test="profile-1" onclick="runTest('profile-1')">
+                        <div class="test-header">
+                            <div class="test-name">Name Extraction</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Extract user name from conversational messages
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="profile-2" onclick="runTest('profile-2')">
+                        <div class="test-header">
+                            <div class="test-name">Location vs Name</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Don't confuse city names with user names
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="profile-3" onclick="runTest('profile-3')">
+                        <div class="test-header">
+                            <div class="test-name">Age Detection</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Extract age when mentioned in conversation
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="profile-4" onclick="runTest('profile-4')">
+                        <div class="test-header">
+                            <div class="test-name">Gender Detection</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Identify gender preferences from messages
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="profile-5" onclick="runTest('profile-5')">
+                        <div class="test-header">
+                            <div class="test-name">Profile Persistence</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Profile data persists across page reloads
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="profile-6" onclick="runTest('profile-6')">
+                        <div class="test-header">
+                            <div class="test-name">Profile Update</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Profile updates without overwriting existing data
+                        </div>
+                        <div class="test-module">Module: userProfileService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Operations -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">💾</span>
+                    <span class="section-title">Database Operations</span>
+                    <span id="section-database-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="database-tests">
+
+                    <div class="test-card" data-test="database-1" onclick="runTest('database-1')">
+                        <div class="test-header">
+                            <div class="test-name">User Creation</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Create new user with unique session ID
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="database-2" onclick="runTest('database-2')">
+                        <div class="test-header">
+                            <div class="test-name">Conversation Init</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Initialize conversation and return valid ID
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="database-3" onclick="runTest('database-3')">
+                        <div class="test-header">
+                            <div class="test-name">Save User Message</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Save user message to database successfully
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="database-4" onclick="runTest('database-4')">
+                        <div class="test-header">
+                            <div class="test-name">Save AI Message</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Save AI response to database with metadata
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="database-5" onclick="runTest('database-5')">
+                        <div class="test-header">
+                            <div class="test-name">Conversation History</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Load conversation history correctly
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Handling & Recovery -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">⚠️</span>
+                    <span class="section-title">Error Handling & Recovery</span>
+                    <span id="section-error-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="error-tests">
+
+                    <div class="test-card" data-test="error-1" onclick="runTest('error-1')">
+                        <div class="test-header">
+                            <div class="test-name">Network Failure</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Gracefully handle network timeout/disconnection
+                        </div>
+                        <div class="test-module">Module: chatAiService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="error-2" onclick="runTest('error-2')">
+                        <div class="test-header">
+                            <div class="test-name">API Error Response</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Handle API 500/400 errors without crashing
+                        </div>
+                        <div class="test-module">Module: simpleChatService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="error-3" onclick="runTest('error-3')">
+                        <div class="test-header">
+                            <div class="test-name">Database Failure</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Continue functioning if DB save fails
+                        </div>
+                        <div class="test-module">Module: chatDatabase.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="error-4" onclick="runTest('error-4')">
+                        <div class="test-header">
+                            <div class="test-name">Invalid Message</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Handle empty or malformed message input
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="error-5" onclick="runTest('error-5')">
+                        <div class="test-header">
+                            <div class="test-name">AI Timeout</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Handle AI response timeout gracefully
+                        </div>
+                        <div class="test-module">Module: chatAiService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="error-6" onclick="runTest('error-6')">
+                        <div class="test-header">
+                            <div class="test-name">Retry Mechanism</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Allow user to retry failed messages
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- State Management -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">🔄</span>
+                    <span class="section-title">State Management</span>
+                    <span id="section-state-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="state-tests">
+
+                    <div class="test-card" data-test="state-1" onclick="runTest('state-1')">
+                        <div class="test-header">
+                            <div class="test-name">Send Button State</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Send button enables/disables correctly
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="state-2" onclick="runTest('state-2')">
+                        <div class="test-header">
+                            <div class="test-name">isSending Reset</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            isSending always resets even after errors
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="state-3" onclick="runTest('state-3')">
+                        <div class="test-header">
+                            <div class="test-name">Typing Indicator</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Typing indicator shows and hides at right times
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="state-4" onclick="runTest('state-4')">
+                        <div class="test-header">
+                            <div class="test-name">Message Count</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Message count updates accurately
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="state-5" onclick="runTest('state-5')">
+                        <div class="test-header">
+                            <div class="test-name">Conversation ID</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Conversation ID persists correctly
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="state-6" onclick="runTest('state-6')">
+                        <div class="test-header">
+                            <div class="test-name">Loading States</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            All loading states transition correctly
+                        </div>
+                        <div class="test-module">Module: SimpleReflectionChat.tsx</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API & Performance -->
+            <div class="test-section">
+                <div class="section-header">
+                    <span class="section-icon">🌐</span>
+                    <span class="section-title">API & Performance</span>
+                    <span id="section-api-status" class="section-status status-pending">Not Started</span>
+                </div>
+                <div class="test-grid" id="api-tests">
+
+                    <div class="test-card" data-test="api-1" onclick="runTest('api-1')">
+                        <div class="test-header">
+                            <div class="test-name">API Connectivity</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Server is running and responding to requests
+                        </div>
+                        <div class="test-module">Module: server.js</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="api-2" onclick="runTest('api-2')">
+                        <div class="test-header">
+                            <div class="test-name">Claude API</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Claude AI API returns valid responses
+                        </div>
+                        <div class="test-module">Module: chatAiService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="api-3" onclick="runTest('api-3')">
+                        <div class="test-header">
+                            <div class="test-name">Response Time</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            API responds within acceptable time (<10s)
+                        </div>
+                        <div class="test-module">Module: simpleChatService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+
+                    <div class="test-card" data-test="api-4" onclick="runTest('api-4')">
+                        <div class="test-header">
+                            <div class="test-name">Model Selection</div>
+                            <div class="test-status-icon pending">⏸</div>
+                        </div>
+                        <div class="test-description">
+                            Correct AI model (Haiku/Sonnet) is used
+                        </div>
+                        <div class="test-module">Module: chatAiService.ts</div>
+                        <div class="test-result"></div>
+                    </div>
+                </div>
+            </div>
