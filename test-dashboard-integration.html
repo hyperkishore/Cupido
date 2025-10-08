@@ -1,0 +1,223 @@
+<!--
+  INTEGRATION SNIPPET FOR test-dashboard.html
+  ===========================================
+
+  Add this snippet to integrate comprehensive-test-functions.js with your test dashboard.
+-->
+
+<!-- 1. Add this in the <head> section BEFORE the closing </head> tag -->
+<script src="comprehensive-test-functions.js"></script>
+
+<!-- 2. Replace the existing test mapping (around line 1726) with this: -->
+<script>
+// Use comprehensive test functions
+const tests = window.TEST_FUNCTIONS || {
+    // Fallback for console tests
+    'console-1': testConsole1,
+    'console-2': testConsole2,
+    'console-3': testConsole3,
+    'console-4': testConsole4,
+    'console-5': testConsole5,
+    // ... rest will be loaded from comprehensive-test-functions.js
+};
+
+// Override the existing runCategory function to use the comprehensive one
+if (window.runCategory) {
+    const comprehensiveRunCategory = window.runCategory;
+
+    window.runCategory = async function(category) {
+        log(`Starting ${category} category tests...`, 'info');
+        updateSectionStatus(category, 'running');
+
+        const result = await comprehensiveRunCategory(category);
+
+        // Update UI based on results
+        const allPassed = result.failed === 0;
+        updateSectionStatus(category, allPassed ? 'pass' : 'fail');
+
+        log(`${category} complete: ${result.passed}/${result.total} passed`,
+            allPassed ? 'success' : 'error');
+
+        return result;
+    };
+}
+
+// Add enhanced runAllTests that uses categories
+async function runAllTests() {
+    log('═══════════════════════════════════', 'info');
+    log('Starting COMPREHENSIVE test suite (40 tests)...', 'info');
+    log('═══════════════════════════════════', 'info');
+
+    // Start test run logging
+    testLogger.startTestRun();
+
+    // Clear previous results and console errors
+    testResults = {};
+    apiCalls.length = 0;
+    if (window.clearConsoleErrors) {
+        window.clearConsoleErrors();
+    }
+
+    // Run all categories in order
+    const categories = ['console', 'message', 'profile', 'database', 'error', 'state', 'api'];
+    let totalPassed = 0;
+    let totalTests = 0;
+
+    for (const category of categories) {
+        try {
+            const result = await window.runCategory(category);
+            totalPassed += result.passed;
+            totalTests += result.total;
+
+            // Small delay between categories
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+            log(`Error running ${category} tests: ${error.message}`, 'error');
+        }
+    }
+
+    // Get console error summary
+    if (window.getConsoleErrorSummary) {
+        const errorSummary = window.getConsoleErrorSummary();
+        if (errorSummary.totalErrors > 0) {
+            log(`⚠️ Found ${errorSummary.totalErrors} console errors during tests`, 'error');
+            console.error('Console errors:', errorSummary.errors);
+        }
+    }
+
+    // Summary
+    log('═══════════════════════════════════', 'info');
+    log(`Test suite complete: ${totalPassed}/${totalTests} passed`,
+        totalPassed === totalTests ? 'success' : 'error');
+    log('═══════════════════════════════════', 'info');
+
+    // End test run logging
+    testLogger.endTestRun();
+
+    // Show commands reminder
+    log('', 'info');
+    log('💾 Test run saved to history', 'success');
+    log('Type showAvailableCommands() to see all console commands', 'info');
+    log('', 'info');
+}
+
+// Enhanced console error monitoring
+if (window.getConsoleErrorSummary) {
+    // Add command to check console errors
+    window.checkConsoleErrors = function() {
+        const summary = window.getConsoleErrorSummary();
+        console.log('📊 Console Error Summary:');
+        console.log(`- Total Errors: ${summary.totalErrors}`);
+        console.log(`- Total Warnings: ${summary.totalWarnings}`);
+
+        if (summary.totalErrors > 0) {
+            console.log('\n🔴 Errors:');
+            summary.errors.forEach((err, i) => {
+                console.log(`${i + 1}. ${err.message}`);
+                console.log(`   Time: ${new Date(err.timestamp).toLocaleTimeString()}`);
+            });
+        }
+
+        if (summary.totalWarnings > 0) {
+            console.log('\n⚠️ Warnings:');
+            summary.warnings.forEach((warn, i) => {
+                console.log(`${i + 1}. ${warn.message}`);
+            });
+        }
+
+        return summary;
+    };
+}
+
+// Update the showAvailableCommands function
+const originalShowAvailableCommands = window.showAvailableCommands;
+window.showAvailableCommands = function() {
+    if (originalShowAvailableCommands) {
+        originalShowAvailableCommands();
+    }
+
+    log('checkConsoleErrors()     - View all console errors/warnings', 'info');
+    log('clearConsoleErrors()     - Clear console error tracking', 'info');
+    log('runCategory("console")   - Run specific test category', 'info');
+};
+
+// Log successful integration
+console.log('✅ Comprehensive test functions integrated successfully');
+console.log('📋 40 tests loaded across 7 categories');
+console.log('🔴 Console error monitoring active');
+console.log('Type checkConsoleErrors() to view error summary');
+</script>
+
+<!-- 3. (Optional) Add a console error display panel to the dashboard -->
+<div class="demo-panel" style="margin-top: 20px;">
+    <div class="demo-header">
+        🔴 Console Error Monitor
+        <button class="clear-console-btn" onclick="clearConsoleErrors(); document.getElementById('errorMonitor').innerHTML = '<div class=\'console-line info\'>Error monitor cleared</div>'">
+            🗑️ Clear Errors
+        </button>
+    </div>
+    <div class="console-output" id="errorMonitor">
+        <div class="console-line info">
+            <span class="timestamp">[Monitor]</span>
+            Console error monitoring active. Errors will appear here automatically.
+        </div>
+    </div>
+</div>
+
+<!-- 4. Add this script to automatically display console errors in the monitor -->
+<script>
+// Auto-update error monitor every 2 seconds
+setInterval(() => {
+    if (window.getConsoleErrorSummary) {
+        const summary = window.getConsoleErrorSummary();
+        const monitor = document.getElementById('errorMonitor');
+
+        if (summary.totalErrors > 0 || summary.totalWarnings > 0) {
+            let html = '';
+
+            // Show errors
+            summary.errors.forEach(err => {
+                const time = new Date(err.timestamp).toLocaleTimeString();
+                html += `<div class="console-line error">
+                    <span class="timestamp">[${time}]</span>
+                    ${err.message}
+                </div>`;
+            });
+
+            // Show warnings
+            summary.warnings.forEach(warn => {
+                const time = new Date(warn.timestamp).toLocaleTimeString();
+                html += `<div class="console-line warning">
+                    <span class="timestamp">[${time}]</span>
+                    ${warn.message}
+                </div>`;
+            });
+
+            monitor.innerHTML = html;
+            monitor.scrollTop = monitor.scrollHeight;
+        }
+    }
+}, 2000);
+</script>
+
+<!--
+  INTEGRATION COMPLETE!
+  ====================
+
+  Now you have:
+  ✅ All 40 test functions available
+  ✅ Console error monitoring active
+  ✅ Automatic error display in dashboard
+  ✅ Category-based test execution
+  ✅ Real-time error tracking
+
+  To test:
+  1. Open test-dashboard.html in browser
+  2. Open console (F12)
+  3. Type: await runCategory('console')
+  4. Watch for any ReferenceErrors or TypeErrors
+  5. Type: checkConsoleErrors() to see all errors
+
+  The console error tests will now catch bugs like "commonLocations is not defined"
+  automatically before they reach production!
+-->
