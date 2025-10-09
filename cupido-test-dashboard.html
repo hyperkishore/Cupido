@@ -1032,7 +1032,7 @@
                                 <iframe
                                     id="live-app-iframe"
                                     class="live-preview-iframe"
-                                    src="http://localhost:8081">
+                                    src="/app">
                                 </iframe>
                             </div>
                         </div>
@@ -1286,7 +1286,7 @@
                     tests: [],
                     environment: {
                         apiUrl: 'http://localhost:3001/api/chat',
-                        appUrl: 'http://localhost:8081',
+                        appUrl: '/app',
                         userAgent: navigator.userAgent,
                         timestamp: Date.now()
                     }
@@ -1950,6 +1950,10 @@
                             logToConsole(`  - Verify iframe communication is working`, 'warning');
                             logToConsole(`  - Check if Live Preview tab has loaded the app`, 'warning');
                             logToConsole(`  - Ensure message handlers are registered`, 'warning');
+                            logToConsole(`  - Verify testID attributes are rendered as data-testid in DOM`, 'warning');
+                            if (result.metadata && result.metadata.issue === 'DOM element not accessible') {
+                                logToConsole(`  - HINT: ${result.metadata.hint}`, 'warning');
+                            }
                         } else if (testId.startsWith('profile-')) {
                             logToConsole(`  - Check AI response for profile extraction`, 'warning');
                             logToConsole(`  - Verify profile service is running`, 'warning');

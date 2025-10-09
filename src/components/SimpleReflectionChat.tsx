@@ -148,6 +148,8 @@ interface SimpleReflectionChatProps {
   onKeyboardToggle?: (isVisible: boolean) => void;
 }
 
+const DEBUG = false; // Set to true for verbose logging during development
+
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -171,6 +173,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const isTypingRef = useRef(false);
   const conversationIdRef = useRef<string | undefined>(undefined);
   const userIdRef = useRef<string>('');
+  const isSendingRef = useRef(false);
+
+  // Deduplication: Track recently processed test messages to prevent duplicates
+  const processedTestMessagesRef = useRef<Set<string>>(new Set());
 
   // Update refs when state changes
   useEffect(() => {
@@ -189,22 +195,32 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     userIdRef.current = userId;
   }, [userId]);
 
+  useEffect(() => {
+    isSendingRef.current = isSending;
+  }, [isSending]);
+
   // Initialize chat with database - reinitialize when user changes
   useEffect(() => {
+    if (DEBUG) console.log('[useEffect setupChat] 🔄 Triggered - authUser?.id:', authUser?.id);
     let unsubscribe: (() => void) | undefined;
 
     const setupChat = async () => {
+      if (DEBUG) console.log('[setupChat] 🚀 Starting chat setup...');
       // Clear existing messages when user changes
       setMessages([]);
       setConversationHistory([]);
       setConversationCount(0);
+      if (DEBUG) console.log('[setupChat] ✓ Cleared existing messages');
 
+      if (DEBUG) console.log('[setupChat] Calling initializeChat...');
       unsubscribe = await initializeChat();
+      if (DEBUG) console.log('[setupChat] ✓ initializeChat returned, unsubscribe:', unsubscribe ? 'function' : 'undefined');
     };
 
     setupChat();
 
     return () => {
+      if (DEBUG) console.log('[useEffect setupChat] Cleanup - calling unsubscribe');
       unsubscribe?.();
     };
   }, [authUser?.id]); // Re-initialize when user changes
@@ -262,13 +278,34 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       switch (type) {
         case 'test-send-message':
-          // Simulate sending a message from test dashboard
-          console.log('[TEST] Received test message command:', message);
-          setInputText(message);
-          // Auto-send after a short delay
+          // Deduplication: Use content-based key (simpler and more reliable than time-based)
+          const conversationId = conversationIdRef.current || 'no-conversation';
+          const messageKey = `${conversationId}_${message.trim().toLowerCase()}`;
+
+          if (processedTestMessagesRef.current.has(messageKey)) {
+            console.log('[TEST] ⚠️  DUPLICATE MESSAGE BLOCKED:', message.substring(0, 50));
+            return; // Skip duplicate
+          }
+
+          // Mark this message as processed
+          processedTestMessagesRef.current.add(messageKey);
+
+          // Clean up after 5 seconds (prevents memory leak for long test sessions)
           setTimeout(() => {
-            handleSend();
-          }, 100);
+            processedTestMessagesRef.current.delete(messageKey);
+          }, 5000);
+
+          // Simulate sending a message from test dashboard
+          console.log('[TEST] ✅ Received test message command:', message);
+          console.log('[TEST] Current state:', {
+            currentInputText: inputText,
+            isSending,
+            messageLength: message?.length
+          });
+
+          // Directly call handleSend with the message (no state involved)
+          console.log('[TEST] Calling handleSend directly with message...');
+          handleSend(message);
           break;
 
         case 'test-clear-session':
@@ -291,11 +328,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const state = {
             messageCount: messagesRef.current.length,
             isTyping: isTypingRef.current,
-            isSending: isSending,
+            isSending: isSendingRef.current,  // Use ref for immediate value
             conversationId: conversationIdRef.current,
             userId: userIdRef.current,
             profile: userProfileService.getProfile(),
           };
+          console.log('[TEST] test-get-state response:', state);
           // Send response back to parent window
           if (window.parent !== window) {
             window.parent.postMessage({
@@ -315,70 +353,96 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   }, []); // Empty dependency array - listener stays active and uses refs
 
   const initializeChat = async (): Promise<(() => void) | undefined> => {
+    if (DEBUG) console.log('[initializeChat] 🚀 Starting initialization...');
+    if (DEBUG) console.log('[initializeChat] authUser:', authUser ? `exists (id: ${authUser.id})` : 'null');
+
     try {
       setIsLoading(true);
 
       // Initialize user profile service
+      if (DEBUG) console.log('[initializeChat] Step 1: Initializing user profile service...');
       await userProfileService.initialize();
+      if (DEBUG) console.log('[initializeChat] ✓ User profile service initialized');
 
       // Use authenticated user or generate demo user
       let sessionUserId: string;
       let userName: string;
 
       if (authUser) {
+        if (DEBUG) console.log('[initializeChat] Step 2a: Using authenticated user path...');
         // Use authenticated user's phone number or ID
         sessionUserId = authUser.phoneNumber || authUser.id;
         userName = authUser.name || `User ${sessionUserId.slice(-6)}`;
-        console.log('🔑 Using authenticated user:', sessionUserId);
+        if (DEBUG) console.log('[initializeChat] 🔑 Authenticated user - sessionUserId:', sessionUserId, 'userName:', userName);
 
         // Check if this user has a stored session
         const storedSessionId = await getStoredSessionUserId(sessionUserId);
+        if (DEBUG) console.log('[initializeChat] Stored session check:', storedSessionId ? 'found' : 'not found');
         if (!storedSessionId) {
           // Store the session ID for this user
           await setStoredSessionUserId(sessionUserId, sessionUserId);
+          if (DEBUG) console.log('[initializeChat] ✓ Stored new session ID');
         }
       } else {
+        if (DEBUG) console.log('[initializeChat] Step 2b: Using DEMO MODE path...');
         // Demo mode: Generate or retrieve user-specific session ID
         const demoUserId = 'demo_user';
+        if (DEBUG) console.log('[initializeChat] Checking for existing demo session...');
         const storedSessionId = await getStoredSessionUserId(demoUserId);
+        if (DEBUG) console.log('[initializeChat] Stored demo session result:', storedSessionId || 'none found');
 
         if (storedSessionId) {
           // Use existing session ID
           sessionUserId = storedSessionId;
-          console.log('🔑 Retrieved existing demo session:', sessionUserId);
+          if (DEBUG) console.log('[initializeChat] 🔑 Retrieved existing demo session:', sessionUserId);
         } else {
           // Generate new session ID only if none exists
           sessionUserId = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+          if (DEBUG) console.log('[initializeChat] 🔑 Generated NEW demo session:', sessionUserId);
           await setStoredSessionUserId(demoUserId, sessionUserId);
-          console.log('🔑 Created new demo session:', sessionUserId);
+          if (DEBUG) console.log('[initializeChat] ✓ Stored new demo session ID');
         }
 
         userName = `Demo User`;
+        if (DEBUG) console.log('[initializeChat] Demo userName:', userName);
       }
 
+      if (DEBUG) console.log('[initializeChat] Step 3: Creating/getting user from database...');
+      if (DEBUG) console.log('[initializeChat] Calling chatDatabase.getOrCreateUser with:', { sessionUserId, userName });
       const user = await chatDatabase.getOrCreateUser(sessionUserId, userName);
+      if (DEBUG) console.log('[initializeChat] User result:', user);
 
       if (!user) {
-        console.error('Failed to create user');
+        console.error('[initializeChat] ❌ Failed to create user - user is null/undefined');
         return;
       }
 
+      if (DEBUG) console.log('[initializeChat] Step 4: Setting userId state...');
+      if (DEBUG) console.log('[initializeChat] User object from DB:', JSON.stringify(user));
       setUserId(user.id);
-      console.log('[MOBILE DEBUG] User ID set:', user.id);
+      // CRITICAL: Update ref immediately for test compatibility (don't wait for useEffect)
+      userIdRef.current = user.id;
+      if (DEBUG) console.log('[initializeChat] ✅ User ID set in state AND ref:', user.id);
 
       // Get or create conversation
+      if (DEBUG) console.log('[initializeChat] Step 5: Creating/getting conversation...');
       const conversation = await chatDatabase.getOrCreateConversation(user.id);
+      if (DEBUG) console.log('[initializeChat] Conversation result:', conversation);
+
       if (!conversation) {
-        console.error('Failed to create conversation');
+        console.error('[initializeChat] ❌ Failed to create conversation - conversation is null/undefined');
         return;
       }
 
+      if (DEBUG) console.log('[initializeChat] Step 6: Setting currentConversation state...');
       setCurrentConversation(conversation);
-      console.log('[MOBILE DEBUG] Conversation created/retrieved:', conversation.id);
-      
+      // CRITICAL: Update ref immediately for test compatibility (don't wait for useEffect)
+      conversationIdRef.current = conversation.id;
+      if (DEBUG) console.log('[initializeChat] ✅ Conversation set in state AND ref:', conversation.id);
+
       // Load chat history (increased limit to load more messages)
       const history = await chatDatabase.getChatHistory(conversation.id, 200);
-      console.log(`📚 Loaded ${history.length} messages from database for conversation ${conversation.id}`);
+      if (DEBUG) console.log(`📚 Loaded ${history.length} messages from database for conversation ${conversation.id}`);
 
       if (history.length > 0) {
         // Convert DB messages to UI messages
@@ -438,10 +502,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       // Store reference to local message IDs for this session
       (window as any).__localChatMessageIds = new Set<string>();
 
+      if (DEBUG) console.log('[initializeChat] ✅ Initialization complete - returning unsubscribe function');
       return unsubscribe;
     } catch (error) {
-      console.error('Error initializing chat:', error);
+      console.error('[initializeChat] ❌ ERROR during initialization:', error);
+      console.error('[initializeChat] Error details:', JSON.stringify(error));
+      console.error('[initializeChat] Stack trace:', error instanceof Error ? error.stack : 'no stack');
     } finally {
+      if (DEBUG) console.log('[initializeChat] Finally block - setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -478,9 +546,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   }, [messages]);
 
   const generateResponse = async (userMessage: string, conversationId?: string) => {
-    console.log('[MOBILE DEBUG] generateResponse called with:', userMessage);
-    console.log('[MOBILE DEBUG] currentConversation in generateResponse:', currentConversation);
-    console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
+    if (DEBUG) console.log('[MOBILE DEBUG] generateResponse called with:', userMessage);
+    if (DEBUG) console.log('[MOBILE DEBUG] currentConversation in generateResponse:', currentConversation);
+    if (DEBUG) console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
     setIsTyping(true);
 
     // Define activeConversationId in function scope so it's available in catch block
@@ -493,29 +561,37 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         { role: 'user' as const, content: userMessage }
       ];
 
-      console.log('💬 Sending to AI:', {
+      if (DEBUG) console.log('💬 Sending to AI:', {
         userMessage,
         historyLength: updatedHistory.length,
         fullHistory: updatedHistory
       });
 
-      console.log('[MOBILE DEBUG] Calling chatAiService.generateResponse');
-      // Call the AI service with UPDATED conversation history
-      const aiResponse = await chatAiService.generateResponse(
+      if (DEBUG) console.log('[MOBILE DEBUG] Calling chatAiService.generateResponse');
+
+      // Call the AI service with UPDATED conversation history (with 30s timeout)
+      const aiResponsePromise = chatAiService.generateResponse(
         userMessage,
         updatedHistory,
         conversationCount
       );
-      console.log('[MOBILE DEBUG] AI Response received:', aiResponse);
+
+      // Timeout wrapper to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI_TIMEOUT: Response took longer than 30s')), 30000)
+      );
+
+      const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]);
+      if (DEBUG) console.log('[MOBILE DEBUG] AI Response received:', aiResponse);
 
       // Add natural delay to feel more human
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
 
       // Save bot message to database
-      console.log('🔍 Active conversation ID for saving bot message:', activeConversationId);
+      if (DEBUG) console.log('🔍 Active conversation ID for saving bot message:', activeConversationId);
 
       if (activeConversationId) {
-        console.log('AI Response received:', {
+        if (DEBUG) console.log('AI Response received:', {
           message: aiResponse.message,
           model: aiResponse.usedModel,
           shouldAskQuestion: aiResponse.shouldAskQuestion
@@ -544,7 +620,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           };
           setMessages(prev => [...prev, tempBotMessage]);
         } else {
-          console.log('✅ AI message saved to database:', savedBotMessage.id);
+          if (DEBUG) console.log('✅ AI message saved to database:', savedBotMessage.id);
         }
 
         if (savedBotMessage) {
@@ -559,10 +635,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           setMessages(prev => {
             const exists = prev.find(msg => msg.id === savedBotMessage.id);
             if (exists) {
-              console.log('⚠️ Bot message already exists, not adding duplicate');
+              if (DEBUG) console.log('⚠️ Bot message already exists, not adding duplicate');
               return prev;
             }
-            console.log('✅ Adding bot message to UI');
+            if (DEBUG) console.log('✅ Adding bot message to UI');
             return [...prev, botMessage];
           });
         }
@@ -741,38 +817,75 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim() || isSending) {
+  const handleSend = async (messageOverride?: string) => {
+    const messageToSend = messageOverride ?? inputText;
+
+    if (DEBUG) console.log('[handleSend] Called with:', {
+      messageOverride: messageOverride ? messageOverride.substring(0, 50) : 'none',
+      inputText: inputText.substring(0, 50),
+      messageToSend: messageToSend.substring(0, 50),
+      inputTextLength: inputText.length,
+      isSending,
+      trimmed: messageToSend.trim().length
+    });
+
+    if (DEBUG) console.log('[handleSend] State check:', {
+      userId_state: userId,
+      userId_ref: userIdRef.current,
+      conversationId_ref: conversationIdRef.current,
+      currentConversation_state: currentConversation?.id || 'null'
+    });
+
+    if (!messageToSend.trim() || isSending) {
+      console.warn('[handleSend] Blocked send:', {
+        noText: !messageToSend.trim(),
+        alreadySending: isSending
+      });
       return;
     }
 
+    // Use refs for immediate access to latest values (avoids race conditions with React state)
+    const effectiveUserId = userIdRef.current || userId;
+
     // Check if conversation exists and get or create it
     let activeConversation = currentConversation;
+    if (!activeConversation && conversationIdRef.current) {
+      // We have a conversation ID in the ref but state hasn't updated yet
+      if (DEBUG) console.log('[handleSend] Using conversation from ref:', conversationIdRef.current);
+      // Get conversation from database using the ref ID
+      activeConversation = await chatDatabase.getOrCreateConversation(effectiveUserId);
+    }
+
     if (!activeConversation) {
-      console.error('❌ [MOBILE DEBUG] No currentConversation! userId:', userId);
-      // Try to initialize conversation
-      if (userId) {
-        const conversation = await chatDatabase.getOrCreateConversation(userId);
+      console.warn('[handleSend] ⚠️  No currentConversation in state! Attempting recovery...');
+      if (DEBUG) console.log('[handleSend] effectiveUserId:', effectiveUserId);
+
+      // Try to initialize conversation using ref values
+      if (effectiveUserId) {
+        if (DEBUG) console.log('[handleSend] Creating conversation for user:', effectiveUserId);
+        const conversation = await chatDatabase.getOrCreateConversation(effectiveUserId);
         if (conversation) {
-          console.log('✅ [MOBILE DEBUG] Created conversation:', conversation);
+          if (DEBUG) console.log('[handleSend] ✅ Created conversation:', conversation.id);
           setCurrentConversation(conversation);
           activeConversation = conversation; // Use the newly created conversation
         } else {
-          console.error('❌ [MOBILE DEBUG] Failed to create conversation');
+          console.error('[handleSend] ❌ Failed to create conversation');
           return;
         }
       } else {
-        console.error('❌ [MOBILE DEBUG] No userId available');
+        console.error('[handleSend] ❌ No userId available (state:', userId, ', ref:', userIdRef.current, ')');
         return;
       }
     }
 
-    // Enhanced duplicate prevention with message hash
-    const messageText = inputText.trim();
-    const messageHash = `${messageText}_${Date.now()}`;
+    if (DEBUG) console.log('[handleSend] ✅ Ready to send - activeConversation:', activeConversation.id);
 
-    if ((window as any).__pendingMessages?.has(messageHash)) {
-      console.log('⚠️ Blocked duplicate: message already pending');
+    // Content-based duplicate prevention (simpler and more reliable than time-based)
+    const messageText = messageToSend.trim();
+    const messageKey = `${activeConversation.id}_${messageText.toLowerCase()}`;
+
+    if ((window as any).__pendingMessages?.has(messageKey)) {
+      console.log('⚠️ Blocked duplicate: exact same message already being sent');
       return;
     }
 
@@ -782,33 +895,25 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
 
     // Add to pending messages
-    (window as any).__pendingMessages.add(messageHash);
+    (window as any).__pendingMessages.add(messageKey);
 
-    // Clear pending after 2 seconds (safety cleanup)
+    // Clear pending after message is processed (or 3s timeout for safety)
     setTimeout(() => {
-      (window as any).__pendingMessages?.delete(messageHash);
-    }, 2000);
+      (window as any).__pendingMessages?.delete(messageKey);
+    }, 3000);
 
     console.log(`📤 [${new Date().toISOString()}] Sending message:`, messageText);
 
-    setInputText('');
+    // Only clear input if we used the actual inputText (not an override)
+    if (!messageOverride) {
+      setInputText('');
+    }
     setIsSending(true);
+    isSendingRef.current = true; // Update ref immediately for test compatibility
 
     // Wrap everything in try/finally to ensure isSending always gets reset
     try {
-      // Extract profile information from user messages
-      const previousMessages = messages.filter(m => !m.isBot).map(m => m.text);
-      const profileUpdates = userProfileService.extractProfileFromMessage(messageText, previousMessages);
-      if (Object.keys(profileUpdates).length > 0) {
-        await userProfileService.updateProfile(profileUpdates);
-
-        // If we just got the user's name, log it
-        if (profileUpdates.name) {
-          console.log('User name collected:', profileUpdates.name);
-        }
-      }
-
-      // Save user message to database first
+      // Save user message to database FIRST (don't wait for profile extraction)
       if (activeConversation) {
         const savedUserMessage = await chatDatabase.saveMessage(
           activeConversation.id,
@@ -818,7 +923,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           { message_length: messageText.length }
         );
 
-        // Always show the user message in UI, even if database save fails
+        // Always show the user message in UI immediately
         let userMessage: Message;
 
         if (!savedUserMessage) {
@@ -831,7 +936,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             timestamp: new Date(),
           };
         } else {
-          console.log('✅ User message saved to database:', savedUserMessage.id);
+          if (DEBUG) console.log('✅ User message saved to database:', savedUserMessage.id);
           userMessage = {
             id: savedUserMessage.id,
             text: messageText,
@@ -844,10 +949,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         setMessages(prev => {
           const exists = prev.find(msg => msg.id === userMessage.id);
           if (exists) {
-            console.log('⚠️ User message already exists, not adding duplicate');
+            if (DEBUG) console.log('⚠️ User message already exists, not adding duplicate');
             return prev;
           }
-          console.log('✅ Adding user message to UI');
+          if (DEBUG) console.log('✅ Adding user message to UI');
           return [...prev, userMessage];
         });
 
@@ -855,21 +960,52 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      // Generate response
-      try {
-        console.log('[MOBILE DEBUG] About to call generateResponse');
-        await generateResponse(messageText, activeConversation.id);
-        console.log('[MOBILE DEBUG] generateResponse completed');
-      } catch (error) {
-        console.error('[MOBILE DEBUG] generateResponse failed:', error);
-      }
+      // User message is now visible - release the send button immediately
+      setIsSending(false);
+      isSendingRef.current = false;
+      if (DEBUG) console.log('[handleSend] ✅ User message sent, isSending=false');
+
+      // Extract profile information in background (non-blocking)
+      // This happens async and doesn't delay the AI response
+      const previousMessages = messages.filter(m => !m.isBot).map(m => m.text);
+      if (DEBUG) console.log('[Profile Extraction] Starting background extraction...');
+      userProfileService.extractProfileFromMessage(messageText, previousMessages)
+        .then(profileUpdates => {
+          if (Object.keys(profileUpdates).length > 0) {
+            return userProfileService.updateProfile(profileUpdates).then(() => {
+              if (DEBUG) console.log('[Profile Extraction] ✅ Profile updated:', profileUpdates);
+
+              // If we just got the user's name, log it (keep this one as it's important)
+              if (profileUpdates.name) {
+                console.log('✅ User name collected:', profileUpdates.name);
+              }
+            });
+          } else {
+            if (DEBUG) console.log('[Profile Extraction] No updates extracted from message');
+          }
+        })
+        .catch(error => {
+          console.error('[Profile Extraction] Background extraction failed:', error);
+        });
+
+      // Generate response in background (completely non-blocking)
+      // Don't await - let it run independently
+      if (DEBUG) console.log('[MOBILE DEBUG] Starting generateResponse in background');
+      generateResponse(messageText, activeConversation.id)
+        .then(() => {
+          if (DEBUG) console.log('[MOBILE DEBUG] generateResponse completed');
+        })
+        .catch(error => {
+          console.error('[MOBILE DEBUG] generateResponse failed:', error);
+        });
     } catch (error) {
       console.error('❌ [CRITICAL] Error in handleSend:', error);
       console.error('Error message:', error instanceof Error ? error.message : String(error));
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    } finally {
+
+      // If error occurred before we set isSending=false, reset it now
       setIsSending(false);
-      console.log('[MOBILE DEBUG] handleSend completed, isSending set to false');
+      isSendingRef.current = false;
     }
   };
 
@@ -890,16 +1026,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        testID="messages-scroll-view"
       >
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <View
             key={message.id}
+            testID={`message-${index}`}
             style={[
               styles.messageContainer,
               message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
             ]}
           >
             <View
+              testID={`message-bubble-${index}`}
               style={[
                 styles.messageBubble,
                 message.isBot ? styles.botBubble : styles.userBubble,
@@ -925,6 +1064,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 </View>
               ) : (
                 <Text
+                  testID={`message-text-${index}`}
                   style={[
                     styles.messageText,
                     message.isBot ? styles.botText : styles.userText,
@@ -944,30 +1084,33 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         ))}
         
         {isTyping && (
-          <View style={styles.typingContainer}>
+          <View style={styles.typingContainer} testID="typing-indicator">
             <Text style={styles.typingText}>typing...</Text>
           </View>
         )}
       </ScrollView>
 
       {/* Fixed input area */}
-      <View 
+      <View
+        testID="input-wrapper"
         style={[
           styles.inputWrapper,
-          { 
+          {
             bottom: inputBottomPosition,
             height: INPUT_AREA_HEIGHT,
           }
         ]}
       >
-        <View style={styles.inputContainer}>
+        <View style={styles.inputContainer} testID="input-container">
           <TouchableOpacity
+            testID="attach-button"
             style={styles.attachButton}
             onPress={handlePhotoUpload}
           >
             <Feather name="plus" size={20} color="#007AFF" />
           </TouchableOpacity>
           <TextInput
+            testID="chat-input"
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
@@ -1005,6 +1148,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             }}
           />
           <TouchableOpacity
+            testID="send-button"
             style={[
               styles.sendButton,
               (!inputText.trim() || isSending) && styles.sendButtonDisabled

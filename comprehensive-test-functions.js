@@ -107,6 +107,52 @@ function getNextNaturalMessage() {
   return message;
 }
 
+// Helper to wait for iframe to load
+async function waitForIframeLoad() {
+  const iframe = document.getElementById('live-app-iframe');
+  if (!iframe) {
+    throw new Error('App iframe not found');
+  }
+
+  // Wait for iframe to be loaded
+  if (!iframe.contentWindow) {
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Iframe load timeout')), 10000);
+      iframe.addEventListener('load', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+  }
+
+  // Wait a bit more for React to render
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return iframe;
+}
+
+// Helper to get element from iframe using testID
+function getIframeElement(testId) {
+  const iframe = document.getElementById('live-app-iframe');
+  if (!iframe || !iframe.contentWindow || !iframe.contentWindow.document) {
+    console.error('Iframe not accessible', {
+      iframe: !!iframe,
+      contentWindow: !!iframe?.contentWindow,
+      document: !!iframe?.contentWindow?.document
+    });
+    return null;
+  }
+
+  const element = iframe.contentWindow.document.querySelector(`[data-testid="${testId}"]`);
+  if (!element) {
+    console.warn(`Element with testID="${testId}" not found in iframe`);
+    console.log('Available testIDs:',
+      Array.from(iframe.contentWindow.document.querySelectorAll('[data-testid]'))
+        .map(el => el.getAttribute('data-testid'))
+    );
+  }
+  return element;
+}
+
 // Helper to send message to iframe
 function sendMessageToApp(message) {
   const frame = document.getElementById('live-app-iframe');
@@ -140,6 +186,54 @@ function getAppState() {
     frame.contentWindow.postMessage({ type: 'test-get-state' }, '*');
   });
 }
+
+// Debug function to diagnose iframe issues
+window.debugIframe = function() {
+  const iframe = document.getElementById('live-app-iframe');
+  console.log('=== IFRAME DEBUG INFO ===');
+  console.log('1. Iframe exists:', !!iframe);
+  console.log('2. Iframe src:', iframe?.src);
+  console.log('3. Iframe contentWindow:', !!iframe?.contentWindow);
+  console.log('4. Iframe contentDocument:', !!iframe?.contentWindow?.document);
+
+  if (iframe?.contentWindow?.document) {
+    const doc = iframe.contentWindow.document;
+    console.log('5. Document body:', !!doc.body);
+    console.log('6. Document title:', doc.title);
+    console.log('7. Body innerHTML length:', doc.body?.innerHTML?.length);
+
+    // Find all elements with data-testid
+    const elementsWithTestId = doc.querySelectorAll('[data-testid]');
+    console.log('8. Elements with data-testid:', elementsWithTestId.length);
+    console.log('9. TestID values:', Array.from(elementsWithTestId).map(el => el.getAttribute('data-testid')));
+
+    // Check for specific elements
+    console.log('10. chat-input found:', !!doc.querySelector('[data-testid="chat-input"]'));
+    console.log('11. send-button found:', !!doc.querySelector('[data-testid="send-button"]'));
+
+    // Check for React root
+    console.log('12. Root div:', !!doc.querySelector('#root'));
+    console.log('13. Root children:', doc.querySelector('#root')?.children?.length);
+  }
+
+  // Test postMessage communication
+  console.log('14. Testing postMessage...');
+  const messageListener = (event) => {
+    if (event.data.type === 'test-state-response') {
+      console.log('15. ✅ TestBridge responded!', event.data);
+      window.removeEventListener('message', messageListener);
+    } else if (event.data.type === 'APP_READY') {
+      console.log('15. ✅ App ready message received!', event.data);
+    }
+  };
+  window.addEventListener('message', messageListener);
+  iframe?.contentWindow?.postMessage({ type: 'test-get-state' }, '*');
+
+  setTimeout(() => {
+    window.removeEventListener('message', messageListener);
+    console.log('=== END DEBUG INFO ===');
+  }, 2000);
+};
 
 // Helper to wait for a condition
 async function waitFor(conditionFn, timeout = 5000, checkInterval = 100) {
@@ -331,6 +425,37 @@ async function testConsole5() {
  */
 async function testMessage1() {
   try {
+    // First ensure iframe is loaded
+    await waitForIframeLoad();
+
+    // Verify UI elements exist using testID
+    const chatInput = getIframeElement('chat-input');
+    const sendButton = getIframeElement('send-button');
+
+    if (!chatInput) {
+      return {
+        pass: false,
+        message: '✗ Chat input not found in iframe',
+        errors: ['Could not find element with data-testid="chat-input"'],
+        metadata: {
+          issue: 'DOM element not accessible',
+          hint: 'Check if React Native web rendered testID as data-testid attribute'
+        }
+      };
+    }
+
+    if (!sendButton) {
+      return {
+        pass: false,
+        message: '✗ Send button not found in iframe',
+        errors: ['Could not find element with data-testid="send-button"'],
+        metadata: {
+          issue: 'DOM element not accessible',
+          hint: 'Check if React Native web rendered testID as data-testid attribute'
+        }
+      };
+    }
+
     const stateBefore = await getAppState();
     const messageCountBefore = stateBefore.messageCount || 0;
 
@@ -343,11 +468,22 @@ async function testMessage1() {
     const stateAfter = await getAppState();
     const messageCountAfter = stateAfter.messageCount || 0;
 
+    // Verify message appeared in DOM
+    const messageElements = Array.from(
+      document.getElementById('live-app-iframe').contentWindow.document
+        .querySelectorAll('[data-testid^="message-"]')
+    );
+
     if (messageCountAfter > messageCountBefore) {
       return {
         pass: true,
         message: `✓ Message appeared immediately (${messageCountBefore} → ${messageCountAfter})`,
-        metadata: { messageCountBefore, messageCountAfter }
+        metadata: {
+          messageCountBefore,
+          messageCountAfter,
+          domMessageCount: messageElements.length,
+          testMessage
+        }
       };
     }
 
@@ -355,13 +491,25 @@ async function testMessage1() {
       pass: false,
       message: '✗ Message count did not increase',
       errors: ['Message did not appear in UI'],
-      metadata: { messageCountBefore, messageCountAfter }
+      metadata: {
+        messageCountBefore,
+        messageCountAfter,
+        domMessageCount: messageElements.length,
+        testMessage,
+        chatInputFound: !!chatInput,
+        sendButtonFound: !!sendButton,
+        issue: 'Message was sent but state did not update'
+      }
     };
   } catch (error) {
     return {
       pass: false,
       message: `✗ Failed to verify message: ${error.message}`,
-      errors: [error.message]
+      errors: [error.message, error.stack],
+      metadata: {
+        error: error.toString(),
+        stack: error.stack
+      }
     };
   }
 }

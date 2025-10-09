@@ -32,3 +32,16 @@
   - `initializeChat` and `handleSend` write to `window.*` without guarding for React Native; on iOS/Android `window` is undefined, so the first session initialization throws a ReferenceError and the chat never loads.
 - **Medium – Saved photo messages lose images on reload** (`src/components/SimpleReflectionChat.tsx:338`, `src/services/chatDatabase.ts:120`)
   - Photo uploads store the URI in `chat_messages.metadata`, but when history is rehydrated the UI ignores `metadata.imageUri`, so reopening the app shows only the text placeholder and the shared image disappears.
+
+- **Medium – Demo Supabase stub ignores `.insert().select().single()`** (`src/services/supabase.ts:18`)
+  - The in-memory Supabase stub used in demo mode returns a stub object without chaining, so calls like `.insert(...).select().single()` throw when `select` isn’t defined; demo flows that try to persist anything crash immediately.
+- **High – Stream chat token call always fails in demo** (`src/services/streamChat.ts:52`, `src/services/supabase.ts:18`)
+  - `StreamChatService.generateUserToken` calls `supabase.functions.invoke`, but the demo client stub returns `{ data: null }`, making the SDK throw because `data.token` is undefined.
+- **High – Simple chat proxy URL doubles `/api/chat`** (`src/services/simpleChatService.ts:12`)
+  - When `EXPO_PUBLIC_AI_PROXY_URL` already points to the chat endpoint, `resolveProxyUrl` blindly appends `/api/chat`, yielding URLs like `/api/chat/api/chat` and breaking the simple chat fallback.
+- **High – Demo Supabase stub missing core query builders** (`src/services/supabase.ts:17-31`)
+  - The in-memory stub only implements `select().eq().single()`; calls like `.order()`, `.limit()`, `.delete()`, or `.in()` (used throughout `chatDatabase`, `weeklyDigest`, etc.) explode in demo mode because the stub returns undefined for those methods.
+- **Medium – Reflection longest streak increments on same-day entries** (`src/services/reflectionsRepository.ts:682-699`)
+  - The SQL updates `longest_streak` with `current_streak + 1` even when the reflection happens on the same day, so logging twice in one day inflates the longest streak counter.
+- **Medium – Image uploads never reach Claude on native** (`src/components/SimpleReflectionChat.tsx:635-655`)
+  - The photo handler only encodes the file to base64 on web; on iOS/Android `base64Data` stays null, so the AI call never receives the image despite saving it locally.
