@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 import { userProfileService } from './userProfileService';
 import promptConfig from '../config/prompts.json';
 
+const DEBUG = false; // Set to true for verbose logging during development
+
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -24,17 +26,17 @@ class ChatAiService {
   constructor() {
     // Using proxy server - no need for API key in frontend
     this.apiKey = 'proxy';  // Placeholder since we're using proxy
-    
-    console.log('🔄 Using proxy server for Claude API calls');
-    console.log('🚀 ChatAiService initialized at:', new Date().toISOString());
-    
+
+    if (DEBUG) console.log('🔄 Using proxy server for Claude API calls');
+    if (DEBUG) console.log('🚀 ChatAiService initialized at:', new Date().toISOString());
+
     // Use Anthropic Claude (baseUrl will be overridden in proxy method)
     this.provider = 'anthropic';
     this.baseUrl = 'https://api.anthropic.com/v1/messages'; // Keep original, proxy method uses different URL
     this.proxyUrl = this.resolveProxyUrl();
-    
-    console.log('ChatAI configured with proxy server ✅');
-    console.log('🌐 Proxy URL resolved to:', this.proxyUrl);
+
+    if (DEBUG) console.log('ChatAI configured with proxy server ✅');
+    if (DEBUG) console.log('🌐 Proxy URL resolved to:', this.proxyUrl);
   }
 
   private createSystemPrompt(): string {
@@ -202,7 +204,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     }
 
     // Use prompt from configuration file with name context
-    console.log('📋 Loading prompt from centralized configuration:', cupidoPrompt.name);
+    if (DEBUG) console.log('📋 Loading prompt from centralized configuration:', cupidoPrompt.name);
     return cupidoPrompt.system_prompt + nameContext;
   }
 
@@ -223,27 +225,29 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     imageData?: { base64: string; mimeType: string }
   ): Promise<ChatAiResponse> {
 
-    console.log('\n\n' + '='.repeat(80));
-    console.log('🔥🔥🔥 OUTGOING MESSAGE DEBUG START 🔥🔥🔥');
-    console.log('='.repeat(80));
-    console.log('📤 User message:', userMessage);
-    console.log('📊 Conversation count:', conversationCount);
-    console.log('📚 History length:', conversationHistory.length);
-    console.log('🖼️ Has image:', !!imageData);
-    console.log('🕐 Timestamp:', new Date().toISOString());
-    console.log('🌍 Environment check:', {
-      nodeEnv: process.env.NODE_ENV,
-      expoPlatform: process.env.EXPO_PLATFORM,
-      proxyUrl: process.env.EXPO_PUBLIC_AI_PROXY_URL
-    });
-    console.log('🔄 Using proxy server for API calls');
-    console.log('='.repeat(80) + '\n');
+    if (DEBUG) {
+      console.log('\n\n' + '='.repeat(80));
+      console.log('🔥🔥🔥 OUTGOING MESSAGE DEBUG START 🔥🔥🔥');
+      console.log('='.repeat(80));
+      console.log('📤 User message:', userMessage);
+      console.log('📊 Conversation count:', conversationCount);
+      console.log('📚 History length:', conversationHistory.length);
+      console.log('🖼️ Has image:', !!imageData);
+      console.log('🕐 Timestamp:', new Date().toISOString());
+      console.log('🌍 Environment check:', {
+        nodeEnv: process.env.NODE_ENV,
+        expoPlatform: process.env.EXPO_PLATFORM,
+        proxyUrl: process.env.EXPO_PUBLIC_AI_PROXY_URL
+      });
+      console.log('🔄 Using proxy server for API calls');
+      console.log('='.repeat(80) + '\n');
+    }
 
     try {
       // Always use Claude 3.5 Sonnet for consistent, high-quality responses
       const modelToUse = 'sonnet';
 
-      console.log(`Using Claude 3.5 ${modelToUse.toUpperCase()} exclusively for all responses`);
+      if (DEBUG) console.log(`Using Claude 3.5 ${modelToUse.toUpperCase()} exclusively for all responses`);
 
       // Mark the last user message to include image if available
       const lastUserMessage = imageData
@@ -264,7 +268,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         response = await this.callOpenAIAPI(messages);
       }
 
-      console.log('✅ SUCCESS - Returning Claude response:', {
+      if (DEBUG) console.log('✅ SUCCESS - Returning Claude response:', {
         responseLength: response.length,
         modelUsed: modelToUse,
         responsePreview: response.substring(0, 50) + '...'
@@ -291,46 +295,61 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
 
 
   private async callAnthropicAPI(messages: ChatMessage[], modelType: 'haiku' | 'sonnet' = 'sonnet', imageData?: { base64: string; mimeType: string }): Promise<string> {
-    console.log('='.repeat(60));
-    console.log('🚀 PROXY CALL STARTING 🚀');
-    console.log('='.repeat(60));
-    console.log(`🤖 Model type: Claude ${modelType.toUpperCase()}`);
+    if (DEBUG) {
+      console.log('='.repeat(60));
+      console.log('🚀 PROXY CALL STARTING 🚀');
+      console.log('='.repeat(60));
+      console.log(`🤖 Model type: Claude ${modelType.toUpperCase()}`);
+    }
 
     // Get proxy URL from environment variable with fallback
     const expoExtra = Constants?.expoConfig?.extra ?? Constants?.manifest?.extra ?? {};
     const envProxyUrl = process.env.EXPO_PUBLIC_AI_PROXY_URL || expoExtra?.aiProxyUrl;
 
-    console.log('🔍 Environment debug:', {
-      'process.env.EXPO_PUBLIC_AI_PROXY_URL': process.env.EXPO_PUBLIC_AI_PROXY_URL,
-      'expoExtra': JSON.stringify(expoExtra),
-      'envProxyUrl': envProxyUrl,
-      'window.location': typeof window !== 'undefined' ? window.location.href : 'not in browser',
-      'Platform.OS': Platform.OS
-    });
+    if (DEBUG) {
+      console.log('🔍 Environment debug:', {
+        'process.env.EXPO_PUBLIC_AI_PROXY_URL': process.env.EXPO_PUBLIC_AI_PROXY_URL,
+        'expoExtra': JSON.stringify(expoExtra),
+        'envProxyUrl': envProxyUrl,
+        'window.location': typeof window !== 'undefined' ? window.location.href : 'not in browser',
+        'Platform.OS': Platform.OS
+      });
+    }
 
     const proxyUrl = this.proxyUrl;
-    console.log('🎯 Proxy URL resolved as:', proxyUrl);
-    console.log('🎯 this.proxyUrl value:', this.proxyUrl);
-    console.log('📋 Request payload:', {
-      messagesCount: messages.length,
-      modelType: modelType,
-      firstMessage: messages[0]?.content?.substring(0, 50) || 'none'
-    });
-    
+    if (DEBUG) {
+      console.log('🎯 Proxy URL resolved as:', proxyUrl);
+      console.log('🎯 this.proxyUrl value:', this.proxyUrl);
+      console.log('📋 Request payload:', {
+        messagesCount: messages.length,
+        modelType: modelType,
+        firstMessage: messages[0]?.content?.substring(0, 50) || 'none'
+      });
+    }
+
     // Skip mixed content check since we're on localhost
     // if (typeof window !== 'undefined' && window.location.protocol === 'https:' && proxyUrl.startsWith('http:')) {
     //   console.error('❌ Mixed content error: Cannot call HTTP proxy from HTTPS page');
     //   throw new Error('MIXED_CONTENT: Cannot call HTTP proxy from HTTPS page');
     // }
-    
-    console.log('📡 About to make fetch request...');
-    console.log('📡 Exact URL being used:', proxyUrl);
-    console.log('📡 URL type:', typeof proxyUrl);
-    console.log('📡 URL length:', proxyUrl.length);
+
+    if (DEBUG) {
+      console.log('📡 About to make fetch request...');
+      console.log('📡 Exact URL being used:', proxyUrl);
+      console.log('📡 URL type:', typeof proxyUrl);
+      console.log('📡 URL length:', proxyUrl.length);
+    }
 
     try {
-      console.log('🌐 FETCH STARTING - Making network call to proxy');
-      console.log('🌐 Final URL for fetch:', proxyUrl);
+      if (DEBUG) {
+        console.log('🌐 FETCH STARTING - Making network call to proxy');
+        console.log('🌐 Final URL for fetch:', proxyUrl);
+      }
+
+      // Add timeout to prevent hanging forever
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
       const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
@@ -340,9 +359,12 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
           messages: messages,
           modelType: modelType,
           imageData: imageData // Include image data if available
-        })
+        }),
+        signal: controller.signal
       });
-      console.log('📥 FETCH COMPLETED - Response received:', {
+
+      clearTimeout(timeoutId);
+      if (DEBUG) console.log('📥 FETCH COMPLETED - Response received:', {
         status: response.status,
         ok: response.ok,
         statusText: response.statusText
@@ -379,20 +401,24 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         console.error('❌ Invalid message in proxy response:', data);
         throw new Error('INVALID_MESSAGE: Proxy returned invalid message format');
       }
-      
-      console.log(`✅ Success: Got ${message.length} chars from Claude ${modelType}`);
+
+      if (DEBUG) console.log(`✅ Success: Got ${message.length} chars from Claude ${modelType}`);
       return message;
       
     } catch (error: any) {
       // Enhanced error handling with specific error types
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error.name === 'AbortError') {
+        console.error('❌ Request timeout - AI response took longer than 25s');
+        throw new Error('TIMEOUT_ERROR: AI request timed out after 25 seconds');
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
         console.error('❌ Network error - cannot reach proxy:', error);
         throw new Error('NETWORK_ERROR: Cannot reach AI proxy server');
-      } else if (error.message.startsWith('MIXED_CONTENT:') || 
-                 error.message.startsWith('NETWORK_ERROR:') || 
-                 error.message.startsWith('PROXY_ERROR:') || 
+      } else if (error.message.startsWith('MIXED_CONTENT:') ||
+                 error.message.startsWith('NETWORK_ERROR:') ||
+                 error.message.startsWith('PROXY_ERROR:') ||
                  error.message.startsWith('INVALID_RESPONSE:') ||
-                 error.message.startsWith('INVALID_MESSAGE:')) {
+                 error.message.startsWith('INVALID_MESSAGE:') ||
+                 error.message.startsWith('TIMEOUT_ERROR:')) {
         // Re-throw our custom errors
         throw error;
       } else {
@@ -426,16 +452,20 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
   }
 
   private generateFallbackResponse(userMessage: string, conversationCount: number, error?: string): ChatAiResponse {
-    console.log('⚠️ FALLBACK RESPONSE TRIGGERED ⚠️');
-    console.log('📝 User message that triggered fallback:', userMessage);
-    console.log('💥 Error that caused fallback:', error || 'Unknown error');
-    console.log('🔄 This means Claude API was NOT called successfully');
-    
-    // Show diagnostic message for certain error types
+    if (DEBUG) {
+      console.log('⚠️ FALLBACK RESPONSE TRIGGERED ⚠️');
+      console.log('📝 User message that triggered fallback:', userMessage);
+      console.log('💥 Error that caused fallback:', error || 'Unknown error');
+      console.log('🔄 This means Claude API was NOT called successfully');
+    }
+
+    // Show diagnostic message for certain error types (keep these as they're important warnings)
     if (error?.includes('NETWORK_ERROR')) {
       console.warn('🚨 AI proxy server is unreachable - check if server.js is running on port 3001');
     } else if (error?.includes('MIXED_CONTENT')) {
       console.warn('🚨 HTTPS/HTTP mixed content issue - proxy needs HTTPS or app needs HTTP');
+    } else if (error?.includes('TIMEOUT_ERROR') || error?.includes('AI_TIMEOUT')) {
+      console.warn('🚨 AI response timed out - server may be overloaded or API slow');
     }
     
     const lowerMessage = userMessage.toLowerCase();

@@ -23,9 +23,21 @@
   - The Supabase client is created at module load using the initial `DEMO_MODE=false`; later calls to `setDemoMode(true)` don’t rebuild the client, so “demo” mode still hits the real backend with placeholder credentials and fails.
 - Native chat crashes on window reference (`src/components/SimpleReflectionChat.tsx:393,728`)
   - `initializeChat` and `handleSend` write to `window.*` without guarding for React Native; on iOS/Android `window` is undefined, so the chat screen blows up as soon as it mounts.
+- Stream chat token call always fails in demo (`src/services/streamChat.ts:52`, `src/services/supabase.ts:18`)
+  - `StreamChatService.generateUserToken` relies on `supabase.functions.invoke`, but the demo client stub never returns a token, so chat initialization throws for every demo user.
+- Simple chat proxy URL doubles `/api/chat` (`src/services/simpleChatService.ts:12`)
+  - If `EXPO_PUBLIC_AI_PROXY_URL` already includes `/api/chat`, the helper appends another segment, producing `/api/chat/api/chat` and breaking the fallback chat service.
+- Demo Supabase stub missing core query builders (`src/services/supabase.ts:17-31`)
+  - The mock client only handles `select().eq().single()`, so any call that chains `.order()`, `.limit()`, `.delete()`, or `.in()` (used by chat, digests, etc.) throws in demo mode.
 
 ## Medium Severity
 - Chat subscriptions leak (`src/screens/ChatScreen.tsx:31-73`, `src/services/supabase.production.ts:501`)
   - `ChatScreen` subscribes to message updates but never unsubscribes on unmount, so each visit stacks another listener and duplicate events.
 - Saved photo messages lose images on reload (`src/components/SimpleReflectionChat.tsx:338`, `src/services/chatDatabase.ts:120`)
   - Photo uploads persist the URI inside `chat_messages.metadata`, but the hydrator drops that metadata, so previously shared images disappear when the conversation is reloaded.
+- Demo Supabase stub ignores `.insert().select().single()` (`src/services/supabase.ts:18`)
+  - The in-memory stub only returns `{ select: () => ({ single: async () => ({ data: null, error: null }) }) }`; any nested call like `.insert(...).select().single()` throws because `select` is undefined, breaking demo persistence paths.
+- Reflection longest streak increments on same-day entries (`src/services/reflectionsRepository.ts:682-699`)
+  - The SQL updates `longest_streak` with `current_streak + 1` even when the reflection happens on the same day, so double logging in one day inflates the longest streak.
+- Image uploads never reach Claude on native (`src/components/SimpleReflectionChat.tsx:635-655`)
+  - The photo handler only base64-encodes on web; on iOS/Android `base64Data` stays null, so the AI proxy never receives the attachment even though the UI shows the photo.

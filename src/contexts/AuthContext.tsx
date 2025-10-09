@@ -27,13 +27,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { mode } = useAppMode();
 
   useEffect(() => {
+    console.log('[AuthContext] Starting initialization...');
     const getSession = async () => {
       try {
-        const currentUser = await AuthService.getCurrentUser(mode);
+        // Add a timeout to prevent infinite loading
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => {
+            console.warn('[AuthContext] ⏱️  Timeout reached (3s) - proceeding without user');
+            resolve(null);
+          }, 3000);
+        });
+
+        console.log('[AuthContext] Fetching current user...');
+        const userPromise = AuthService.getCurrentUser(mode);
+
+        // Race between the user fetch and timeout
+        const currentUser = await Promise.race([userPromise, timeoutPromise]);
+        console.log('[AuthContext] Result:', currentUser ? 'User loaded' : 'No user');
         setUser(currentUser);
       } catch (error) {
-        console.error('Error getting current user:', error);
+        console.error('[AuthContext] ❌ Error getting current user:', error);
+        setUser(null); // Ensure we set user to null on error
       } finally {
+        console.log('[AuthContext] ✅ Setting loading to false');
         setLoading(false);
       }
     };

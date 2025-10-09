@@ -24,6 +24,8 @@ import { VersionDisplay } from './src/components/VersionDisplay';
 import { ModeProvider, useAppMode } from './src/contexts/AppModeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { CalmLoadingScreen } from './src/components/CalmLoadingScreen';
+import { TestBridge } from './src/components/TestBridge';
 
 const Tab = createBottomTabNavigator();
 
@@ -73,6 +75,7 @@ const AppShell = () => {
           </View>
           
           <Tab.Navigator
+            initialRouteName="Reflect"
             screenOptions={({ route }) => ({
               headerShown: false,
               tabBarIcon: ({ focused, color }) => {
@@ -157,6 +160,7 @@ export default function App() {
       <AuthProvider>
         <AppStateProvider>
           <FeedbackProvider>
+            <TestBridge />
             <Root />
           </FeedbackProvider>
         </AppStateProvider>
@@ -171,9 +175,15 @@ const Root = () => {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   React.useEffect(() => {
+    console.log('[Root] Loading state:', loading, 'User:', user ? 'exists' : 'null');
+  }, [loading, user]);
+
+  React.useEffect(() => {
+    console.log('[Root] Setting 5s timeout for loading screen...');
     // Set a timeout for loading state
     const timer = setTimeout(() => {
       if (loading) {
+        console.warn('[Root] ⏱️  Loading timeout reached (5s) - showing timeout screen');
         setLoadingTimeout(true);
       }
     }, 5000); // 5 seconds timeout
@@ -182,15 +192,8 @@ const Root = () => {
   }, [loading]);
 
   if (loading && !loadingTimeout) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <Text style={styles.loadingTitle}>Cupido</Text>
-          <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingCopy}>Loading your reflection space</Text>
-        </View>
-      </SafeAreaView>
-    );
+    console.log('[Root] Rendering CalmLoadingScreen...');
+    return <CalmLoadingScreen message="Loading your reflection space" />;
   }
 
   if (loadingTimeout) {

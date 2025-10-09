@@ -17,25 +17,11 @@ class UserProfileService {
   private STORAGE_KEY = 'cupido_user_profile';
   private profile: UserProfile = {};
 
-  // Common locations that shouldn't be names
-  private commonLocations = [
-    'bangalore', 'bengaluru', 'delhi', 'mumbai', 'chennai', 'kolkata', 'hyderabad', 'pune', 'ahmedabad',
-    'new york', 'london', 'paris', 'tokyo', 'singapore', 'dubai', 'san francisco', 'los angeles',
-    'chicago', 'boston', 'seattle', 'austin', 'portland', 'miami', 'atlanta', 'denver'
-  ];
-
   async initialize(): Promise<void> {
     try {
       const stored = await AsyncStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         this.profile = JSON.parse(stored);
-
-        // Clean up any incorrectly stored city names
-        if (this.profile.name && this.commonLocations.includes(this.profile.name.toLowerCase())) {
-          console.log('Cleaning up incorrectly stored location as name:', this.profile.name);
-          delete this.profile.name;
-          await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.profile));
-        }
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -72,92 +58,95 @@ class UserProfileService {
     }
   }
 
-  // Extract profile data from chat messages
-  extractProfileFromMessage(message: string, previousMessages: string[] = []): Partial<UserProfile> {
-    const updates: Partial<UserProfile> = {};
-    const lowerMessage = message.toLowerCase();
+  // Extract profile data using Claude API for natural language understanding
+  async extractProfileFromMessage(message: string, previousMessages: string[] = []): Promise<Partial<UserProfile>> {
+    try {
+      // Use Claude API to intelligently extract structured data
+      const extractionPrompt = `You are a profile data extraction assistant. Extract any personal information from the user's message and return ONLY a valid JSON object.
 
-    // Name detection (first few messages or when explicitly stated)
-    const isNameContext = lowerMessage.includes('my name') || lowerMessage.includes("i'm ") || lowerMessage.includes('i am ') || lowerMessage.includes('call me');
-    const isLocationContext = lowerMessage.includes('from') || lowerMessage.includes('live in') || lowerMessage.includes('based in') || lowerMessage.includes('location');
+Important rules:
+1. Only extract information explicitly mentioned
+2. Return {} if no profile information found
+3. Do not infer or guess information
+4. Valid fields: name, age, gender, location, hobbies (string[]), datingPreference
 
-    if ((previousMessages.length < 5 || isNameContext) && !isLocationContext) {
-      // Check if it looks like a name (starts with capital, no numbers, reasonable length)
-      const words = message.trim().split(/\s+/);
+Examples:
+"My name is Jamie" → {"name": "Jamie"}
+"I'm 28 years old" → {"age": 28}
+"I'm a woman looking for men" → {"gender": "female", "datingPreference": "men"}
+"Jamie here, 28, from Boston" → {"name": "Jamie", "age": 28, "location": "Boston"}
 
-      // Handle "My name is X" or "I'm X" or "Call me X" patterns
-      let nameStart = -1;
-      if (lowerMessage.includes('my name is')) {
-        nameStart = words.findIndex((w, i) => words.slice(0, i + 1).join(' ').toLowerCase().includes('my name is'));
-        nameStart += 3; // Skip "my name is"
-      } else if (lowerMessage.includes('call me')) {
-        nameStart = words.findIndex((w, i) => words.slice(0, i + 1).join(' ').toLowerCase().includes('call me'));
-        nameStart += 2; // Skip "call me"
-      } else if ((lowerMessage.includes("i'm ") || lowerMessage.includes('i am ')) && !isLocationContext) {
-        nameStart = words.findIndex((w, i) => words[i]?.toLowerCase() === "i'm" || (words[i]?.toLowerCase() === 'i' && words[i + 1]?.toLowerCase() === 'am'));
-        nameStart += (words[nameStart]?.toLowerCase() === "i'm" ? 1 : 2);
+User message: "${message}"
 
-        // Skip if next word is "from" or "in" (location context)
-        if (words[nameStart]?.toLowerCase() === 'from' || words[nameStart]?.toLowerCase() === 'in') {
-          nameStart = -1;
-        }
+JSON:`;
+
+      // Call Claude API via the proxy with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'You extract profile data and return only valid JSON. No explanations.' },
+            { role: 'user', content: extractionPrompt }
+          ],
+          modelType: 'sonnet'
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.error('[Profile Extraction] API call failed:', response.status);
+        return {};
       }
 
-      // Extract name from identified position or check if message is just a name
-      if (nameStart >= 0 && nameStart < words.length) {
-        // Take up to 2 words as name (first and last)
-        const nameWords = [];
-        for (let i = nameStart; i < Math.min(nameStart + 2, words.length); i++) {
-          const word = words[i];
-          // Check if it's a valid name (not a location)
-          if (word && word.match(/^[A-Z][a-z]+$/) && !this.commonLocations.includes(word.toLowerCase())) {
-            nameWords.push(word);
-          } else {
-            break; // Stop if we hit non-name word
-          }
-        }
-        if (nameWords.length > 0) {
-          updates.name = nameWords.join(' ');
-        }
-      } else if (words.length <= 3 && words[0].match(/^[A-Z][a-z]+$/) && !isLocationContext) {
-        // Message is just a name (1-3 words starting with capitals)
-        const nameWords = words.filter(w => w.match(/^[A-Z][a-z]+$/) && !this.commonLocations.includes(w.toLowerCase()));
-        if (nameWords.length === words.length && nameWords.length > 0) {
-          updates.name = nameWords.join(' ');
-        }
+      const data = await response.json();
+      const extractedText = data.message || '{}';
+
+      // Parse JSON from Claude's response
+      // Claude might wrap it in markdown code blocks
+      const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.log('[Profile Extraction] No JSON found in response:', extractedText);
+        return {};
       }
-    }
 
-    // Age detection
-    const ageMatch = message.match(/\b(1[89]|[2-9]\d)\b/);
-    if (ageMatch && (lowerMessage.includes('year') || lowerMessage.includes('old') || previousMessages.some(m => m.toLowerCase().includes('how old')))) {
-      const age = parseInt(ageMatch[0]);
-      if (age >= 18 && age <= 100) {
-        updates.age = age;
+      const extracted = JSON.parse(jsonMatch[0]);
+
+      // Validate extracted data
+      const updates: Partial<UserProfile> = {};
+      if (extracted.name && typeof extracted.name === 'string' && extracted.name.length > 0) {
+        updates.name = extracted.name;
       }
-    }
-
-    // Gender detection
-    if (lowerMessage.includes('male') || lowerMessage.includes('man') || lowerMessage.includes('guy')) {
-      updates.gender = 'male';
-    } else if (lowerMessage.includes('female') || lowerMessage.includes('woman') || lowerMessage.includes('girl')) {
-      updates.gender = 'female';
-    } else if (lowerMessage.includes('non-binary') || lowerMessage.includes('they/them')) {
-      updates.gender = 'non-binary';
-    }
-
-    // Dating preference detection
-    if (lowerMessage.includes('looking for')) {
-      if (lowerMessage.includes('men') || lowerMessage.includes('guys')) {
-        updates.datingPreference = 'men';
-      } else if (lowerMessage.includes('women') || lowerMessage.includes('girls')) {
-        updates.datingPreference = 'women';
-      } else if (lowerMessage.includes('both') || lowerMessage.includes('anyone')) {
-        updates.datingPreference = 'both';
+      if (extracted.age && typeof extracted.age === 'number' && extracted.age >= 18 && extracted.age <= 100) {
+        updates.age = extracted.age;
       }
-    }
+      if (extracted.gender && typeof extracted.gender === 'string') {
+        updates.gender = extracted.gender;
+      }
+      if (extracted.location && typeof extracted.location === 'string') {
+        updates.location = extracted.location;
+      }
+      if (extracted.datingPreference && typeof extracted.datingPreference === 'string') {
+        updates.datingPreference = extracted.datingPreference;
+      }
+      if (extracted.hobbies && Array.isArray(extracted.hobbies)) {
+        updates.hobbies = extracted.hobbies.filter((h: any) => typeof h === 'string');
+      }
 
-    return updates;
+      return updates;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('[Profile Extraction] Timeout after 5s - skipping extraction');
+      } else {
+        console.error('[Profile Extraction] Error:', error);
+      }
+      return {};
+    }
   }
 }
 
