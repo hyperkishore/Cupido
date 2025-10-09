@@ -129,51 +129,98 @@ app.post('/api/chat', async (req, res) => {
     // Token limit for realistic but complete messages
     const maxTokens = modelType === 'sonnet' ? 150 : 120;
 
-    // Process messages - handle both text and images
-    const processedMessages = conversationMessages.map(msg => {
+    // ============================================
+    // PROMPT CACHING - Dynamic Fresh Window
+    // ============================================
+    // Calculate optimal fresh window based on conversation length
+    const totalMessages = conversationMessages.length;
+    let freshWindow;
+    if (totalMessages < 100) freshWindow = 50;        // Small convos: more context
+    else if (totalMessages < 500) freshWindow = 30;   // Medium: balanced
+    else if (totalMessages < 1000) freshWindow = 20;  // Large: efficiency
+    else freshWindow = 15;                            // Very long: maximum efficiency
+
+    console.log(`📊 Conversation: ${totalMessages} messages, fresh window: ${freshWindow}`);
+
+    // Process messages - handle both text and images with caching
+    const processedMessages = conversationMessages.map((msg, index) => {
+      const isCacheBreakpoint = index === totalMessages - freshWindow - 1;
+
       // Check if this message should have image data attached
       if (msg.role === 'user' && imageData && msg.includeImage) {
         // Claude expects images as part of content array
+        const contentBlocks = [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: imageData.mimeType || 'image/jpeg',
+              data: imageData.base64
+            }
+          },
+          {
+            type: 'text',
+            text: msg.content
+          }
+        ];
+
+        // Add cache_control to last content block if at breakpoint
+        if (isCacheBreakpoint) {
+          contentBlocks[contentBlocks.length - 1].cache_control = { type: 'ephemeral' };
+        }
+
         return {
           role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: imageData.mimeType || 'image/jpeg',
-                data: imageData.base64
-              }
-            },
-            {
-              type: 'text',
-              text: msg.content
-            }
-          ]
+          content: contentBlocks
         };
       }
+
       // Regular text message
-      return {
+      const message = {
         role: msg.role === 'assistant' ? 'assistant' : 'user',
         content: msg.content
       };
+
+      // Add cache_control at breakpoint (cache all messages BEFORE this)
+      if (isCacheBreakpoint) {
+        console.log(`🔖 Cache breakpoint at message ${index + 1}/${totalMessages} (caching ${index + 1} messages)`);
+        message.content = [
+          {
+            type: 'text',
+            text: msg.content,
+            cache_control: { type: 'ephemeral' }
+          }
+        ];
+      }
+
+      return message;
     });
+
+    // Prepare system message with caching
+    const systemBlocks = [
+      {
+        type: 'text',
+        text: systemMessage,
+        cache_control: { type: 'ephemeral' }  // Always cache system prompt
+      }
+    ];
 
     const requestBody = {
       model: modelMap[modelType],
       max_tokens: maxTokens,
-      system: systemMessage,
+      system: systemBlocks,  // Use structured format with cache_control
       messages: processedMessages
     };
 
-    console.log(`Calling ${modelMap[modelType]} with ${maxTokens} max tokens`);
+    console.log(`Calling ${modelMap[modelType]} with ${maxTokens} max tokens (caching enabled)`);
 
     const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31'  // Enable caching
       },
       body: JSON.stringify(requestBody)
     });
@@ -185,6 +232,35 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const data = await response.json();
+
+    // ============================================
+    // CACHE PERFORMANCE MONITORING
+    // ============================================
+    const usage = data.usage || {};
+    const cacheStats = {
+      inputTokens: usage.input_tokens || 0,
+      cacheCreationTokens: usage.cache_creation_input_tokens || 0,
+      cacheReadTokens: usage.cache_read_input_tokens || 0,
+      outputTokens: usage.output_tokens || 0
+    };
+
+    const cacheHitRate = cacheStats.inputTokens > 0
+      ? ((cacheStats.cacheReadTokens / (cacheStats.inputTokens + cacheStats.cacheReadTokens)) * 100).toFixed(1)
+      : 0;
+
+    console.log(`💰 Token Usage:
+    - Input: ${cacheStats.inputTokens}
+    - Cache Read: ${cacheStats.cacheReadTokens} (${cacheHitRate}% hit rate)
+    - Cache Creation: ${cacheStats.cacheCreationTokens}
+    - Output: ${cacheStats.outputTokens}`);
+
+    // Calculate cost savings
+    const normalCost = (cacheStats.inputTokens + cacheStats.cacheReadTokens) * 0.30 / 1000000; // $0.30/MTok
+    const cachedCost = (cacheStats.inputTokens * 0.30 + cacheStats.cacheReadTokens * 0.03 + cacheStats.cacheCreationTokens * 0.375) / 1000000;
+    const savings = normalCost - cachedCost;
+    const savingsPercent = normalCost > 0 ? ((savings / normalCost) * 100).toFixed(1) : 0;
+
+    console.log(`💵 Cost: $${cachedCost.toFixed(4)} (saved $${savings.toFixed(4)} / ${savingsPercent}% vs no cache)`);
 
     // Harden response parsing
     let aiResponse = 'Sorry, I had trouble processing that. What else is on your mind?';
@@ -201,7 +277,8 @@ app.post('/api/chat', async (req, res) => {
 
     res.json({
       message: aiResponse,
-      usedModel: modelType
+      usedModel: modelType,
+      cacheStats  // Include cache stats in response for monitoring
     });
 
   } catch (error) {
