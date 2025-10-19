@@ -1747,7 +1747,7 @@
             <div class="stats">
                 <div class="stat-card">
                     <div class="stat-label">Total Tests</div>
-                    <div class="stat-value" id="total-tests">66</div>
+                    <div class="stat-value" id="total-tests">0</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Passed</div>
@@ -3312,16 +3312,26 @@
             updateStats();
         }
 
-        // Update stats
+        // Update stats - automatically calculated from TEST_FUNCTIONS
         function updateStats() {
+            // CRITICAL: Calculate total from actual TEST_FUNCTIONS object, not manual config
+            const actualTestCount = window.TEST_FUNCTIONS ? Object.keys(window.TEST_FUNCTIONS).length : 0;
+            
             const passed = tests.filter(t => t.status === 'pass').length;
             const failed = tests.filter(t => t.status === 'fail').length;
             const pending = tests.filter(t => t.status === 'pending').length;
 
-            document.getElementById('total-tests').textContent = tests.length;
+            // Use actual test count, not hardcoded value
+            document.getElementById('total-tests').textContent = actualTestCount;
             document.getElementById('passed-tests').textContent = passed;
             document.getElementById('failed-tests').textContent = failed;
             document.getElementById('pending-tests').textContent = pending;
+            
+            // Validation: Ensure tests array matches TEST_FUNCTIONS
+            if (tests.length !== actualTestCount) {
+                console.warn(`Test count mismatch: tests.length=${tests.length}, TEST_FUNCTIONS=${actualTestCount}`);
+                logToConsole(`⚠️  Test count mismatch detected: ${tests.length} vs ${actualTestCount}`, 'warning');
+            }
         }
 
         // Export results
