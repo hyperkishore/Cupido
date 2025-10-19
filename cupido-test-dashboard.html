@@ -3318,6 +3318,7 @@
             const failed = tests.filter(t => t.status === 'fail').length;
             const pending = tests.filter(t => t.status === 'pending').length;
 
+            document.getElementById('total-tests').textContent = tests.length;
             document.getElementById('passed-tests').textContent = passed;
             document.getElementById('failed-tests').textContent = failed;
             document.getElementById('pending-tests').textContent = pending;
