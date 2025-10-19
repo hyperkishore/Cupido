@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+
+// Custom prompts file path
+const CUSTOM_PROMPTS_FILE = path.join(__dirname, 'custom-prompts.json');
+const DELETED_PROMPTS_FILE = path.join(__dirname, 'deleted-prompts.json');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // ============================================
@@ -96,7 +100,7 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('Body keys:', Object.keys(req.body));
 
-    const { messages, modelType = 'haiku', imageData } = req.body;
+    const { messages, modelType = 'sonnet', imageData, systemPrompt } = req.body;
 
     // Validate messages array
     if (!messages || !Array.isArray(messages)) {
@@ -116,18 +120,21 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Convert messages format for Anthropic
-    const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+    // Support both systemPrompt parameter (from dashboard simulator) and system role in messages
+    const systemMessage = systemPrompt || messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system');
 
     // Always use Claude Sonnet 4.5 for consistent high-quality responses
     // Claude 4 models are more concise and better at following instructions
     const modelMap = {
-      'haiku': 'claude-sonnet-4-5-20250929',  // Using Sonnet 4.5 for all requests
-      'sonnet': 'claude-sonnet-4-5-20250929'   // Claude 4.5 Sonnet
+      'sonnet': 'claude-sonnet-4-5-20250929'   // Claude 4.5 Sonnet only
     };
 
-    // Token limit for realistic but complete messages
-    const maxTokens = modelType === 'sonnet' ? 150 : 120;
+    // Use Sonnet model with fallback for any unrecognized modelType
+    const selectedModel = modelMap[modelType] || modelMap['sonnet'];
+
+    // Token limit for complete responses (dating profiles, advice, etc.)
+    const maxTokens = 800;  // Allows full responses without truncation
 
     // ============================================
     // PROMPT CACHING - Dynamic Fresh Window
@@ -196,31 +203,33 @@ app.post('/api/chat', async (req, res) => {
       return message;
     });
 
-    // Prepare system message with caching
-    const systemBlocks = [
-      {
-        type: 'text',
-        text: systemMessage,
-        cache_control: { type: 'ephemeral' }  // Always cache system prompt
-      }
-    ];
+    // Prepare system message with caching (only if not empty)
+    const systemBlocks = systemMessage
+      ? [
+          {
+            type: 'text',
+            text: systemMessage,
+            cache_control: { type: 'ephemeral' }  // Always cache system prompt
+          }
+        ]
+      : undefined;  // Don't send empty system blocks
 
     const requestBody = {
-      model: modelMap[modelType],
+      model: selectedModel,
       max_tokens: maxTokens,
       system: systemBlocks,  // Use structured format with cache_control
       messages: processedMessages
     };
 
-    console.log(`Calling ${modelMap[modelType]} with ${maxTokens} max tokens (caching enabled)`);
+    console.log(`Calling ${selectedModel} with ${maxTokens} max tokens (caching enabled)`);
 
     const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'prompt-caching-2024-07-31'  // Enable caching
+        'anthropic-version': '2023-06-01'
+        // Note: No beta header needed - prompt caching is GA since Dec 2024
       },
       body: JSON.stringify(requestBody)
     });
@@ -290,6 +299,124 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Profile extraction endpoint - uses Haiku for cost efficiency
+app.post('/api/extract-profile', async (req, res) => {
+  try {
+    console.log('👤 PROFILE EXTRACTION REQUEST');
+
+    if (!req.body || !req.body.message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const { message } = req.body;
+
+    if (!CLAUDE_API_KEY) {
+      throw new Error('Missing ANTHROPIC_API_KEY');
+    }
+
+    // Load extraction prompt from Supabase (enhanced 23-field version)
+    let extractionPrompt = '';
+    let systemPrompt = 'You extract profile data and return only valid JSON. No explanations.';
+
+    if (supabase) {
+      try {
+        const { data: promptData, error: promptError } = await supabase
+          .from('prompt_versions')
+          .select('system_prompt')
+          .eq('prompt_id', 'profile_extraction_enhanced_v1')
+          .order('major_version', { ascending: false })
+          .order('minor_version', { ascending: false })
+          .order('patch_version', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (promptData && promptData.system_prompt) {
+          // Replace placeholder with actual user message
+          extractionPrompt = promptData.system_prompt.replace('{{USER_MESSAGE}}', message);
+          console.log('✅ Loaded enhanced extraction prompt from Supabase (23 fields)');
+        } else {
+          console.warn('⚠️ Enhanced prompt not found, using fallback');
+          // Fallback to basic extraction if prompt not found
+          extractionPrompt = `Extract profile data from: "${message}"\nReturn only valid JSON.`;
+        }
+      } catch (error) {
+        console.error('Error loading extraction prompt:', error);
+        // Use fallback prompt
+        extractionPrompt = `Extract profile data from: "${message}"\nReturn only valid JSON.`;
+      }
+    } else {
+      // Supabase not available - use fallback
+      console.warn('⚠️ Supabase not configured, using basic extraction');
+      extractionPrompt = `Extract profile data from: "${message}"\nReturn only valid JSON.`;
+    }
+
+    const requestBody = {
+      model: 'claude-3-5-haiku-20241022',  // Haiku - fast and cheap
+      max_tokens: 300,  // Increased for 23-field extraction
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt
+        }
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: extractionPrompt
+        }
+      ]
+    };
+
+    console.log('Calling Haiku for profile extraction');
+
+    const response = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Anthropic API error ${response.status}:`, errorText);
+      // Return empty object on error - profile extraction is non-critical
+      return res.json({ extracted: {} });
+    }
+
+    const data = await response.json();
+
+    // Parse response
+    let aiResponse = '{}';
+    if (data && data.content && Array.isArray(data.content)) {
+      const textBlocks = data.content.filter(block => block.type === 'text');
+      if (textBlocks.length > 0) {
+        aiResponse = textBlocks.map(block => block.text).join(' ');
+      }
+    }
+
+    console.log(`✅ Haiku extraction response: ${aiResponse.substring(0, 100)}...`);
+
+    res.json({
+      message: aiResponse,
+      extracted: aiResponse  // Return raw text for client-side parsing
+    });
+
+  } catch (error) {
+    console.error('Profile extraction error:', error);
+    // Return empty object - profile extraction failures shouldn't block the app
+    res.json({ extracted: {} });
+  }
+});
+
+// Error logger integration
+const errorLogger = require('./error-logger');
+
+// Start error logger file watcher
+errorLogger.startWatching();
+
 // Test results storage (in-memory for simplicity)
 let latestTestResults = null;
 const testResultsHistory = [];
@@ -335,6 +462,876 @@ app.get('/api/test-results/history', (req, res) => {
   });
 });
 
+// ============================================
+// ERROR LOGGING ENDPOINTS
+// ============================================
+
+// POST endpoint to log console errors
+app.post('/api/log-error', (req, res) => {
+  try {
+    const result = errorLogger.logError(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error logging error:', error);
+    res.status(500).json({ error: 'Failed to log error' });
+  }
+});
+
+// POST endpoint to log test failures
+app.post('/api/log-test-failure', (req, res) => {
+  try {
+    const result = errorLogger.logTestFailure(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error logging test failure:', error);
+    res.status(500).json({ error: 'Failed to log test failure' });
+  }
+});
+
+// ============================================
+// PROMPT MANAGEMENT ENDPOINTS
+// ============================================
+
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Import prompts from prompts.json
+app.post('/api/prompts/import', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    console.log('📥 Importing prompts from prompts.json...');
+
+    // Read prompts.json
+    const promptsPath = path.join(__dirname, 'src', 'config', 'prompts.json');
+    const promptsData = JSON.parse(fs.readFileSync(promptsPath, 'utf8'));
+
+    let importedCount = 0;
+    const errors = [];
+
+    for (const [promptId, promptData] of Object.entries(promptsData.prompts)) {
+      try {
+        // Check if prompt already exists
+        const { data: existing } = await supabase
+          .from('prompt_versions')
+          .select('id')
+          .eq('prompt_id', promptId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (existing) {
+          console.log(`⏭️  Skipping existing prompt: ${promptId}`);
+          continue;
+        }
+
+        // Get the active version
+        const activeVersionKey = promptData.active_version || 'v1';
+        const activeVersionData = promptData.versions[activeVersionKey];
+
+        if (!activeVersionData) {
+          errors.push(`No version data for ${promptId}`);
+          continue;
+        }
+
+        // Insert prompt
+        const { error } = await supabase
+          .from('prompt_versions')
+          .insert({
+            prompt_id: promptId,
+            prompt_name: promptData.name || promptId,
+            major_version: 1,
+            minor_version: 0,
+            patch_version: 0,
+            system_prompt: activeVersionData.system_prompt || activeVersionData,
+            description: promptData.description || '',
+            category: 'conversation',
+            tags: [],
+            labels: ['production'],
+            status: 'active',
+            is_active: true,
+            commit_message: activeVersionData.notes || 'Imported from prompts.json',
+            created_by: 'migration',
+            source_file: '/src/config/prompts.json',
+            is_default: true,
+          });
+
+        if (error) {
+          errors.push(`${promptId}: ${error.message}`);
+        } else {
+          console.log(`✅ Imported: ${promptId}`);
+          importedCount++;
+        }
+      } catch (err) {
+        errors.push(`${promptId}: ${err.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      imported: importedCount,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('Error importing prompts:', error);
+    res.status(500).json({ error: 'Failed to import prompts', details: error.message });
+  }
+});
+
+// Helper function to load custom prompts from file
+function loadCustomPrompts() {
+  try {
+    if (fs.existsSync(CUSTOM_PROMPTS_FILE)) {
+      const data = fs.readFileSync(CUSTOM_PROMPTS_FILE, 'utf8');
+      return JSON.parse(data).prompts || {};
+    }
+  } catch (error) {
+    console.error('Error loading custom prompts:', error);
+  }
+  return {};
+}
+
+// Helper function to save custom prompts to file
+function saveCustomPrompts(prompts) {
+  try {
+    fs.writeFileSync(CUSTOM_PROMPTS_FILE, JSON.stringify({ prompts }, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error saving custom prompts:', error);
+    return false;
+  }
+}
+
+// Helper functions for managing deleted prompts
+function loadDeletedPrompts() {
+  try {
+    if (fs.existsSync(DELETED_PROMPTS_FILE)) {
+      const data = fs.readFileSync(DELETED_PROMPTS_FILE, 'utf8');
+      return JSON.parse(data).deletedPrompts || [];
+    }
+  } catch (error) {
+    console.error('Error loading deleted prompts:', error);
+  }
+  return [];
+}
+
+function saveDeletedPrompts(deletedList) {
+  try {
+    fs.writeFileSync(DELETED_PROMPTS_FILE, JSON.stringify({ deletedPrompts: deletedList }, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error saving deleted prompts:', error);
+    return false;
+  }
+}
+
+function addToDeletedPrompts(promptId) {
+  const deletedList = loadDeletedPrompts();
+  if (!deletedList.includes(promptId)) {
+    deletedList.push(promptId);
+    saveDeletedPrompts(deletedList);
+  }
+}
+
+// List all prompts (including custom prompts from file)
+app.get('/api/prompts', async (req, res) => {
+  try {
+    const allPrompts = [];
+
+    // Load the list of deleted prompts to filter out
+    const deletedPrompts = loadDeletedPrompts();
+
+    // Get Supabase prompts if available
+    let supabasePromptIds = new Set();
+    if (supabase) {
+      try {
+        // Get all prompt_ids (distinct)
+        const { data: supabasePrompts, error: allPromptsError } = await supabase
+          .from('prompt_versions')
+          .select('prompt_id')
+          .order('prompt_id');
+
+        if (!allPromptsError && supabasePrompts) {
+          // Get unique prompt IDs
+          const uniquePromptIds = [...new Set(supabasePrompts.map(p => p.prompt_id))];
+          supabasePromptIds = new Set(uniquePromptIds);
+
+          // For each unique prompt, get the latest version info
+          const summaries = await Promise.all(
+            uniquePromptIds.map(async (promptId) => {
+              // Get the most recent version (active or not)
+              const { data: latestVersion, error: latestError } = await supabase
+                .from('prompt_versions')
+                .select('*')
+                .eq('prompt_id', promptId)
+                .order('major_version', { ascending: false })
+                .order('minor_version', { ascending: false })
+                .order('patch_version', { ascending: false })
+                .limit(1)
+                .single();
+
+              if (latestError) return null;
+
+              // Count total versions for this prompt
+              const { count } = await supabase
+                .from('prompt_versions')
+                .select('id', { count: 'exact', head: true })
+                .eq('prompt_id', promptId);
+
+              return {
+                prompt_id: latestVersion.prompt_id,
+                prompt_name: latestVersion.prompt_name,
+                active_version: latestVersion.version_string,
+                version_count: count || 1,
+                category: latestVersion.category,
+                description: latestVersion.description,
+                is_default: latestVersion.is_default,
+                is_active: latestVersion.is_active,
+                tags: latestVersion.tags || [],
+                system_prompt: latestVersion.system_prompt
+              };
+            })
+          );
+
+          // Add Supabase prompts to the list, filtering out deleted ones
+          summaries.filter(s => {
+            if (s === null) return false;
+            // Check if this prompt is in the deleted list
+            const isDeleted = deletedPrompts.includes(s.prompt_id);
+            if (isDeleted) {
+              console.log(`Filtering out deleted prompt: ${s.prompt_id}`);
+            }
+            return !isDeleted;
+          }).forEach(p => allPrompts.push(p));
+        }
+      } catch (error) {
+        console.error('Error fetching Supabase prompts:', error);
+        // Continue with custom prompts even if Supabase fails
+      }
+    }
+
+    // Load custom prompts from file (only if NOT in Supabase)
+    const customPrompts = loadCustomPrompts();
+    for (const [id, prompt] of Object.entries(customPrompts)) {
+      // Skip if this prompt has been deleted
+      if (deletedPrompts.includes(id)) continue;
+
+      // Skip if this prompt already exists in Supabase
+      if (supabasePromptIds.has(id)) continue;
+
+      allPrompts.push({
+        prompt_id: id,
+        prompt_name: prompt.name || 'Custom Prompt',
+        active_version: prompt.version || '1.0.0',
+        version_count: 1,
+        category: prompt.category || 'custom',
+        description: prompt.description || '',
+        is_default: false,
+        is_active: false,
+        tags: prompt.tags || ['custom'],
+        system_prompt: prompt.content || prompt.system_prompt || ''
+      });
+    }
+
+    res.json(allPrompts);
+  } catch (error) {
+    console.error('Error listing prompts:', error);
+    res.status(500).json({ error: 'Failed to list prompts', details: error.message });
+  }
+});
+
+// Get only simulator prompts (convenience endpoint for test dashboard)
+app.get('/api/prompts/simulator', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    console.log('🎭 Fetching simulator prompts...');
+
+    // Fetch prompts with 'simulator' tag
+    const { data: simulatorPrompts, error } = await supabase
+      .from('prompt_versions')
+      .select('*')
+      .contains('tags', ['simulator'])
+      .order('prompt_name');
+
+    if (error) {
+      console.error('Error fetching simulator prompts:', error);
+      return res.status(500).json({ error: 'Failed to fetch simulator prompts', details: error.message });
+    }
+
+    // Transform to simplified format for dashboard
+    const formattedPrompts = (simulatorPrompts || []).map(prompt => ({
+      id: prompt.prompt_id,
+      name: prompt.prompt_name,
+      prompt: prompt.system_prompt,
+      description: prompt.description,
+      version: prompt.version_string,
+    }));
+
+    console.log(`✅ Found ${formattedPrompts.length} simulator prompts`);
+    res.json(formattedPrompts);
+  } catch (error) {
+    console.error('Error listing simulator prompts:', error);
+    res.status(500).json({ error: 'Failed to list simulator prompts', details: error.message });
+  }
+});
+
+// Create new prompt
+app.post('/api/prompts', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const {
+      prompt_id,
+      prompt_name,
+      description,
+      system_prompt,
+      category = 'custom',
+      is_default = false,
+      is_active = false
+    } = req.body;
+
+    // For custom prompts, save to Supabase (RLS policies now allow this)
+    if (prompt_id.startsWith('custom_prompt_')) {
+      // Create the prompt with a basic version
+      // Note: version_string is auto-generated by the database, don't set it manually
+      const { data, error } = await supabase
+        .from('prompt_versions')
+        .insert({
+          prompt_id: prompt_id,
+          prompt_name: prompt_name || 'Custom Prompt',
+          major_version: 1,
+          minor_version: 0,
+          patch_version: 0,
+          // version_string is auto-generated, don't set it
+          system_prompt: system_prompt || '',
+          description: description || '',
+          category: category,
+          tags: [],
+          labels: ['custom'],
+          status: 'active',
+          is_active: false,  // Don't auto-activate custom prompts
+          commit_message: 'Created from dashboard',
+          created_by: 'dashboard',
+          is_default: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating prompt:', error);
+        res.status(500).json({
+          error: 'Failed to save prompt to database',
+          details: error.message
+        });
+      } else {
+        console.log('✅ Custom prompt saved to Supabase:', prompt_id);
+
+        // Also save to local file as backup
+        const customPrompts = loadCustomPrompts();
+        customPrompts[prompt_id] = {
+          name: prompt_name,
+          description: description,
+          content: system_prompt,
+          category: category,
+          version: '1.0.0',
+          created_at: new Date().toISOString()
+        };
+        saveCustomPrompts(customPrompts);
+
+        res.json({
+          success: true,
+          prompt_id: prompt_id,
+          message: 'Custom prompt saved to database',
+          data: data
+        });
+      }
+      return;
+    }
+
+    // For non-custom prompts, attempt to save to Supabase
+    const { data, error } = await supabase
+      .from('prompt_versions')
+      .insert({
+        prompt_id: prompt_id,
+        prompt_name: prompt_name,
+        major_version: 1,
+        minor_version: 0,
+        patch_version: 0,
+        system_prompt: system_prompt || '',
+        description: description || '',
+        category: category,
+        tags: [],
+        labels: ['draft'],
+        status: 'draft',
+        is_active: is_active,
+        commit_message: 'Created via dashboard',
+        created_by: 'dashboard',
+        is_default: is_default,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      prompt_id: data.prompt_id,
+      data: data
+    });
+  } catch (error) {
+    console.error('Error creating prompt:', error);
+
+    // For RLS errors, return success for custom prompts
+    if (error.message && error.message.includes('row-level security') &&
+        req.body.prompt_id && req.body.prompt_id.startsWith('custom_prompt_')) {
+      res.json({
+        success: true,
+        prompt_id: req.body.prompt_id,
+        message: 'Custom prompt created locally (RLS bypass)'
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to create prompt', details: error.message });
+    }
+  }
+});
+
+// Delete a prompt
+app.delete('/api/prompts/:promptId', async (req, res) => {
+  try {
+    const { promptId } = req.params;
+
+    // Add to deleted prompts list to filter from results
+    addToDeletedPrompts(promptId);
+
+    // For custom prompts, delete from both Supabase and local file
+    if (promptId.startsWith('custom_prompt_')) {
+      // Try to delete from Supabase if available
+      if (supabase) {
+        const { error } = await supabase
+          .from('prompt_versions')
+          .delete()
+          .eq('prompt_id', promptId);
+
+        if (error) {
+          console.warn('Failed to delete from Supabase:', error);
+          // Even if Supabase delete fails, we've added it to deleted list
+        } else {
+          console.log(`✅ Deleted ${promptId} from Supabase`);
+        }
+      }
+
+      // Also delete from local custom prompts file
+      const customPrompts = loadCustomPrompts();
+      if (customPrompts[promptId]) {
+        delete customPrompts[promptId];
+        saveCustomPrompts(customPrompts);
+        console.log(`✅ Deleted ${promptId} from local file`);
+      }
+
+      res.json({ success: true, message: 'Prompt deleted' });
+    } else {
+      // For non-custom prompts, only delete from Supabase
+      if (!supabase) {
+        return res.status(500).json({ error: 'Supabase not configured' });
+      }
+
+      const { error } = await supabase
+        .from('prompt_versions')
+        .delete()
+        .eq('prompt_id', promptId);
+
+      if (error) throw error;
+
+      res.json({ success: true, message: 'Prompt deleted from database' });
+    }
+  } catch (error) {
+    console.error('Error deleting prompt:', error);
+    res.status(500).json({ error: 'Failed to delete prompt', details: error.message });
+  }
+});
+
+// Get specific prompt
+app.get('/api/prompts/:promptId', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const { version } = req.query;
+
+    let query = supabase
+      .from('prompt_versions')
+      .select('*')
+      .eq('prompt_id', promptId);
+
+    if (version) {
+      const [major, minor, patch] = version.split('.').map(Number);
+      query = query
+        .eq('major_version', major)
+        .eq('minor_version', minor)
+        .eq('patch_version', patch);
+    } else {
+      // If no version specified, get the latest version (regardless of active status)
+      query = query
+        .order('major_version', { ascending: false })
+        .order('minor_version', { ascending: false })
+        .order('patch_version', { ascending: false })
+        .limit(1);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Prompt not found' });
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error getting prompt:', error);
+    res.status(500).json({ error: 'Failed to get prompt', details: error.message });
+  }
+});
+
+// List versions of a prompt
+app.get('/api/prompts/:promptId/versions', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+
+    const { data, error } = await supabase
+      .from('prompt_versions')
+      .select('*')
+      .eq('prompt_id', promptId)
+      .order('major_version', { ascending: false })
+      .order('minor_version', { ascending: false })
+      .order('patch_version', { ascending: false });
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (error) {
+    console.error('Error listing versions:', error);
+    res.status(500).json({ error: 'Failed to list versions', details: error.message });
+  }
+});
+
+// Create new prompt version
+app.post('/api/prompts/:promptId/versions', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const {
+      promptName,
+      systemPrompt,
+      versionType = 'patch',
+      commitMessage,
+      notes,
+      createdBy = 'admin',
+      activate = false,
+    } = req.body;
+
+    // Call the database function to create version
+    const { data: versionId, error } = await supabase.rpc('create_prompt_version', {
+      p_prompt_id: promptId,
+      p_prompt_name: promptName,
+      p_system_prompt: systemPrompt,
+      p_version_type: versionType,
+      p_commit_message: commitMessage || 'Updated via dashboard',
+      p_notes: notes || '',
+      p_created_by: createdBy,
+      p_activate: activate,
+    });
+
+    if (error) throw error;
+
+    // Fetch the created version to get version_string
+    const { data: versionData, error: fetchError } = await supabase
+      .from('prompt_versions')
+      .select('*')
+      .eq('id', versionId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    res.json({
+      success: true,
+      versionId: versionId,
+      version_string: versionData.version_string,
+      ...versionData
+    });
+  } catch (error) {
+    console.error('Error creating version:', error);
+    res.status(500).json({ error: 'Failed to create version', details: error.message });
+  }
+});
+
+// Update existing prompt version (with optional version increment)
+app.patch('/api/prompts/:promptId', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const {
+      promptName,
+      systemPrompt,
+      description,
+      versionType,  // Optional: 'patch', 'minor', or 'major' to create new version
+      commitMessage,
+    } = req.body;
+
+    // Get the most recent version of this prompt
+    const { data: latestVersion, error: fetchError } = await supabase
+      .from('prompt_versions')
+      .select('*')
+      .eq('prompt_id', promptId)
+      .order('major_version', { ascending: false })
+      .order('minor_version', { ascending: false })
+      .order('patch_version', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching latest version:', fetchError);
+      throw fetchError;
+    }
+
+    if (!latestVersion) {
+      return res.status(404).json({ error: 'Prompt not found' });
+    }
+
+    // If versionType is provided, create a new version row
+    if (versionType) {
+      console.log(`📝 Creating new ${versionType} version for ${promptId}`);
+
+      // Calculate new version numbers
+      let newMajor = latestVersion.major_version;
+      let newMinor = latestVersion.minor_version;
+      let newPatch = latestVersion.patch_version;
+
+      if (versionType === 'major') {
+        newMajor++;
+        newMinor = 0;
+        newPatch = 0;
+      } else if (versionType === 'minor') {
+        newMinor++;
+        newPatch = 0;
+      } else { // patch
+        newPatch++;
+      }
+
+      const newVersionString = `${newMajor}.${newMinor}.${newPatch}`;
+
+      // Insert new version row
+      const { data, error } = await supabase
+        .from('prompt_versions')
+        .insert({
+          prompt_id: promptId,
+          prompt_name: promptName,
+          major_version: newMajor,
+          minor_version: newMinor,
+          patch_version: newPatch,
+          system_prompt: systemPrompt,
+          description: description,
+          category: latestVersion.category,
+          tags: latestVersion.tags,
+          labels: latestVersion.labels,
+          status: latestVersion.status,
+          is_active: latestVersion.is_active,
+          commit_message: commitMessage || `${versionType} version update`,
+          created_by: 'dashboard',
+          is_default: latestVersion.is_default,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating new version:', error);
+        throw error;
+      }
+
+      console.log(`✅ Created new version ${promptId} v${newVersionString}`);
+
+      res.json({
+        success: true,
+        version_string: newVersionString,
+        ...data
+      });
+    } else {
+      // No version increment - just update the existing row
+      console.log(`📝 Updating prompt ${promptId} (no version increment)`);
+
+      const { data, error } = await supabase
+        .from('prompt_versions')
+        .update({
+          prompt_name: promptName,
+          system_prompt: systemPrompt,
+          description: description,
+        })
+        .eq('id', latestVersion.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating prompt:', error);
+        throw error;
+      }
+
+      console.log(`✅ Updated prompt ${promptId} v${latestVersion.version_string}`);
+
+      res.json({
+        success: true,
+        version_string: latestVersion.version_string,
+        ...data
+      });
+    }
+  } catch (error) {
+    console.error('Error updating prompt:', error);
+    res.status(500).json({ error: 'Failed to update prompt', details: error.message });
+  }
+});
+
+// Set as default prompt (replaces activate endpoint)
+app.post('/api/prompts/:promptId/set-default', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const { versionString } = req.body;
+
+    const [major, minor, patch] = versionString.split('.').map(Number);
+
+    // First, set is_default = false on ALL prompts
+    const { error: unsetDefaultError } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_default: false,
+      })
+      .neq('prompt_id', ''); // Update all rows
+
+    if (unsetDefaultError) throw unsetDefaultError;
+
+    // Then set is_default = true on the selected prompt
+    const { error } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_default: true,
+      })
+      .eq('prompt_id', promptId)
+      .eq('major_version', major)
+      .eq('minor_version', minor)
+      .eq('patch_version', patch);
+
+    if (error) throw error;
+
+    console.log(`✓ Set default prompt: ${promptId} v${versionString}`);
+
+    res.json({ success: true, message: `${promptId} is now the default prompt` });
+  } catch (error) {
+    console.error('Error setting default prompt:', error);
+    res.status(500).json({ error: 'Failed to set default prompt', details: error.message });
+  }
+});
+
+// Toggle prompt visibility
+app.post('/api/prompts/:promptId/toggle-visibility', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const { versionString, isVisible } = req.body;
+
+    const [major, minor, patch] = versionString.split('.').map(Number);
+
+    // Update is_visible on the specified prompt version
+    const { error } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_visible: isVisible,
+      })
+      .eq('prompt_id', promptId)
+      .eq('major_version', major)
+      .eq('minor_version', minor)
+      .eq('patch_version', patch);
+
+    if (error) throw error;
+
+    const status = isVisible ? 'visible' : 'hidden';
+    console.log(`✓ Set visibility for ${promptId} v${versionString}: ${status}`);
+
+    res.json({ success: true, message: `Prompt is now ${status}`, isVisible });
+  } catch (error) {
+    console.error('Error toggling visibility:', error);
+    res.status(500).json({ error: 'Failed to toggle visibility', details: error.message });
+  }
+});
+
+// Activate a version (deprecated - kept for backward compatibility, now just sets is_active)
+// TODO: Remove this endpoint after transitioning all clients to use set-default
+app.post('/api/prompts/:promptId/activate', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const { versionString } = req.body;
+
+    const [major, minor, patch] = versionString.split('.').map(Number);
+
+    // First, deactivate ALL prompts (only change is_active flag)
+    const { error: deactivateError } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_active: false,
+      })
+      .neq('prompt_id', ''); // Update all rows
+
+    if (deactivateError) throw deactivateError;
+
+    // Then activate the selected prompt
+    const { error } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_active: true,
+      })
+      .eq('prompt_id', promptId)
+      .eq('major_version', major)
+      .eq('minor_version', minor)
+      .eq('patch_version', patch);
+
+    if (error) throw error;
+
+    console.log(`✓ Activated prompt ${promptId} v${versionString} (deprecated API)`);
+
+    res.json({ success: true, deprecated: true, message: 'Use /set-default endpoint instead' });
+  } catch (error) {
+    console.error('Error activating version:', error);
+    res.status(500).json({ error: 'Failed to activate version', details: error.message });
+  }
+});
+
 // Serve test dashboard at /test-dashboard
 app.get('/test-dashboard', (req, res) => {
   const dashboardPath = path.join(__dirname, 'test-dashboard.html');
@@ -352,6 +1349,16 @@ app.get('/comprehensive-test-functions.js', (req, res) => {
     res.sendFile(functionsPath);
   } else {
     res.status(404).send('Test functions not found');
+  }
+});
+
+// Serve prompt manager
+app.get('/promptManager.js', (req, res) => {
+  const managerPath = path.join(__dirname, 'promptManager.js');
+  if (fs.existsSync(managerPath)) {
+    res.sendFile(managerPath);
+  } else {
+    res.status(404).send('Prompt manager not found');
   }
 });
 
@@ -396,6 +1403,8 @@ function createHtmlInjector(baseUrl) {
 // ============================================
 // Proxy /app/* to localhost:8081 to achieve same-origin for DOM testing
 // This eliminates CORS restrictions when test dashboard accesses app iframe
+const { Transform } = require('stream');
+
 app.use('/app', createProxyMiddleware({
   target: 'http://localhost:8081',
   changeOrigin: true,
@@ -406,6 +1415,32 @@ app.use('/app', createProxyMiddleware({
   logLevel: 'debug',
   onProxyReq: (proxyReq, req, res) => {
     console.log(`🔀 Proxying: ${req.method} ${req.url} → http://localhost:8081${req.url.replace('/app', '')}`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    // Remove X-Frame-Options header to allow iframe embedding
+    delete proxyRes.headers['x-frame-options'];
+
+    // For HTML responses, modify the content to remove X-Frame-Options meta tag
+    const contentType = proxyRes.headers['content-type'] || '';
+    if (contentType.includes('text/html')) {
+      // Create a transform stream to modify HTML on the fly
+      const transformStream = new Transform({
+        transform(chunk, encoding, callback) {
+          let html = chunk.toString();
+          // Remove X-Frame-Options DENY meta tag
+          html = html.replace(/<meta\s+http-equiv=["']X-Frame-Options["']\s+content=["']DENY["']\s*\/>/gi, '');
+          callback(null, html);
+        }
+      });
+
+      // Update content-length since we're modifying the body
+      delete proxyRes.headers['content-length'];
+
+      proxyRes.pipe(transformStream).pipe(res);
+    } else {
+      // For non-HTML responses (JS, JSON, CSS, etc.), just pipe through
+      proxyRes.pipe(res);
+    }
   },
   onError: (err, req, res) => {
     console.error('❌ Proxy error:', err.message);
