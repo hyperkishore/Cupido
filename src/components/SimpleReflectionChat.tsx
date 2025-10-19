@@ -342,6 +342,39 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             }, '*');
           }
           break;
+          
+        case 'simulator-response':
+          // Handle simulator responses from the test dashboard
+          const { message: simResponse, personaName } = event.data;
+          if (!simResponse) break;
+          
+          console.log(`[SIMULATOR] Received response from ${personaName || 'simulator'}:`, simResponse);
+          
+          // Add the simulator response as an AI message
+          const newBotMessage: ChatMessageType = {
+            id: `${Date.now()}-simulator`,
+            text: simResponse,
+            isBot: true,
+            timestamp: new Date().toISOString(),
+          };
+          
+          setMessages(prev => [...prev, newBotMessage]);
+          messagesRef.current = [...messagesRef.current, newBotMessage];
+          
+          // Save to database if conversation exists
+          if (currentConversation) {
+            try {
+              await chatDatabase.addMessage(
+                currentConversation.id,
+                simResponse,
+                'ai',
+                { simulatorPersona: personaName }
+              );
+            } catch (error) {
+              console.error('[SIMULATOR] Error saving message:', error);
+            }
+          }
+          break;
       }
     };
 
@@ -883,6 +916,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     // Content-based duplicate prevention (simpler and more reliable than time-based)
     const messageText = messageToSend.trim();
     const messageKey = `${activeConversation.id}_${messageText.toLowerCase()}`;
+    
+    // Notify parent window (test dashboard) if in iframe
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'cupido-message',
+        sender: 'user',
+        message: messageText,
+        conversationId: activeConversation.id,
+        timestamp: new Date().toISOString()
+      }, '*');
+    }
 
     if ((window as any).__pendingMessages?.has(messageKey)) {
       console.log('⚠️ Blocked duplicate: exact same message already being sent');

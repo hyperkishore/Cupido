@@ -35,10 +35,11 @@ export const PromptSelectorModal: React.FC<PromptSelectorModalProps> = ({
   const loadPrompts = async () => {
     try {
       setLoading(true);
-      const allPrompts = promptService.getAllPrompts();
+      // Only show cupido-tagged prompts in the main app selector
+      const cupidoPrompts = promptService.getCupidoPrompts();
       const currentId = await promptService.getSelectedPromptId();
 
-      setPrompts(allPrompts);
+      setPrompts(cupidoPrompts);
       setSelectedPromptId(currentId);
     } catch (error) {
       console.error('[PromptSelector] Error loading prompts:', error);
