@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { SimpleReflectionChat } from '../components/SimpleReflectionChat';
 import { useNavigation } from '@react-navigation/native';
 import { userProfileService } from '../services/userProfileService';
+import { VersionDisplay } from '../components/VersionDisplay';
 
 export const PixelPerfectReflectScreen = () => {
   const navigation = useNavigation();
@@ -41,12 +42,17 @@ export const PixelPerfectReflectScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit>
-          {userName ? `${userName}'s Reflection` : 'Daily Reflection'}
-        </Text>
-        <Text style={styles.headerSubtitle} numberOfLines={2}>
-          {userName ? `Hey ${userName}, let's explore your thoughts` : 'Explore your thoughts deeply'}
-        </Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit>
+              {userName ? `${userName}'s Reflection` : 'Daily Reflection'}
+            </Text>
+            <Text style={styles.headerSubtitle} numberOfLines={2}>
+              {userName ? `Hey ${userName}, let's explore your thoughts` : 'Explore your thoughts deeply'}
+            </Text>
+          </View>
+          <VersionDisplay />
+        </View>
       </View>
       <View style={styles.chatContainer}>
         <SimpleReflectionChat onKeyboardToggle={handleKeyboardToggle} />
@@ -66,6 +72,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginRight: 12,
   },
   headerTitle: {
     fontSize: 24,

@@ -1702,17 +1702,30 @@
                     <div class="simulator-content">
                         <!-- Persona Selection -->
                         <div class="simulator-group">
-                            <label class="simulator-label">Persona</label>
-                            <select id="persona-select" class="simulator-input" onchange="updatePersonaInfo()">
-                                <option value="">Select persona...</option>
-                                <option value="sarah">Sarah Chen - PM at Google</option>
-                                <option value="mike">Mike Rodriguez - Graphic Designer</option>
-                                <option value="emily">Emily Watson - PhD Student</option>
-                                <option value="raj">Raj Patel - Entrepreneur</option>
-                                <option value="rachel">Rachel Kim - Artist</option>
-                                <option value="alex">Alex Torres - Startup Founder</option>
+                            <label class="simulator-label">Simulator Persona</label>
+                            <select id="simulator-persona" class="simulator-input">
+                                <option value="">Loading personas...</option>
                             </select>
                             <div id="persona-info" class="persona-info" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- Simulator Control Buttons -->
+                        <div class="simulator-group">
+                            <label class="simulator-label">Controls</label>
+                            <div class="preset-grid">
+                                <button id="sim-start-btn" class="preset-btn" onclick="startSimulator()" style="background: #34c759; color: white;">▶ Start</button>
+                                <button id="sim-pause-btn" class="preset-btn" onclick="pauseSimulator()" disabled>⏸ Pause</button>
+                                <button id="sim-stop-btn" class="preset-btn" onclick="stopSimulator()" disabled style="background: #ff3b30; color: white;">⏹ Stop</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Speed Control -->
+                        <div class="simulator-group">
+                            <div class="slider-value">
+                                <label class="simulator-label" style="margin: 0;">Response Speed</label>
+                                <span class="slider-value-display" id="speed-value">1x</span>
+                            </div>
+                            <input type="range" id="speed-slider" class="simulator-slider" min="0.5" max="3" step="0.5" value="1" oninput="updateSimulatorSpeed(this.value); document.getElementById('speed-value').textContent = this.value + 'x'">
                         </div>
 
                         <!-- Testing Variations -->
@@ -1993,6 +2006,17 @@
     <script src="comprehensive-test-functions.js"></script>
 
     <script>
+        // Simulator state management
+        const simulatorState = {
+            isActive: false,
+            isPaused: false,
+            speed: 1,
+            selectedPersonaId: null,
+            conversationHistory: [],
+            typingDelayMin: 1000,
+            typingDelayMax: 3000
+        };
+        
         // Test configuration from comprehensive test functions
         const testConfig = {
             console: { name: 'Console Error Detection', count: 5 },
@@ -2029,6 +2053,146 @@
             apiCalls.push(call);
             logToConsole(`API Call: ${method} ${url} (${duration}ms)`, 'info', 'app');
             return call;
+        }
+        
+        // Simulator control functions
+        async function handleCupidoMessage(userMessage) {
+            if (!simulatorState.isActive || simulatorState.isPaused) return;
+            
+            // Add user message to conversation history
+            simulatorState.conversationHistory.push({
+                role: 'user',
+                content: userMessage
+            });
+            
+            // Calculate typing delay
+            const delay = simulatorState.typingDelayMin + 
+                Math.random() * (simulatorState.typingDelayMax - simulatorState.typingDelayMin);
+            const adjustedDelay = delay / simulatorState.speed;
+            
+            logToConsole(`Simulator will respond in ${Math.round(adjustedDelay)}ms`, 'info', 'simulator');
+            
+            // Wait for typing delay
+            setTimeout(async () => {
+                if (!simulatorState.isActive || simulatorState.isPaused) return;
+                
+                try {
+                    // Generate response from simulator API
+                    const response = await fetch('/api/simulator/generate-response', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            personaPromptId: simulatorState.selectedPersonaId,
+                            conversationHistory: simulatorState.conversationHistory.slice(-10), // Last 10 messages
+                            userMessage: userMessage
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.response) {
+                        // Add AI response to history
+                        simulatorState.conversationHistory.push({
+                            role: 'assistant',
+                            content: data.response
+                        });
+                        
+                        // Send response to Cupido app
+                        const iframe = document.getElementById('app-iframe');
+                        if (iframe && iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({
+                                type: 'simulator-response',
+                                message: data.response,
+                                personaName: data.personaName
+                            }, '*');
+                        }
+                        
+                        logToConsole(`[SIMULATOR ${data.personaName}] ${data.response}`, 'success', 'simulator');
+                    }
+                } catch (error) {
+                    logToConsole(`Simulator error: ${error.message}`, 'error', 'simulator');
+                }
+            }, adjustedDelay);
+        }
+        
+        function startSimulator() {
+            const personaSelect = document.getElementById('simulator-persona');
+            if (!personaSelect || !personaSelect.value) {
+                alert('Please select a simulator persona first');
+                return;
+            }
+            
+            simulatorState.isActive = true;
+            simulatorState.isPaused = false;
+            simulatorState.selectedPersonaId = personaSelect.value;
+            simulatorState.conversationHistory = [];
+            
+            updateSimulatorControls();
+            logToConsole('Simulator started', 'success', 'simulator');
+        }
+        
+        function pauseSimulator() {
+            simulatorState.isPaused = !simulatorState.isPaused;
+            updateSimulatorControls();
+            logToConsole(simulatorState.isPaused ? 'Simulator paused' : 'Simulator resumed', 'info', 'simulator');
+        }
+        
+        function stopSimulator() {
+            simulatorState.isActive = false;
+            simulatorState.isPaused = false;
+            simulatorState.conversationHistory = [];
+            updateSimulatorControls();
+            logToConsole('Simulator stopped', 'info', 'simulator');
+        }
+        
+        function updateSimulatorSpeed(speed) {
+            simulatorState.speed = parseFloat(speed);
+            logToConsole(`Simulator speed set to ${speed}x`, 'info', 'simulator');
+        }
+        
+        function updateSimulatorControls() {
+            const startBtn = document.getElementById('sim-start-btn');
+            const pauseBtn = document.getElementById('sim-pause-btn');
+            const stopBtn = document.getElementById('sim-stop-btn');
+            const personaSelect = document.getElementById('simulator-persona');
+            
+            if (startBtn) startBtn.disabled = simulatorState.isActive;
+            if (pauseBtn) {
+                pauseBtn.disabled = !simulatorState.isActive;
+                pauseBtn.textContent = simulatorState.isPaused ? 'Resume' : 'Pause';
+            }
+            if (stopBtn) stopBtn.disabled = !simulatorState.isActive;
+            if (personaSelect) personaSelect.disabled = simulatorState.isActive;
+        }
+        
+        async function loadSimulatorPersonas() {
+            try {
+                const response = await fetch('/api/prompts');
+                const prompts = await response.json();
+                
+                // Filter for simulator tagged prompts
+                const simulatorPrompts = prompts.filter(p => 
+                    p.tags && p.tags.includes('simulator') && p.is_active
+                );
+                
+                const personaSelect = document.getElementById('simulator-persona');
+                if (personaSelect) {
+                    personaSelect.innerHTML = '<option value="">Select persona...</option>';
+                    simulatorPrompts.forEach(prompt => {
+                        const option = document.createElement('option');
+                        option.value = prompt.id;
+                        option.textContent = `${prompt.name} (v${prompt.version || '1.0.0'})`;
+                        personaSelect.appendChild(option);
+                    });
+                    
+                    if (simulatorPrompts.length === 0) {
+                        personaSelect.innerHTML = '<option value="">No simulator personas available</option>';
+                        logToConsole('No simulator personas found. Create prompts with "simulator" tag.', 'warn', 'simulator');
+                    }
+                }
+            } catch (error) {
+                logToConsole(`Failed to load simulator personas: ${error.message}`, 'error', 'simulator');
+            }
         }
 
         // Database Logger - stores all test runs in localStorage
@@ -3088,7 +3252,8 @@ Include the exact code snippets that need to be changed.`;
 
         // Update persona info display
         function updatePersonaInfo() {
-            const personaId = document.getElementById('persona-select').value;
+            const personaSelect = document.getElementById('persona-select');
+            const personaId = personaSelect.value;
             const personaInfo = document.getElementById('persona-info');
 
             if (!personaId) {
@@ -3096,16 +3261,35 @@ Include the exact code snippets that need to be changed.`;
                 return;
             }
 
-            const persona = SIMULATOR_PERSONAS[personaId];
-            personaInfo.style.display = 'block';
-            personaInfo.innerHTML = `
-                <div style="margin-top: 8px; padding: 12px; background: #f5f5f7; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #1d1d1f;">${persona.name}, ${persona.age}</div>
-                    <div style="font-size: 12px; color: #6e6e73; margin-top: 4px;">${persona.occupation}</div>
-                    <div style="font-size: 12px; color: #6e6e73;">${persona.location}</div>
-                    <div style="font-size: 12px; color: #1d1d1f; margin-top: 8px;">${persona.bio}</div>
-                </div>
-            `;
+            // Get prompt data from the selected option
+            const selectedOption = personaSelect.options[personaSelect.selectedIndex];
+            const promptData = selectedOption.dataset.promptData;
+
+            if (promptData) {
+                // Using Supabase simulator prompt
+                const prompt = JSON.parse(promptData);
+                personaInfo.style.display = 'block';
+                personaInfo.innerHTML = `
+                    <div style="margin-top: 8px; padding: 12px; background: #f5f5f7; border-radius: 8px;">
+                        <div style="font-weight: 600; color: #1d1d1f;">${prompt.name}</div>
+                        <div style="font-size: 12px; color: #6e6e73; margin-top: 4px;">Version: ${prompt.version}</div>
+                        ${prompt.description ? `<div style="font-size: 12px; color: #1d1d1f; margin-top: 8px;">${prompt.description}</div>` : ''}
+                        <div style="font-size: 11px; color: #86868b; margin-top: 8px;">From Supabase Prompt Library</div>
+                    </div>
+                `;
+            } else if (typeof SIMULATOR_PERSONAS !== 'undefined' && SIMULATOR_PERSONAS[personaId]) {
+                // Fallback to hardcoded personas (for backwards compatibility)
+                const persona = SIMULATOR_PERSONAS[personaId];
+                personaInfo.style.display = 'block';
+                personaInfo.innerHTML = `
+                    <div style="margin-top: 8px; padding: 12px; background: #f5f5f7; border-radius: 8px;">
+                        <div style="font-weight: 600; color: #1d1d1f;">${persona.name}, ${persona.age}</div>
+                        <div style="font-size: 12px; color: #6e6e73; margin-top: 4px;">${persona.occupation}</div>
+                        <div style="font-size: 12px; color: #6e6e73;">${persona.location}</div>
+                        <div style="font-size: 12px; color: #1d1d1f; margin-top: 8px;">${persona.bio}</div>
+                    </div>
+                `;
+            }
         }
 
         // Load preset messages
@@ -3585,6 +3769,15 @@ Include the exact code snippets that need to be changed.`;
                         logToConsole('Chat exported successfully', 'success', 'app');
                         break;
 
+                    case 'cupido-message':
+                        // Handle messages from Cupido app
+                        if (simulatorState.isActive && event.data.sender === 'user') {
+                            logToConsole(`[CUPIDO USER] ${event.data.message}`, 'info', 'app');
+                            // Auto-generate simulator response after a delay
+                            handleCupidoMessage(event.data.message);
+                        }
+                        break;
+                    
                     case 'simulator-response':
                         // Handle simulator responses
                         const response = event.data.response;
@@ -3650,14 +3843,58 @@ Include the exact code snippets that need to be changed.`;
         function initializeLivePreview() {
             setupConsoleMonitoring();
             setupKeyboardShortcuts();
+            loadSimulatorPersonas(); // Load simulator prompts from Supabase
             logToConsole('Live Preview initialized', 'success', 'app');
             logToConsole('Monitoring console output from app...', 'info', 'app');
             logToConsole('Simulator controls ready for testing', 'info', 'app');
         }
 
+        // Load simulator-tagged prompts for persona selector
+        async function loadSimulatorPersonas() {
+            try {
+                const response = await fetch('/api/prompts');
+                if (!response.ok) throw new Error('Failed to load prompts');
+
+                const allPrompts = await response.json();
+
+                // Filter for simulator-tagged prompts only
+                const simulatorPrompts = allPrompts.filter(p =>
+                    p.tags && p.tags.includes('simulator')
+                );
+
+                // Populate the persona selector
+                const personaSelect = document.getElementById('persona-select');
+                if (personaSelect) {
+                    // Clear existing options except the first "Select persona..."
+                    personaSelect.innerHTML = '<option value="">Select persona...</option>';
+
+                    // Add simulator prompts as options
+                    simulatorPrompts.forEach(prompt => {
+                        const option = document.createElement('option');
+                        option.value = prompt.prompt_id;
+                        option.textContent = `${prompt.prompt_name} (v${prompt.active_version || prompt.version_string})`;
+                        option.dataset.promptData = JSON.stringify({
+                            id: prompt.prompt_id,
+                            name: prompt.prompt_name,
+                            description: prompt.description || '',
+                            systemPrompt: prompt.system_prompt,
+                            version: prompt.active_version || prompt.version_string
+                        });
+                        personaSelect.appendChild(option);
+                    });
+
+                    logToConsole(`Loaded ${simulatorPrompts.length} simulator persona(s) from Supabase`, 'success', 'app');
+                }
+            } catch (error) {
+                console.error('Failed to load simulator personas:', error);
+                logToConsole('Failed to load simulator personas from Supabase', 'error', 'app');
+            }
+        }
+
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
             initializeTests();
+            loadSimulatorPersonas();
             logToConsole('Cupido Test Dashboard initialized', 'info');
             logToConsole('40 tests loaded across 7 categories', 'info');
             logToConsole('Test logging enabled - all runs saved to localStorage', 'info');
@@ -3968,6 +4205,30 @@ Include the exact code snippets that need to be changed.`;
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label">Tag (Use Case)</label>
+                        <select class="form-input" id="prompt-tag-input" onchange="markDirty()">
+                            <option value="cupido" ${(prompt.tags && prompt.tags.includes('cupido')) ? 'selected' : ''}>Cupido (Main App)</option>
+                            <option value="simulator" ${(prompt.tags && prompt.tags.includes('simulator')) ? 'selected' : ''}>Simulator (Testing)</option>
+                            <option value="extractor" ${(prompt.tags && prompt.tags.includes('extractor')) ? 'selected' : ''}>Extractor (Profile)</option>
+                            <option value="money2020" ${(prompt.tags && prompt.tags.includes('money2020')) ? 'selected' : ''}>Money2020 (Demo)</option>
+                            <option value="custom" ${(prompt.tags && prompt.tags.includes('custom')) ? 'selected' : ''}>Custom</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="prompt-default-input"
+                                   ${prompt.is_default ? 'checked' : ''}
+                                   onchange="markDirty()"
+                                   style="width: auto; height: auto;">
+                            <span>Set as default prompt for this tag</span>
+                        </label>
+                        <div style="font-size: 12px; color: #86868b; margin-top: 4px;">
+                            Default prompt will be automatically selected when the app starts
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">System Prompt</label>
                         <textarea class="form-input form-textarea" id="prompt-text-input"
                                   onchange="markDirty()">${prompt.system_prompt}</textarea>
@@ -4014,6 +4275,8 @@ Include the exact code snippets that need to be changed.`;
             const name = document.getElementById('prompt-name-input').value;
             const description = document.getElementById('prompt-description-input').value;
             const systemPrompt = document.getElementById('prompt-text-input').value;
+            const tag = document.getElementById('prompt-tag-input').value;
+            const isDefault = document.getElementById('prompt-default-input').checked;
 
             try {
                 console.log('Saving draft for prompt:', prompt.prompt_id);
@@ -4024,6 +4287,8 @@ Include the exact code snippets that need to be changed.`;
                         promptName: name,         // Server expects camelCase
                         description: description,
                         systemPrompt: systemPrompt,  // Server expects camelCase
+                        tags: [tag],              // Send as array with single tag
+                        isDefault: isDefault,
                         commitMessage: 'Draft saved via dashboard'
                     })
                 });
@@ -4053,6 +4318,8 @@ Include the exact code snippets that need to be changed.`;
             const name = document.getElementById('prompt-name-input').value;
             const description = document.getElementById('prompt-description-input').value;
             const systemPrompt = document.getElementById('prompt-text-input').value;
+            const tag = document.getElementById('prompt-tag-input').value;
+            const isDefault = document.getElementById('prompt-default-input').checked;
             const versionType = promptLibraryState.selectedVersionType;
 
             try {
@@ -4064,6 +4331,8 @@ Include the exact code snippets that need to be changed.`;
                         promptName: name,              // Server expects camelCase
                         systemPrompt: systemPrompt,    // Server expects camelCase
                         versionType: versionType,      // Server expects camelCase
+                        tags: [tag],                   // Send as array with single tag
+                        isDefault: isDefault,
                         commitMessage: `${versionType} version update via dashboard`,
                         notes: description || '',
                         createdBy: 'dashboard',

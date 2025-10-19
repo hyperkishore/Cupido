@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { userProfileService } from './userProfileService';
-import promptConfig from '../config/prompts.json';
+import { promptService } from './promptService';
 
 const DEBUG = false; // Set to true for verbose logging during development
 
@@ -39,18 +39,33 @@ class ChatAiService {
     if (DEBUG) console.log('🌐 Proxy URL resolved to:', this.proxyUrl);
   }
 
-  private createSystemPrompt(): string {
+  private async createSystemPrompt(): Promise<string> {
     const userName = userProfileService.getName();
     const nameContext = userName ? `\nIMPORTANT: The user's name is ${userName}. Use their name naturally in conversation when it flows naturally.\n` : '';
 
-    // Load prompt from centralized configuration
-    const cupidoPrompt = promptConfig.prompts.cupido_self_discovery;
+    try {
+      // Initialize promptService if not initialized
+      if (!promptService.isInitialized()) {
+        if (DEBUG) console.log('📝 Initializing promptService...');
+        await promptService.initialize();
+      }
 
-    // Check if we have a valid prompt configuration
-    if (!cupidoPrompt || !cupidoPrompt.system_prompt) {
-      console.warn('Prompt configuration not found, using fallback');
-      // Fallback to embedded prompt if config fails
-      return `You are Cupido's conversation companion, inspired by "So Much Closer" conversation cards, guiding someone on a continuous journey of self-discovery. A dating profile may emerge from this journey, but it's simply a milestone in understanding oneself, never the destination.
+      // Get currently selected prompt (or default cupido prompt)
+      const promptInfo = await promptService.getCurrentPromptInfo();
+
+      if (promptInfo && promptInfo.systemPrompt) {
+        if (DEBUG) console.log('📋 Loading prompt from Supabase:', promptInfo.name, 'v' + promptInfo.activeVersion);
+        return promptInfo.systemPrompt + nameContext;
+      } else {
+        console.warn('⚠️ No prompt found from promptService, using fallback');
+      }
+    } catch (error) {
+      console.error('❌ Error loading prompt from Supabase:', error);
+    }
+
+    // Fallback to embedded prompt if Supabase fails
+    console.warn('⚠️ Using fallback embedded prompt');
+    return `You are Cupido's conversation companion, inspired by "So Much Closer" conversation cards, guiding someone on a continuous journey of self-discovery. A dating profile may emerge from this journey, but it's simply a milestone in understanding oneself, never the destination.
 ${nameContext}
 
 CORE IDENTITY:
@@ -201,11 +216,6 @@ You're not helping someone complete a task (dating profile). You're companioning
 Every conversation deepens the spiral. Every question opens new territory. Every insight reveals new edges to explore. This is the true purpose: facilitating a continuous journey of self-discovery where each person becomes more fully themselves, more capable of authentic connection, and more aware of the depths they contain.
 
 The journey has no end point. Only deeper understanding, emerging readiness, and continuous growth.`;
-    }
-
-    // Use prompt from configuration file with name context
-    if (DEBUG) console.log('📋 Loading prompt from centralized configuration:', cupidoPrompt.name);
-    return cupidoPrompt.system_prompt + nameContext;
   }
 
   async generateResponseWithImage(
@@ -255,7 +265,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         : { role: 'user' as const, content: userMessage };
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: this.createSystemPrompt() },
+        { role: 'system', content: await this.createSystemPrompt() },
         ...conversationHistory,
         lastUserMessage as ChatMessage
       ];

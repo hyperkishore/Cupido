@@ -411,11 +411,11 @@ app.post('/api/extract-profile', async (req, res) => {
   }
 });
 
-// Error logger integration
-const errorLogger = require('./error-logger');
+// Error logger integration (disabled for now)
+// const errorLogger = require('./error-logger');
 
 // Start error logger file watcher
-errorLogger.startWatching();
+// errorLogger.startWatching();
 
 // Test results storage (in-memory for simplicity)
 let latestTestResults = null;
@@ -466,22 +466,22 @@ app.get('/api/test-results/history', (req, res) => {
 // ERROR LOGGING ENDPOINTS
 // ============================================
 
-// POST endpoint to log console errors
+// POST endpoint to log console errors (disabled - error logger not available)
 app.post('/api/log-error', (req, res) => {
   try {
-    const result = errorLogger.logError(req.body);
-    res.json(result);
+    console.log('Error logged:', req.body);
+    res.json({ success: true, message: 'Error logged to console' });
   } catch (error) {
     console.error('Error logging error:', error);
     res.status(500).json({ error: 'Failed to log error' });
   }
 });
 
-// POST endpoint to log test failures
+// POST endpoint to log test failures (disabled - error logger not available)
 app.post('/api/log-test-failure', (req, res) => {
   try {
-    const result = errorLogger.logTestFailure(req.body);
-    res.json(result);
+    console.log('Test failure logged:', req.body);
+    res.json({ success: true, message: 'Test failure logged to console' });
   } catch (error) {
     console.error('Error logging test failure:', error);
     res.status(500).json({ error: 'Failed to log test failure' });
@@ -1096,7 +1096,27 @@ app.post('/api/prompts/:promptId/versions', async (req, res) => {
       notes,
       createdBy = 'admin',
       activate = false,
+      tags,  // Array of tags (e.g., ["cupido"], ["simulator"])
+      isDefault,  // Boolean - if true, unset other prompts with same tag
     } = req.body;
+
+    // If isDefault is true, unset other prompts with the same tag as default
+    if (isDefault && tags && tags.length > 0) {
+      const tag = tags[0];  // Get the first (and typically only) tag
+      console.log(`📌 Setting as default for tag: ${tag}`);
+
+      // Unset is_default for all other prompts with this tag
+      const { error: unsetError } = await supabase
+        .from('prompt_versions')
+        .update({ is_default: false })
+        .contains('tags', [tag])
+        .neq('prompt_id', promptId);
+
+      if (unsetError) {
+        console.error('Error unsetting other defaults:', unsetError);
+        // Don't fail the request - continue with version creation
+      }
+    }
 
     // Call the database function to create version
     const { data: versionId, error } = await supabase.rpc('create_prompt_version', {
@@ -1120,6 +1140,37 @@ app.post('/api/prompts/:promptId/versions', async (req, res) => {
       .single();
 
     if (fetchError) throw fetchError;
+
+    // Update tags and isDefault if provided (RPC doesn't handle these yet)
+    if (tags !== undefined || isDefault !== undefined) {
+      const updateFields = {};
+      if (tags !== undefined) {
+        updateFields.tags = tags;
+      }
+      if (isDefault !== undefined) {
+        updateFields.is_default = isDefault;
+      }
+
+      const { data: updatedData, error: updateError } = await supabase
+        .from('prompt_versions')
+        .update(updateFields)
+        .eq('id', versionId)
+        .select('*')
+        .single();
+
+      if (updateError) {
+        console.error('Error updating tags/isDefault:', updateError);
+        // Don't fail - return the version without these fields
+      } else {
+        // Return the updated version with tags and isDefault
+        return res.json({
+          success: true,
+          versionId: versionId,
+          version_string: updatedData.version_string,
+          ...updatedData
+        });
+      }
+    }
 
     res.json({
       success: true,
@@ -1147,6 +1198,8 @@ app.patch('/api/prompts/:promptId', async (req, res) => {
       description,
       versionType,  // Optional: 'patch', 'minor', or 'major' to create new version
       commitMessage,
+      tags,  // Array of tags (e.g., ["cupido"], ["simulator"])
+      isDefault,  // Boolean - if true, unset other prompts with same tag
     } = req.body;
 
     // Get the most recent version of this prompt
@@ -1167,6 +1220,24 @@ app.patch('/api/prompts/:promptId', async (req, res) => {
 
     if (!latestVersion) {
       return res.status(404).json({ error: 'Prompt not found' });
+    }
+
+    // If isDefault is true, unset other prompts with the same tag as default
+    if (isDefault && tags && tags.length > 0) {
+      const tag = tags[0];  // Get the first (and typically only) tag
+      console.log(`📌 Setting as default for tag: ${tag}`);
+
+      // Unset is_default for all other prompts with this tag
+      const { error: unsetError } = await supabase
+        .from('prompt_versions')
+        .update({ is_default: false })
+        .contains('tags', [tag])
+        .neq('prompt_id', promptId);
+
+      if (unsetError) {
+        console.error('Error unsetting other defaults:', unsetError);
+        // Don't fail the request - continue with the update
+      }
     }
 
     // If versionType is provided, create a new version row
@@ -1203,13 +1274,13 @@ app.patch('/api/prompts/:promptId', async (req, res) => {
           system_prompt: systemPrompt,
           description: description,
           category: latestVersion.category,
-          tags: latestVersion.tags,
+          tags: tags !== undefined ? tags : latestVersion.tags,
           labels: latestVersion.labels,
           status: latestVersion.status,
           is_active: latestVersion.is_active,
           commit_message: commitMessage || `${versionType} version update`,
           created_by: 'dashboard',
-          is_default: latestVersion.is_default,
+          is_default: isDefault !== undefined ? isDefault : latestVersion.is_default,
         })
         .select()
         .single();
@@ -1230,13 +1301,24 @@ app.patch('/api/prompts/:promptId', async (req, res) => {
       // No version increment - just update the existing row
       console.log(`📝 Updating prompt ${promptId} (no version increment)`);
 
+      // Build update object dynamically to only include provided fields
+      const updateFields = {
+        prompt_name: promptName,
+        system_prompt: systemPrompt,
+        description: description,
+      };
+
+      if (tags !== undefined) {
+        updateFields.tags = tags;
+      }
+
+      if (isDefault !== undefined) {
+        updateFields.is_default = isDefault;
+      }
+
       const { data, error } = await supabase
         .from('prompt_versions')
-        .update({
-          prompt_name: promptName,
-          system_prompt: systemPrompt,
-          description: description,
-        })
+        .update(updateFields)
         .eq('id', latestVersion.id)
         .select()
         .single();
@@ -1418,6 +1500,164 @@ app.post('/api/prompts/:promptId/activate', async (req, res) => {
   } catch (error) {
     console.error('Error activating version:', error);
     res.status(500).json({ error: 'Failed to activate version', details: error.message });
+  }
+});
+
+// Simulator API endpoint for generating responses
+app.post('/api/simulator/generate-response', async (req, res) => {
+  try {
+    console.log('🎭 Simulator response generation request');
+    
+    const {
+      personaPromptId,
+      conversationHistory = [],
+      userMessage,
+      conversationId
+    } = req.body;
+    
+    if (!personaPromptId || !userMessage) {
+      return res.status(400).json({ error: 'Missing required fields: personaPromptId and userMessage' });
+    }
+    
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+    
+    if (!CLAUDE_API_KEY) {
+      return res.status(500).json({ error: 'Claude API key not configured' });
+    }
+    
+    console.log(`🔍 Fetching persona prompt: ${personaPromptId}`);
+    
+    // Get the persona prompt from database (use prompt_versions table)
+    // For simulator, get the latest version regardless of active status
+    const { data: personaPrompt, error: fetchError } = await supabase
+      .from('prompt_versions')
+      .select('*')
+      .eq('prompt_id', personaPromptId)
+      .order('major_version', { ascending: false })
+      .order('minor_version', { ascending: false })
+      .order('patch_version', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (fetchError) {
+      console.error('Error fetching persona prompt:', fetchError);
+      return res.status(404).json({ error: 'Persona prompt not found', details: fetchError.message });
+    }
+    
+    if (!personaPrompt) {
+      return res.status(404).json({ error: 'No active persona prompt found' });
+    }
+    
+    console.log(`✅ Found persona: ${personaPrompt.prompt_name}`);
+    
+    // Prepare messages for Claude API
+    const systemPrompt = personaPrompt.system_prompt;
+    
+    // Build conversation messages (exclude system message)
+    const messages = [];
+    
+    // Add conversation history if provided
+    if (conversationHistory && conversationHistory.length > 0) {
+      messages.push(...conversationHistory.filter(msg => msg.role !== 'system'));
+    }
+    
+    // Add the new user message
+    messages.push({
+      role: 'user', 
+      content: userMessage
+    });
+    
+    console.log(`🤖 Generating response using Claude with ${messages.length} messages`);
+    
+    // Generate response using Claude API (reuse existing API call logic)
+    const requestBody = {
+      model: 'claude-3-5-sonnet-20241022',  // Use Sonnet for consistent persona responses
+      max_tokens: 500,  // Reasonable length for simulator responses
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt
+        }
+      ],
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
+    };
+
+    const response = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Claude API error ${response.status}:`, errorText);
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Extract response text
+    let simulatorResponse = 'I apologize, but I had trouble generating a response.';
+    if (data && data.content && Array.isArray(data.content)) {
+      const textBlocks = data.content.filter(block => block.type === 'text');
+      if (textBlocks.length > 0) {
+        simulatorResponse = textBlocks.map(block => block.text).join(' ');
+      }
+    }
+    
+    console.log(`✅ Generated simulator response: ${simulatorResponse.substring(0, 100)}...`);
+    
+    // Save simulator test data if conversationId provided
+    if (conversationId && supabase) {
+      try {
+        const { error: saveError } = await supabase
+          .from('conversations')
+          .update({
+            is_simulator_test: true,
+            simulator_params: {
+              persona_prompt_id: personaPromptId,
+              persona_name: personaPrompt.prompt_name,
+              generated_at: new Date().toISOString(),
+              user_message: userMessage,
+              simulator_response: simulatorResponse
+            }
+          })
+          .eq('id', conversationId);
+          
+        if (saveError) {
+          console.warn('Failed to save simulator metadata:', saveError);
+        } else {
+          console.log(`💾 Saved simulator test metadata for conversation ${conversationId}`);
+        }
+      } catch (saveErr) {
+        console.warn('Error saving simulator metadata:', saveErr);
+      }
+    }
+    
+    res.json({
+      response: simulatorResponse,
+      personaName: personaPrompt.prompt_name,
+      personaId: personaPromptId,
+      timestamp: new Date().toISOString(),
+      model: 'claude-3-5-sonnet-20241022'
+    });
+    
+  } catch (error) {
+    console.error('Simulator generation error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate simulator response', 
+      details: error.message,
+      fallback: true
+    });
   }
 });
 
