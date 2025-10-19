@@ -1,0 +1,444 @@
+{
+  "profileBuildingPrompts": [
+    {
+      "id": "profile_name",
+      "question": "Let's start building your profile! What's your first name? (This is what others will see)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "introduction",
+      "tone": "friendly",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "name",
+        "validation": "minimum 2 characters, letters only",
+        "example": "Sarah"
+      },
+      "metadata": {
+        "priority": 1,
+        "isRequired": true,
+        "fieldType": "critical"
+      }
+    },
+    {
+      "id": "profile_age",
+      "question": "When's your birthday? We need to verify you're 18 or older to use Cupido. (We'll only show your age, not your full birthday)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "age_verification",
+      "tone": "reassuring",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "dateOfBirth",
+        "validation": "ISO date format (YYYY-MM-DD), must be 18+",
+        "example": "1995-06-15"
+      },
+      "metadata": {
+        "priority": 2,
+        "isRequired": true,
+        "fieldType": "critical",
+        "legalRequirement": true
+      }
+    },
+    {
+      "id": "profile_gender",
+      "question": "How do you identify? (This helps us show you to the right people)\n\n• Male\n• Female\n• Non-binary\n• Other\n• Prefer not to say",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "identity",
+      "tone": "inclusive",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "gender",
+        "validation": "one of: male, female, non-binary, other, prefer-not-to-say",
+        "example": "female"
+      },
+      "metadata": {
+        "priority": 3,
+        "isRequired": true,
+        "fieldType": "critical"
+      }
+    },
+    {
+      "id": "profile_bio",
+      "question": "Now for the fun part! Tell us about yourself. What makes you... you? Share your passions, quirks, what you're looking for, or anything that helps someone get to know the real you. (Minimum 50 characters - be authentic!)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "self_expression",
+      "tone": "encouraging",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "medium",
+      "extractionRules": {
+        "field": "bio",
+        "validation": "minimum 50 characters, maximum 500 characters",
+        "example": "Adventure seeker and coffee enthusiast. I spend weekends hiking or trying new restaurants. Looking for someone who can appreciate both deep conversations and silly moments. Bonus points if you can recommend a good book!"
+      },
+      "metadata": {
+        "priority": 4,
+        "isRequired": true,
+        "fieldType": "critical"
+      }
+    },
+    {
+      "id": "profile_location",
+      "question": "Where are you based? (City and state/country - this helps us find matches nearby)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "location",
+      "tone": "casual",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "location",
+        "validation": "city, state/country format",
+        "example": "San Francisco, CA",
+        "structure": {
+          "city": "string",
+          "state": "string",
+          "country": "string (default: USA)"
+        }
+      },
+      "metadata": {
+        "priority": 5,
+        "isRequired": true,
+        "fieldType": "high"
+      }
+    },
+    {
+      "id": "profile_interests",
+      "question": "What are you into? List at least 3 interests, hobbies, or passions. (Separate with commas - these help find common ground with matches!)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "interests",
+      "tone": "enthusiastic",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "interests",
+        "validation": "array of at least 3 items",
+        "example": "hiking, photography, cooking, indie music, travel",
+        "parseAs": "comma-separated array"
+      },
+      "metadata": {
+        "priority": 6,
+        "isRequired": true,
+        "fieldType": "medium"
+      }
+    },
+    {
+      "id": "profile_looking_for",
+      "question": "Who are you hoping to meet? Select all that apply:\n\n• Men\n• Women\n• Non-binary folks\n• Everyone",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "preferences",
+      "tone": "inclusive",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "lookingFor",
+        "validation": "array containing: male, female, non-binary, or everyone",
+        "example": "female, non-binary",
+        "parseAs": "comma-separated array"
+      },
+      "metadata": {
+        "priority": 7,
+        "isRequired": true,
+        "fieldType": "high"
+      }
+    },
+    {
+      "id": "profile_relationship_goals",
+      "question": "What kind of connection are you looking for?\n\n• Something casual\n• A serious relationship\n• New friends\n• Not sure yet",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "intentions",
+      "tone": "non-judgmental",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "medium",
+      "extractionRules": {
+        "field": "relationshipGoals",
+        "validation": "one of: casual, serious, friendship, not-sure",
+        "example": "serious"
+      },
+      "metadata": {
+        "priority": 8,
+        "isRequired": true,
+        "fieldType": "high"
+      }
+    },
+    {
+      "id": "profile_height",
+      "question": "How tall are you? (Optional - in feet and inches, or cm)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "physical_attributes",
+      "tone": "casual",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "height",
+        "validation": "convert to centimeters",
+        "example": "5'8\" or 173cm",
+        "convertTo": "centimeters"
+      },
+      "metadata": {
+        "priority": 9,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_education",
+      "question": "What's your education background? (Optional - e.g., 'Bachelor's in Psychology' or 'Self-taught developer')",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "background",
+      "tone": "inclusive",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "education",
+        "validation": "free text, max 100 characters",
+        "example": "Bachelor's in Computer Science"
+      },
+      "metadata": {
+        "priority": 10,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_job",
+      "question": "What do you do for work? (Optional - your job title or what you do)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "career",
+      "tone": "casual",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "jobTitle",
+        "validation": "free text, max 100 characters",
+        "example": "Software Engineer at Anthropic"
+      },
+      "metadata": {
+        "priority": 11,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_lifestyle_smoking",
+      "question": "Do you smoke? (Optional)\n\n• Yes\n• No\n• Sometimes\n• Prefer not to say",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "lifestyle",
+      "tone": "non-judgmental",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "smoking",
+        "validation": "one of: yes, no, sometimes, prefer-not-to-say",
+        "example": "no"
+      },
+      "metadata": {
+        "priority": 12,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_lifestyle_drinking",
+      "question": "How about drinking? (Optional)\n\n• Yes\n• No\n• Sometimes\n• Prefer not to say",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "lifestyle",
+      "tone": "non-judgmental",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "drinking",
+        "validation": "one of: yes, no, sometimes, prefer-not-to-say",
+        "example": "sometimes"
+      },
+      "metadata": {
+        "priority": 13,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_kids_have",
+      "question": "Do you have kids? (Optional - yes/no)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "family",
+      "tone": "neutral",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "hasKids",
+        "validation": "boolean: yes=true, no=false",
+        "example": "no"
+      },
+      "metadata": {
+        "priority": 14,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_kids_want",
+      "question": "Do you want kids someday? (Optional)\n\n• Yes\n• No\n• Maybe\n• Prefer not to say",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "family",
+      "tone": "neutral",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "wantsKids",
+        "validation": "one of: yes, no, maybe, prefer-not-to-say",
+        "example": "maybe"
+      },
+      "metadata": {
+        "priority": 15,
+        "isRequired": false,
+        "fieldType": "low"
+      }
+    },
+    {
+      "id": "profile_age_preference",
+      "question": "What age range are you interested in? (Optional - e.g., '25-35')",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "preferences",
+      "tone": "casual",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "ageRangePreference",
+        "validation": "two numbers: min-max",
+        "example": "25-35",
+        "parseAs": {
+          "min": "number",
+          "max": "number"
+        }
+      },
+      "metadata": {
+        "priority": 16,
+        "isRequired": false,
+        "fieldType": "medium"
+      }
+    },
+    {
+      "id": "profile_max_distance",
+      "question": "How far are you willing to travel to meet someone? (Optional - in miles or km)",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "preferences",
+      "tone": "practical",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "maxDistance",
+        "validation": "number in kilometers",
+        "example": "25 miles or 40km",
+        "convertTo": "kilometers"
+      },
+      "metadata": {
+        "priority": 17,
+        "isRequired": false,
+        "fieldType": "medium"
+      }
+    },
+    {
+      "id": "profile_completion_confirmation",
+      "question": "Amazing! Your profile is coming together beautifully. 🎉\n\nJust one more thing - we'll need at least 2 photos to complete your profile. You can upload them from your profile page.\n\nReady to start connecting?",
+      "type": "text",
+      "category": "profile_onboarding",
+      "theme": "completion",
+      "tone": "celebratory",
+      "intendedUseCase": "profile_completion",
+      "emotionalDepth": "low",
+      "extractionRules": {
+        "field": "onboardingComplete",
+        "validation": "confirmation message",
+        "action": "redirect_to_profile_photo_upload"
+      },
+      "metadata": {
+        "priority": 18,
+        "isRequired": true,
+        "fieldType": "completion",
+        "isFinal": true
+      }
+    }
+  ],
+  "instructions": {
+    "usage": "These prompts should be shown sequentially during the onboarding flow",
+    "flow": "Ask one question at a time, extract the answer, save to database, then move to next",
+    "skipLogic": "Allow users to skip optional questions, but all critical fields must be completed",
+    "validation": "Validate each answer before saving and moving forward",
+    "aiInstructions": {
+      "extractionMethod": "Use Claude to parse natural language responses and extract structured data",
+      "validation": "Validate extracted data matches the expected format before saving",
+      "feedback": "If extraction fails, politely ask the user to rephrase or provide more specific information",
+      "examples": [
+        {
+          "prompt": "What's your first name?",
+          "userResponse": "Hi! I'm Sarah",
+          "extracted": {
+            "field": "name",
+            "value": "Sarah"
+          }
+        },
+        {
+          "prompt": "When's your birthday?",
+          "userResponse": "June 15, 1995",
+          "extracted": {
+            "field": "dateOfBirth",
+            "value": "1995-06-15"
+          }
+        },
+        {
+          "prompt": "How do you identify?",
+          "userResponse": "I'm a woman",
+          "extracted": {
+            "field": "gender",
+            "value": "female"
+          }
+        },
+        {
+          "prompt": "Where are you based?",
+          "userResponse": "I live in San Francisco",
+          "extracted": {
+            "field": "location",
+            "value": {
+              "city": "San Francisco",
+              "state": "CA",
+              "country": "USA"
+            }
+          }
+        },
+        {
+          "prompt": "What are you into?",
+          "userResponse": "I love hiking, photography, and trying new restaurants",
+          "extracted": {
+            "field": "interests",
+            "value": ["hiking", "photography", "trying new restaurants"]
+          }
+        },
+        {
+          "prompt": "How tall are you?",
+          "userResponse": "5 foot 8",
+          "extracted": {
+            "field": "height",
+            "value": 173
+          }
+        }
+      ]
+    }
+  }
+}
