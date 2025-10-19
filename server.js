@@ -1757,6 +1757,16 @@ app.get('/comprehensive-test-functions.js', (req, res) => {
   }
 });
 
+// Serve infrastructure test functions
+app.get('/infrastructure-tests.js', (req, res) => {
+  const infrastructurePath = path.join(__dirname, 'infrastructure-tests.js');
+  if (fs.existsSync(infrastructurePath)) {
+    res.sendFile(infrastructurePath);
+  } else {
+    res.status(404).send('Infrastructure tests not found');
+  }
+});
+
 // Serve prompt manager
 app.get('/promptManager.js', (req, res) => {
   const managerPath = path.join(__dirname, 'promptManager.js');
@@ -1860,6 +1870,19 @@ app.use('/', createProxyMiddleware({
   changeOrigin: true,
   // Only proxy specific file types (bundles, maps, assets)
   filter: (pathname, req) => {
+    // Exclude our dashboard files from proxying
+    const dashboardFiles = [
+      'infrastructure-tests.js',
+      'comprehensive-test-functions.js', 
+      'promptManager.js',
+      'error-logger.js'
+    ];
+    
+    // Don't proxy our dashboard files
+    if (dashboardFiles.some(file => pathname.includes(file))) {
+      return false;
+    }
+    
     const shouldProxy = pathname.match(/\.(bundle|map|js|ts)(\?.*)?$/) ||
                        pathname.match(/^\/_expo/) ||
                        pathname === '/';

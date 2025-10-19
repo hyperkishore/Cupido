@@ -72,18 +72,26 @@ try {
     const testFunctions = fs.readFileSync('/Users/kishore/Desktop/Claude-experiments/Cupido/comprehensive-test-functions.js', 'utf8');
     
     // Create a minimal browser-like environment
-    const window = { TEST_FUNCTIONS: {} };
-    const console = { log: () => {}, warn: () => {}, error: () => {} };
-    const document = { getElementById: () => ({ src: '' }) };
+    global.window = { 
+        TEST_FUNCTIONS: {},
+        addEventListener: function() {}, // Mock DOM method
+        postMessage: function() {},
+        parent: { postMessage: function() {} }
+    };
+    global.console = { log: () => {}, warn: () => {}, error: () => {} };
+    global.document = { 
+        getElementById: () => ({ src: '' }),
+        addEventListener: function() {}
+    };
     
     // Execute the test functions code
     eval(testFunctions);
     
     // Check if TEST_FUNCTIONS was populated
-    const count = Object.keys(window.TEST_FUNCTIONS).length;
-    console.log('SUCCESS: ' + count + ' test functions loaded');
+    const count = Object.keys(global.window.TEST_FUNCTIONS).length;
+    process.stdout.write('SUCCESS: ' + count + ' test functions loaded');
 } catch (error) {
-    console.log('ERROR: ' + error.message);
+    process.stdout.write('ERROR: ' + error.message);
 }
 ")
 

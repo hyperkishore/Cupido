@@ -1696,8 +1696,7 @@
     <div class="header">
         <div class="header-title">Cupido Test Dashboard</div>
         <div class="header-actions">
-            <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
-            <button class="btn btn-primary" onclick="runSelectedTests()">Run Tests</button>
+            <!-- Buttons moved to controls bar for better UX -->
         </div>
     </div>
 
@@ -1718,7 +1717,7 @@
             <!-- Controls Bar -->
             <div class="controls-bar">
                 <div class="controls-left">
-                    <select id="test-scope">
+                    <select id="test-scope" onchange="filterTestsByCategory()">
                         <option value="all" id="all-tests-option">All Tests (72)</option>
                         <option value="foundation">Foundation Tests (5)</option>
                         <option value="prompts">Prompt Management (3)</option>
@@ -1732,6 +1731,8 @@
                         <option value="simulator">Simulator Testing (18)</option>
                         <option value="infra">Infrastructure Validation (6)</option>
                     </select>
+                    <button class="btn btn-primary" onclick="runSelectedTests()">▶ Run Tests</button>
+                    <button class="btn btn-secondary" onclick="exportResults()">📤 Export Results</button>
                     <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
                     <button class="btn btn-secondary" onclick="clearSelection()">Clear</button>
                     <button class="btn btn-primary" onclick="runBrowserDebug()" style="background: #ff3b30; border-color: #ff3b30;">🔍 DEBUG</button>
@@ -2192,7 +2193,7 @@
     <script src="infrastructure-tests.js"></script>
 
     <script>
-        // Simulator state management
+        // Simulator state management - exposed on window for test access
         const simulatorState = {
             isActive: false,
             isPaused: false,
@@ -2202,6 +2203,9 @@
             typingDelayMin: 1000,
             typingDelayMax: 3000
         };
+        
+        // Expose simulator state globally for tests
+        window.simulatorState = simulatorState;
         
         // Test configuration from comprehensive test functions
         const testConfig = {
@@ -2863,10 +2867,11 @@
             return metadata[testId] || { description: 'Test description', module: 'Unknown' };
         }
 
-        // Render test table
-        function renderTestTable() {
+        // Render test table (optionally with filtered tests)
+        function renderTestTable(filteredTests = null) {
             const tbody = document.getElementById('test-table-body');
-            tbody.innerHTML = tests.map(test => `
+            const testsToShow = filteredTests || tests;
+            tbody.innerHTML = testsToShow.map(test => `
                 <tr id="test-row-${test.id}">
                     <td><input type="checkbox" class="test-checkbox" value="${test.id}" onchange="toggleTestSelection('${test.id}')"></td>
                     <td>${test.name}</td>
@@ -2879,6 +2884,29 @@
                     <td><button class="action-btn" onclick="runSingleTest('${test.id}')">Run</button></td>
                 </tr>
             `).join('');
+        }
+
+        // Filter tests based on category selection
+        function filterTestsByCategory() {
+            const selectedCategory = document.getElementById('test-scope').value;
+            logToConsole(`🔍 Filtering tests by category: ${selectedCategory}`, 'info');
+            
+            // If "all" is selected, show all tests
+            if (selectedCategory === 'all') {
+                renderTestTable();
+                logToConsole(`✅ Showing all ${tests.length} tests`, 'success');
+                return;
+            }
+            
+            // Filter tests by category
+            const filteredTests = tests.filter(test => {
+                const [testCategory] = test.id.split('-');
+                return testCategory === selectedCategory;
+            });
+            
+            // Render filtered test table
+            renderTestTable(filteredTests);
+            logToConsole(`✅ Showing ${filteredTests.length} tests in category: ${testConfig[selectedCategory]?.name || selectedCategory}`, 'success');
         }
 
         // Tab switching
