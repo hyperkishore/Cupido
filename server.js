@@ -500,6 +500,71 @@ app.get('/api/error-stats', async (req, res) => {
 });
 
 // ============================================
+// INFRASTRUCTURE TESTING ENDPOINTS
+// ============================================
+
+// Health check script endpoint
+app.get('/api/run-script/health-check', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./health-check.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// JavaScript syntax validation script endpoint
+app.get('/api/run-script/validate-js-syntax', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./validate-js-syntax.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Pre-deployment check script endpoint
+app.get('/api/run-script/pre-deployment-check', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./pre-deployment-check.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Dashboard debug script endpoint
+app.get('/api/run-script/debug-dashboard', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./debug-dashboard.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Error management control script endpoint
+app.post('/api/run-script/error-management-control', (req, res) => {
+  const { exec } = require('child_process');
+  const command = req.body.command || 'diagnostics';
+  exec(`./error-management-control.sh ${command}`, (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// ============================================
 // PROMPT MANAGEMENT ENDPOINTS
 // ============================================
 

@@ -1719,7 +1719,9 @@
             <div class="controls-bar">
                 <div class="controls-left">
                     <select id="test-scope">
-                        <option value="all" id="all-tests-option">All Tests (66)</option>
+                        <option value="all" id="all-tests-option">All Tests (72)</option>
+                        <option value="foundation">Foundation Tests (5)</option>
+                        <option value="prompts">Prompt Management (3)</option>
                         <option value="console">Console Error Detection (5)</option>
                         <option value="message">Message Flow & UI (8)</option>
                         <option value="profile">Profile Extraction (6)</option>
@@ -1728,9 +1730,11 @@
                         <option value="state">State Management (6)</option>
                         <option value="api">API & Performance (4)</option>
                         <option value="simulator">Simulator Testing (18)</option>
+                        <option value="infra">Infrastructure Validation (6)</option>
                     </select>
                     <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
                     <button class="btn btn-secondary" onclick="clearSelection()">Clear</button>
+                    <button class="btn btn-primary" onclick="runBrowserDebug()" style="background: #ff3b30; border-color: #ff3b30;">🔍 DEBUG</button>
                 </div>
                 <div class="controls-right">
                     <div class="toggle-container">
@@ -2183,6 +2187,9 @@
 
     <!-- Load comprehensive test functions -->
     <script src="comprehensive-test-functions.js"></script>
+    
+    <!-- Load infrastructure test functions -->
+    <script src="infrastructure-tests.js"></script>
 
     <script>
         // Simulator state management
@@ -2207,7 +2214,8 @@
             error: { name: 'Error Handling', count: 6 },
             state: { name: 'State Management', count: 6 },
             api: { name: 'API & Performance', count: 4 },
-            simulator: { name: 'Simulator Testing', count: 18 }
+            simulator: { name: 'Simulator Testing', count: 18 },
+            infra: { name: 'Infrastructure Validation', count: 6 }
         };
 
         // Initialize tests
@@ -4334,15 +4342,20 @@ Include the exact code snippets that need to be changed.`;
         }
 
         // Enhanced tab switching to load error monitoring data
-        const originalSwitchTab = window.switchTab || function(tabName, event) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+        // Store reference to original switchTab function (defined earlier)
+        const originalSwitchTabFunction = function(tabName, event) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             document.getElementById(tabName + '-tab').classList.add('active');
         };
 
-        function switchTab(tabName, event) {
-            originalSwitchTab(tabName, event);
+        // Override the global switchTab function
+        window.switchTab = function(tabName, event) {
+            originalSwitchTabFunction(tabName, event);
             
             // Load error monitoring data when switching to error monitoring tab
             if (tabName === 'error-monitoring') {
@@ -4360,10 +4373,82 @@ Include the exact code snippets that need to be changed.`;
                 }
             }
             
+            // Initialize prompt library when switching to prompts tab
             if (tabName === 'prompts') {
                 initializePromptLibrary();
             }
         };
+
+        // BROWSER DEBUG FUNCTION - Co-founder level debugging
+        function runBrowserDebug() {
+            logToConsole('🔍 BROWSER DEBUG STARTING...', 'info');
+            logToConsole('═══════════════════════════════', 'info');
+            
+            // Check TEST_FUNCTIONS availability
+            logToConsole(`🔍 window.TEST_FUNCTIONS available: ${!!window.TEST_FUNCTIONS}`, 'info');
+            if (window.TEST_FUNCTIONS) {
+                const functionCount = Object.keys(window.TEST_FUNCTIONS).length;
+                logToConsole(`🔍 TEST_FUNCTIONS count: ${functionCount}`, 'success');
+                logToConsole(`🔍 First few functions: ${Object.keys(window.TEST_FUNCTIONS).slice(0, 5).join(', ')}`, 'info');
+            } else {
+                logToConsole('❌ TEST_FUNCTIONS is not available', 'error');
+            }
+            
+            // Check tests array
+            logToConsole(`🔍 tests array length: ${tests ? tests.length : 'tests array not found'}`, 'info');
+            
+            // Check DOM elements
+            logToConsole('🔍 DOM elements:', 'info');
+            logToConsole(`  total-tests element: ${document.getElementById('total-tests')?.textContent}`, 'info');
+            logToConsole(`  passed-tests element: ${document.getElementById('passed-tests')?.textContent}`, 'info');
+            logToConsole(`  pending-tests element: ${document.getElementById('pending-tests')?.textContent}`, 'info');
+            
+            // Check testConfig
+            logToConsole('🔍 testConfig:', 'info');
+            if (typeof testConfig !== 'undefined') {
+                const totalFromConfig = Object.values(testConfig).reduce((sum, cat) => sum + cat.count, 0);
+                logToConsole(`  testConfig total: ${totalFromConfig}`, 'info');
+                logToConsole(`  testConfig categories: ${Object.keys(testConfig).length}`, 'info');
+            } else {
+                logToConsole('  testConfig not found', 'error');
+            }
+            
+            // Check script tags
+            logToConsole('🔍 Checking script tags:', 'info');
+            const scripts = document.querySelectorAll('script[src]');
+            scripts.forEach((script, i) => {
+                logToConsole(`  Script ${i + 1}: ${script.src}`, 'info');
+            });
+            
+            // Manual initialization test
+            logToConsole('🔍 Manual initialization test:', 'info');
+            if (typeof initializeTests === 'function') {
+                logToConsole('✅ initializeTests function exists', 'success');
+                logToConsole('🔄 Calling initializeTests manually...', 'info');
+                
+                // Clear and reinitialize
+                tests.length = 0;
+                initializeTests();
+                renderTestTable();
+                updateStats();
+                
+                logToConsole(`🔍 After manual call - tests array length: ${tests ? tests.length : 'tests array not found'}`, 'info');
+            } else {
+                logToConsole('❌ initializeTests function not found', 'error');
+            }
+            
+            logToConsole('═══════════════════════════════', 'info');
+            logToConsole('🔍 BROWSER DEBUG COMPLETE', 'info');
+            logToConsole('📋 Check console output above for detailed analysis', 'warning');
+        }
+
+        // Capture JavaScript errors
+        window.jsErrors = [];
+        window.addEventListener('error', (event) => {
+            const errorMsg = `${event.error?.message || event.message} at ${event.filename}:${event.lineno}`;
+            window.jsErrors.push(errorMsg);
+            logToConsole(`❌ JS Error: ${errorMsg}`, 'error');
+        });
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
@@ -4396,6 +4481,26 @@ Include the exact code snippets that need to be changed.`;
             // Initialize advanced testing features
             initializeAdvancedFeatures();
             logToConsole('Advanced testing features ready: Automation, Templates, Metrics, Scenarios', 'success', 'app');
+            
+            // Auto-run debug after initial load to help diagnose issues
+            setTimeout(() => {
+                logToConsole('🔄 Auto-running debug analysis after page load...', 'warning');
+                runBrowserDebug();
+            }, 3000);
+            
+            // Auto-run infrastructure validation tests
+            setTimeout(() => {
+                logToConsole('🏗️  Auto-running infrastructure validation tests...', 'info');
+                logToConsole('These tests validate our diagnostic scripts and system health', 'info');
+                
+                // Run infrastructure tests automatically
+                const infrastructureTests = ['infra-1', 'infra-2', 'infra-3', 'infra-4', 'infra-5', 'infra-6'];
+                infrastructureTests.forEach((testId, index) => {
+                    setTimeout(() => {
+                        runSingleTest(testId);
+                    }, (index + 1) * 2000); // Stagger tests 2 seconds apart
+                });
+            }, 5000); // Start after debug analysis completes
         });
 
         // ============================================================
@@ -5069,14 +5174,8 @@ Include the exact code snippets that need to be changed.`;
             return div.innerHTML;
         }
 
-        // Override switchTab to initialize Prompt Library when tab is opened
-        const originalSwitchTab = window.switchTab;
-        window.switchTab = function(tabName, event) {
-            originalSwitchTab(tabName, event);
-            if (tabName === 'prompts') {
-                initializePromptLibrary();
-            }
-        };
+        // Add prompt library initialization to the existing switchTab override
+        // This should be combined with the error monitoring switchTab override above
     </script>
 </body>
 </html>
