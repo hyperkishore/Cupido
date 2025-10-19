@@ -1,0 +1,171 @@
+#!/bin/bash
+
+# CONTINUOUS MONITORING SYSTEM
+# ============================
+# Co-founder level monitoring that runs 24/7 to catch issues before users do
+# This ensures we maintain high quality and catch regressions immediately
+
+echo "🔄 CUPIDO CONTINUOUS MONITORING"
+echo "==============================="
+echo "Co-founder protection: Always watching for issues"
+echo ""
+
+# Configuration
+CHECK_INTERVAL=300  # 5 minutes
+ALERT_THRESHOLD=3   # Number of failures before escalating
+LOG_FILE="logs/monitoring.log"
+
+# Ensure logs directory exists
+mkdir -p logs
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Global counters
+CONSECUTIVE_FAILURES=0
+TOTAL_CHECKS=0
+TOTAL_FAILURES=0
+
+log_with_timestamp() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+alert() {
+    echo -e "${RED}🚨 ALERT: $1${NC}"
+    log_with_timestamp "ALERT: $1"
+}
+
+success() {
+    echo -e "${GREEN}✅ $1${NC}"
+    log_with_timestamp "SUCCESS: $1"
+}
+
+warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+    log_with_timestamp "WARNING: $1"
+}
+
+info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+    log_with_timestamp "INFO: $1"
+}
+
+# Health check function
+perform_health_check() {
+    local check_passed=true
+    
+    # Quick service availability checks
+    if ! curl -s http://localhost:3001 > /dev/null 2>&1; then
+        alert "Node.js server (localhost:3001) is DOWN"
+        check_passed=false
+    fi
+    
+    if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
+        alert "Expo server (localhost:8081) is DOWN"
+        check_passed=false
+    fi
+    
+    # Dashboard functionality
+    if ! curl -s http://localhost:3001/cupido-test-dashboard | grep -q "Cupido Test Dashboard" 2>/dev/null; then
+        alert "Test dashboard is NOT responding correctly"
+        check_passed=false
+    fi
+    
+    # API endpoints
+    if ! curl -s http://localhost:3001/api/error-stats | grep -q "total" 2>/dev/null; then
+        alert "Error stats API is NOT working"
+        check_passed=false
+    fi
+    
+    # Test count validation
+    TEST_COUNT=$(curl -s http://localhost:3001/cupido-test-dashboard 2>/dev/null | grep -o 'id="total-tests">[0-9]*' | grep -o '[0-9]*')
+    if [ "$TEST_COUNT" != "66" ]; then
+        alert "Test count is incorrect: $TEST_COUNT (expected 66)"
+        check_passed=false
+    fi
+    
+    return $check_passed
+}
+
+# Function to handle failures
+handle_failure() {
+    ((CONSECUTIVE_FAILURES++))
+    ((TOTAL_FAILURES++))
+    
+    if [ $CONSECUTIVE_FAILURES -ge $ALERT_THRESHOLD ]; then
+        alert "CRITICAL: $CONSECUTIVE_FAILURES consecutive failures detected!"
+        alert "System may be unstable - immediate attention required"
+        
+        # Log system state for debugging
+        info "Logging system state for debugging..."
+        echo "=== SYSTEM STATE DEBUG ===" >> "$LOG_FILE"
+        echo "Date: $(date)" >> "$LOG_FILE"
+        echo "Process List:" >> "$LOG_FILE"
+        ps aux | grep -E "(node|expo)" >> "$LOG_FILE" 2>/dev/null
+        echo "Port Usage:" >> "$LOG_FILE"
+        lsof -i :3001 >> "$LOG_FILE" 2>/dev/null
+        lsof -i :8081 >> "$LOG_FILE" 2>/dev/null
+        echo "=== END DEBUG ===" >> "$LOG_FILE"
+        
+        # Attempt automatic recovery
+        info "Attempting automatic recovery..."
+        # Note: In production, this could restart services
+        warning "Manual intervention may be required"
+    fi
+}
+
+# Function to handle success
+handle_success() {
+    if [ $CONSECUTIVE_FAILURES -gt 0 ]; then
+        success "System recovered after $CONSECUTIVE_FAILURES failures"
+    fi
+    CONSECUTIVE_FAILURES=0
+}
+
+# Main monitoring loop
+main_monitoring_loop() {
+    info "Starting continuous monitoring (checking every ${CHECK_INTERVAL}s)"
+    info "Alert threshold: $ALERT_THRESHOLD consecutive failures"
+    info "Log file: $LOG_FILE"
+    
+    while true; do
+        ((TOTAL_CHECKS++))
+        
+        echo ""
+        info "Check #$TOTAL_CHECKS - $(date '+%H:%M:%S')"
+        
+        if perform_health_check; then
+            success "All systems operational"
+            handle_success
+        else
+            warning "Health check failed"
+            handle_failure
+        fi
+        
+        # Display summary stats
+        UPTIME_PERCENTAGE=$(echo "scale=2; ($TOTAL_CHECKS - $TOTAL_FAILURES) * 100 / $TOTAL_CHECKS" | bc -l 2>/dev/null || echo "100")
+        info "Stats: Uptime ${UPTIME_PERCENTAGE}% | Total checks: $TOTAL_CHECKS | Failures: $TOTAL_FAILURES"
+        
+        # Wait for next check
+        sleep $CHECK_INTERVAL
+    done
+}
+
+# Signal handlers for graceful shutdown
+cleanup() {
+    echo ""
+    info "Monitoring stopped by user"
+    info "Final stats: Total checks: $TOTAL_CHECKS | Total failures: $TOTAL_FAILURES"
+    log_with_timestamp "Monitoring session ended"
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+# Start monitoring
+log_with_timestamp "Continuous monitoring started"
+main_monitoring_loop
