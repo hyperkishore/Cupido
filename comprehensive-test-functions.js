@@ -32,6 +32,22 @@ const consoleErrors = [];
 const consoleWarnings = [];
 const consoleNetworkErrors = [];
 
+// Helper function to access simulator state across different window contexts
+function getSimulatorState() {
+  if (typeof window === 'undefined') return null;
+  
+  // Check current window first
+  if (window.simulatorState) return window.simulatorState;
+  
+  // Check parent window (for iframe tests)
+  if (window.parent && window.parent.simulatorState) return window.parent.simulatorState;
+  
+  // Check top window
+  if (window.top && window.top.simulatorState) return window.top.simulatorState;
+  
+  return null;
+}
+
 // Override console methods to capture errors
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
@@ -2395,8 +2411,8 @@ async function testSimulator6() {
     // We can't easily test actual postMessage without the app running
     
     // Check if simulator state is properly initialized
-    if (typeof window !== 'undefined' && window.simulatorState) {
-      const state = window.simulatorState;
+    const state = getSimulatorState();
+    if (state) {
       
       if (!state.hasOwnProperty('isActive') || 
           !state.hasOwnProperty('isPaused') || 
@@ -2453,8 +2469,9 @@ async function testSimulator7() {
     }
     
     // Test basic state changes (without actually starting simulator)
-    if (typeof window !== 'undefined' && window.simulatorState) {
-      const initialState = { ...window.simulatorState };
+    const state = getSimulatorState();
+    if (state) {
+      const initialState = { ...state };
       
       return {
         pass: true,
@@ -2488,15 +2505,14 @@ async function testSimulator7() {
  */
 async function testSimulator8() {
   try {
-    if (typeof window === 'undefined' || !window.simulatorState) {
+    const state = getSimulatorState();
+    if (!state) {
       return {
         pass: false,
         message: '✗ Simulator state not available for testing',
-        errors: ['simulatorState not defined']
+        errors: ['simulatorState not defined in window hierarchy']
       };
     }
-    
-    const state = window.simulatorState;
     
     // Test that stop functionality exists and state has required properties
     if (!state.hasOwnProperty('conversationHistory') || 
@@ -2539,15 +2555,14 @@ async function testSimulator8() {
  */
 async function testSimulator9() {
   try {
-    if (typeof window === 'undefined' || !window.simulatorState) {
+    const state = getSimulatorState();
+    if (!state) {
       return {
         pass: false,
         message: '✗ Simulator state not available for speed testing',
-        errors: ['simulatorState not defined']
+        errors: ['simulatorState not defined in window hierarchy']
       };
     }
-    
-    const state = window.simulatorState;
     
     // Check if speed and timing properties exist
     if (!state.hasOwnProperty('speed') || 
@@ -2598,15 +2613,16 @@ async function testSimulator9() {
  */
 async function testSimulator10() {
   try {
-    if (typeof window === 'undefined' || !window.simulatorState) {
+    const simulatorState = getSimulatorState();
+    if (!simulatorState) {
       return {
         pass: false,
         message: '✗ Simulator state not available for timing testing',
-        errors: ['simulatorState not defined']
+        errors: ['simulatorState not defined in window hierarchy']
       };
     }
     
-    const { typingDelayMin, typingDelayMax } = window.simulatorState;
+    const { typingDelayMin, typingDelayMax } = simulatorState;
     
     // Verify delay range is realistic (1-3 seconds = 1000-3000ms)
     const expectedMin = 1000; // 1 second
@@ -2822,15 +2838,14 @@ async function testSimulator13() {
  */
 async function testSimulator14() {
   try {
-    if (typeof window === 'undefined' || !window.simulatorState) {
+    const state = getSimulatorState();
+    if (!state) {
       return {
         pass: false,
         message: '✗ Simulator state not available for persistence testing',
-        errors: ['simulatorState not defined']
+        errors: ['simulatorState not defined in window hierarchy']
       };
     }
-    
-    const state = window.simulatorState;
     
     // Test that conversation history persists
     if (!Array.isArray(state.conversationHistory)) {

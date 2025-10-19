@@ -59,14 +59,19 @@ else
     fail_check "Test dashboard is NOT accessible"
 fi
 
-# Check test count display - should be automatically calculated
-EXPECTED_TEST_COUNT=$(curl -s http://localhost:3001/comprehensive-test-functions.js | grep -o "'[a-z-]*-[0-9]*':" | wc -l | tr -d ' ')
-DISPLAYED_TEST_COUNT=$(curl -s http://localhost:3001/cupido-test-dashboard | grep -o 'id="total-tests">[0-9]*' | grep -o '[0-9]*')
+# Check test count display - should include both comprehensive and infrastructure tests
+COMPREHENSIVE_COUNT=$(curl -s http://localhost:3001/comprehensive-test-functions.js | grep -o "'[a-z-]*-[0-9]*':" | wc -l | tr -d ' ')
+INFRASTRUCTURE_COUNT=$(curl -s http://localhost:3001/infrastructure-tests.js | grep -o "'infra-[0-9]*':" | wc -l | tr -d ' ')
+EXPECTED_TEST_COUNT=$((COMPREHENSIVE_COUNT + INFRASTRUCTURE_COUNT))
+DISPLAYED_TEST_COUNT=$(curl -s http://localhost:3001/cupido-test-dashboard | grep -o 'All Tests ([0-9]*)' | grep -o '[0-9]*')
+if [ -z "$DISPLAYED_TEST_COUNT" ]; then
+    DISPLAYED_TEST_COUNT=$(curl -s http://localhost:3001/cupido-test-dashboard | grep -o 'id="total-tests">[0-9]*' | grep -o '[0-9]*')
+fi
 
 if [ "$DISPLAYED_TEST_COUNT" = "$EXPECTED_TEST_COUNT" ]; then
-    pass_check "Dashboard shows correct test count ($DISPLAYED_TEST_COUNT automatically calculated)"
+    pass_check "Dashboard shows correct test count ($DISPLAYED_TEST_COUNT = $COMPREHENSIVE_COUNT + $INFRASTRUCTURE_COUNT)"
 else
-    fail_check "Dashboard test count mismatch: shows $DISPLAYED_TEST_COUNT, should be $EXPECTED_TEST_COUNT"
+    fail_check "Dashboard test count mismatch: shows $DISPLAYED_TEST_COUNT, should be $EXPECTED_TEST_COUNT ($COMPREHENSIVE_COUNT + $INFRASTRUCTURE_COUNT)"
 fi
 
 # Check if test functions file exists
