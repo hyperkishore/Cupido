@@ -905,7 +905,59 @@ app.post('/api/prompts', async (req, res) => {
   }
 });
 
-// Delete a prompt
+// Delete a specific version of a prompt
+app.delete('/api/prompts/:promptId/versions/:versionString', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId, versionString } = req.params;
+    const [major, minor, patch] = versionString.split('.').map(Number);
+
+    console.log(`🗑️  Delete version request: ${promptId} v${versionString}`);
+
+    // Check if this version is currently active
+    const { data: versionData, error: fetchError } = await supabase
+      .from('prompt_versions')
+      .select('is_active, id')
+      .eq('prompt_id', promptId)
+      .eq('major_version', major)
+      .eq('minor_version', minor)
+      .eq('patch_version', patch)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    if (!versionData) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+
+    if (versionData.is_active) {
+      return res.status(400).json({
+        error: 'Cannot delete active version',
+        message: 'Please deactivate this version before deleting it'
+      });
+    }
+
+    // Delete the version
+    const { error: deleteError } = await supabase
+      .from('prompt_versions')
+      .delete()
+      .eq('id', versionData.id);
+
+    if (deleteError) throw deleteError;
+
+    console.log(`✅ Deleted version ${promptId} v${versionString}`);
+    res.json({ success: true, message: `Version ${versionString} deleted` });
+
+  } catch (error) {
+    console.error('Error deleting version:', error);
+    res.status(500).json({ error: 'Failed to delete version', details: error.message });
+  }
+});
+
+// Delete a prompt (all versions)
 app.delete('/api/prompts/:promptId', async (req, res) => {
   try {
     const { promptId } = req.params;
@@ -1249,6 +1301,43 @@ app.post('/api/prompts/:promptId/set-default', async (req, res) => {
   } catch (error) {
     console.error('Error setting default prompt:', error);
     res.status(500).json({ error: 'Failed to set default prompt', details: error.message });
+  }
+});
+
+// Toggle prompt activation (replaces toggle-visibility for active state)
+app.post('/api/prompts/:promptId/toggle-active', async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const { promptId } = req.params;
+    const { versionString, isActive } = req.body;
+
+    const [major, minor, patch] = versionString.split('.').map(Number);
+
+    // Update is_active on the specified prompt version
+    // The database trigger will automatically deactivate other versions of the SAME prompt
+    const { error } = await supabase
+      .from('prompt_versions')
+      .update({
+        is_active: isActive,
+        status: isActive ? 'active' : 'draft'
+      })
+      .eq('prompt_id', promptId)
+      .eq('major_version', major)
+      .eq('minor_version', minor)
+      .eq('patch_version', patch);
+
+    if (error) throw error;
+
+    const status = isActive ? 'active' : 'inactive';
+    console.log(`✓ Set activation for ${promptId} v${versionString}: ${status}`);
+
+    res.json({ success: true, message: `Prompt is now ${status}`, isActive });
+  } catch (error) {
+    console.error('Error toggling activation:', error);
+    res.json({ error: 'Failed to toggle activation', details: error.message });
   }
 });
 

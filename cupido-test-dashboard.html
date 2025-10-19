@@ -922,6 +922,660 @@
             overflow-y: auto;
             padding: 16px;
         }
+
+        /* Prompt Library Styles */
+        .prompt-library-container {
+            display: flex;
+            height: calc(100vh - 200px);
+            background: #ffffff;
+            gap: 1px;
+            overflow: hidden;
+        }
+
+        .prompt-sidebar {
+            width: 380px;
+            background: #f5f5f7;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #d2d2d7;
+        }
+
+        .prompt-toolbar {
+            padding: 12px 16px;
+            background: #ffffff;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .toolbar-search {
+            flex: 1;
+        }
+
+        .filter-panel {
+            padding: 16px;
+            background: #ffffff;
+            border-bottom: 1px solid #d2d2d7;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #1d1d1f;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .filter-checkbox input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .filter-checkbox:hover {
+            color: #0071e3;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            background: #f5f5f7 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M7 12C9.76142 12 12 9.76142 12 7C12 4.23858 9.76142 2 7 2C4.23858 2 2 4.23858 2 7C2 9.76142 4.23858 12 7 12Z" stroke="%236e6e73" stroke-width="1.5"/><path d="M11 11L14 14" stroke="%236e6e73" stroke-width="1.5" stroke-linecap="round"/></svg>') no-repeat 10px center;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0071e3;
+            background-color: #ffffff;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:hover {
+            border-color: #86868b;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+
+        .prompt-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .prompt-list-loading {
+            padding: 40px 20px;
+            text-align: center;
+            color: #86868b;
+            font-size: 14px;
+        }
+
+        .prompt-item {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .prompt-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .prompt-item.selected {
+            border-color: #0071e3;
+            background: #f0f7ff;
+        }
+
+        .prompt-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .prompt-item-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1d1d1f;
+            flex: 1;
+        }
+
+        .prompt-item-footer {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .prompt-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .prompt-tag.cupido {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .prompt-tag.simulator {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .prompt-tag.extractor {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .prompt-tag.money2020 {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .prompt-version-badge {
+            font-size: 11px;
+            color: #86868b;
+            font-weight: 500;
+        }
+
+        /* Apple-style Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d2d2d7;
+            transition: .3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #34c759;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+
+        /* Right Panel: Prompt Editor */
+        .prompt-editor-panel {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #86868b;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            color: #86868b;
+        }
+
+        .prompt-editor-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .prompt-editor-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .version-navigator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .version-display {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+            padding: 4px 12px;
+            background: #f5f5f7;
+            border-radius: 6px;
+        }
+
+        .version-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #d2d2d7;
+            background: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+
+        .version-navigator:hover .version-arrow {
+            opacity: 1;
+        }
+
+        .version-arrow:hover {
+            background: #f5f5f7;
+            border-color: #86868b;
+        }
+
+        .version-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .version-arrow:disabled:hover {
+            background: #ffffff;
+            border-color: #d2d2d7;
+        }
+
+        .prompt-editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 300px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .prompt-editor-actions {
+            padding: 16px 24px;
+            border-top: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: #ff3b30;
+            border: 1px solid #ff3b30;
+        }
+
+        .btn-delete:hover {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .version-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .version-type-btn {
+            padding: 8px 16px;
+            border: 1px solid #d2d2d7;
+            background: #ffffff;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .version-type-btn:hover {
+            border-color: #0071e3;
+            background: #f0f7ff;
+        }
+
+        .version-type-btn.selected {
+            background: #0071e3;
+            color: white;
+            border-color: #0071e3;
+        }
+
+        .btn-save-draft {
+            background: #f5f5f7;
+            color: #1d1d1f;
+            border: 1px solid #d2d2d7;
+        }
+
+        .btn-save-draft:hover {
+            background: #e8e8ed;
+        }
+
+        .btn-update-version {
+            background: #0071e3;
+            color: white;
+        }
+
+        .btn-update-version:hover {
+            background: #0077ed;
+        }
+
+        /* Compare Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 10001;
+        }
+
+        .compare-modal-content {
+            width: 1400px;
+            height: 85vh;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 32px;
+            color: #86868b;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .modal-close:hover {
+            background-color: #f5f5f7;
+        }
+
+        /* Compare selectors */
+        .compare-selectors {
+            padding: 20px 24px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            gap: 20px;
+        }
+
+        .compare-selector-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .compare-selector-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+
+        .compare-selector-group select {
+            padding: 8px 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Compare container */
+        .compare-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: #d2d2d7;
+            overflow: hidden;
+        }
+
+        .compare-panel {
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .compare-panel-header {
+            padding: 12px 16px;
+            background: #f5f5f7;
+            border-bottom: 1px solid #d2d2d7;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .compare-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Diff highlighting */
+        .diff-line {
+            display: block;
+            margin: 0;
+            padding: 2px 0;
+        }
+
+        .diff-added {
+            background-color: #d1f4d1;
+            color: #0d6932;
+        }
+
+        .diff-removed {
+            background-color: #ffd8d8;
+            color: #d60000;
+            text-decoration: line-through;
+        }
+
+        .diff-unchanged {
+            color: #1d1d1f;
+        }
+
+        .diff-changed {
+            background-color: #fff4cc;
+            color: #8b6914;
+        }
+
+        .btn-compare {
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-compare:hover {
+            background: #0077ed;
+        }
     </style>
 </head>
 <body>
@@ -936,10 +1590,11 @@
 
     <!-- Tabs -->
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('tests')">Tests</div>
-        <div class="tab" onclick="switchTab('live')">Live Preview</div>
-        <div class="tab" onclick="switchTab('console')">Console</div>
-        <div class="tab" onclick="switchTab('history')">History</div>
+        <div class="tab active" onclick="switchTab('tests', event)">Tests</div>
+        <div class="tab" onclick="switchTab('live', event)">Live Preview</div>
+        <div class="tab" onclick="switchTab('console', event)">Console</div>
+        <div class="tab" onclick="switchTab('history', event)">History</div>
+        <div class="tab" onclick="switchTab('prompts', event)">Prompt Library</div>
     </div>
 
     <!-- Main Container -->
@@ -1223,6 +1878,113 @@
                 <div class="empty-state-icon">📊</div>
                 <h3>Test History</h3>
                 <p>View past test runs and results</p>
+            </div>
+        </div>
+
+        <!-- Prompt Library Tab -->
+        <div class="tab-content" id="prompts-tab">
+            <div class="prompt-library-container">
+                <!-- Left Panel: Prompt List -->
+                <div class="prompt-sidebar">
+                    <!-- Toolbar with New, Search, and Filter in one row -->
+                    <div class="prompt-toolbar">
+                        <button class="btn btn-primary btn-icon" id="new-prompt-btn" title="New Prompt">
+                            <span style="font-size: 18px;">+</span>
+                        </button>
+                        <div class="toolbar-search">
+                            <input type="text" id="prompt-search" placeholder="Search..." class="search-input">
+                        </div>
+                        <button class="btn btn-secondary btn-icon" id="filter-btn" title="Filter">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6h14M5 10h10M7 14h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Filter Panel (hidden by default) -->
+                    <div class="filter-panel" id="filter-panel" style="display: none;">
+                        <div class="filter-section">
+                            <div class="filter-label">Tags</div>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="cupido" class="tag-checkbox"> Cupido App
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="simulator" class="tag-checkbox"> Simulator
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="extractor" class="tag-checkbox"> Extractor
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="money2020" class="tag-checkbox"> Money2020
+                            </label>
+                        </div>
+                        <div class="filter-section">
+                            <div class="filter-label">Status</div>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="active" class="status-checkbox"> Active
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="draft" class="status-checkbox"> Draft
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" value="archived" class="status-checkbox"> Archived
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Prompt List -->
+                    <div class="prompt-list" id="prompt-list">
+                        <div class="prompt-list-loading">Loading prompts...</div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Prompt Editor -->
+                <div class="prompt-editor-panel" id="prompt-editor-panel">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <h3>No Prompt Selected</h3>
+                        <p>Select a prompt from the list or create a new one</p>
+                    </div>
+                </div>
+
+                <!-- Compare Versions Modal -->
+                <div id="compare-modal" class="modal" style="display: none;">
+                    <div class="modal-overlay" onclick="closeCompareModal()"></div>
+                    <div class="modal-content compare-modal-content">
+                        <div class="modal-header">
+                            <h2>Compare Versions</h2>
+                            <button class="modal-close" onclick="closeCompareModal()">×</button>
+                        </div>
+
+                        <!-- Version Selectors -->
+                        <div class="compare-selectors">
+                            <div class="compare-selector-group">
+                                <label>From Version:</label>
+                                <select id="compare-from-version" onchange="updateComparison()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="compare-selector-group">
+                                <label>To Version:</label>
+                                <select id="compare-to-version" onchange="updateComparison()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Side-by-side comparison -->
+                        <div class="compare-container">
+                            <div class="compare-panel">
+                                <div class="compare-panel-header" id="compare-from-header">Version 1.0.0</div>
+                                <div class="compare-panel-content" id="compare-from-content"></div>
+                            </div>
+                            <div class="compare-panel">
+                                <div class="compare-panel-header" id="compare-to-header">Version 2.0.0</div>
+                                <div class="compare-panel-content" id="compare-to-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1658,11 +2420,13 @@
         }
 
         // Tab switching
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
@@ -2383,7 +3147,7 @@ Include the exact code snippets that need to be changed.`;
         async function sendSimulatorMessage() {
             const messageInput = document.getElementById('sim-message');
             const message = messageInput.value.trim();
-            const includeImage = document.getElementById('include-image').checked;
+            const includeImage = document.getElementById('include-image').value === 'true';
             const personaId = document.getElementById('persona-select').value;
             const rudenessLevel = document.getElementById('rudeness-slider').value;
             const maxMessages = document.getElementById('max-messages').value;
@@ -2651,7 +3415,7 @@ Include the exact code snippets that need to be changed.`;
                     responseStyle: document.getElementById('response-style').value,
                     messageDelay: parseInt(document.getElementById('message-delay').value),
                     persona: document.getElementById('persona-select').value,
-                    includeImage: document.getElementById('include-image').checked
+                    includeImage: document.getElementById('include-image').value === 'true'
                 },
                 metrics: { ...testMetrics }
             };
@@ -2724,7 +3488,7 @@ Include the exact code snippets that need to be changed.`;
                     responseStyle: document.getElementById('response-style').value,
                     messageDelay: parseInt(document.getElementById('message-delay').value),
                     persona: document.getElementById('persona-select').value,
-                    includeImage: document.getElementById('include-image').checked
+                    includeImage: document.getElementById('include-image').value === 'true'
                 },
                 metrics: {
                     ...testMetrics,
@@ -2748,7 +3512,7 @@ Include the exact code snippets that need to be changed.`;
             URL.revokeObjectURL(url);
 
             logToConsole('📥 Test results exported successfully', 'success', 'app');
-            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${testHistory.length} tests, ${consoleLog.length} log entries`, 'info', 'app');
+            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${(window.testHistory || []).length} tests, ${(window.consoleLog || []).length} log entries`, 'info', 'app');
         }
 
         // Initialize scenarios dropdown on load
@@ -2920,6 +3684,654 @@ Include the exact code snippets that need to be changed.`;
             initializeAdvancedFeatures();
             logToConsole('Advanced testing features ready: Automation, Templates, Metrics, Scenarios', 'success', 'app');
         });
+
+        // ============================================================
+        // PROMPT LIBRARY FUNCTIONALITY
+        // ============================================================
+
+        // State management for Prompt Library
+        const promptLibraryState = {
+            allPrompts: [],
+            filteredPrompts: [],
+            selectedPrompt: null,
+            selectedVersionHistory: [],
+            currentVersionIndex: 0,
+            selectedVersionType: 'patch',
+            isDirty: false
+        };
+
+        // Initialize Prompt Library when tab is clicked
+        function initializePromptLibrary() {
+            loadPrompts();
+            setupPromptLibraryEventListeners();
+        }
+
+        // Load all prompts from API
+        async function loadPrompts() {
+            try {
+                const response = await fetch('/api/prompts');
+                if (!response.ok) throw new Error('Failed to load prompts');
+
+                const data = await response.json();
+                // API returns array directly, not {prompts: []}
+                // Map API fields to expected format
+                promptLibraryState.allPrompts = (Array.isArray(data) ? data : []).map(p => ({
+                    id: p.prompt_id,
+                    prompt_id: p.prompt_id,
+                    prompt_name: p.prompt_name,
+                    version_string: p.active_version || '1.0.0',
+                    system_prompt: p.system_prompt,
+                    description: p.description,
+                    is_visible: p.is_active !== false, // Default to visible if not specified
+                    is_active: p.is_active,
+                    is_default: p.is_default,
+                    tags: p.tags || [],
+                    category: p.category,
+                    status: p.is_active ? 'active' : 'draft'
+                }));
+                filterAndRenderPrompts();
+            } catch (error) {
+                console.error('Error loading prompts:', error);
+                document.getElementById('prompt-list').innerHTML =
+                    '<div class="prompt-list-loading" style="color: #ff3b30;">Error loading prompts</div>';
+            }
+        }
+
+        // Filter and render prompts based on search and filters
+        function filterAndRenderPrompts() {
+            const searchTerm = document.getElementById('prompt-search')?.value.toLowerCase() || '';
+
+            // Get selected tags from checkboxes
+            const selectedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked'))
+                .map(cb => cb.value);
+
+            // Get selected statuses from checkboxes
+            const selectedStatuses = Array.from(document.querySelectorAll('.status-checkbox:checked'))
+                .map(cb => cb.value);
+
+            promptLibraryState.filteredPrompts = promptLibraryState.allPrompts.filter(prompt => {
+                const matchesSearch = !searchTerm || prompt.prompt_name.toLowerCase().includes(searchTerm);
+
+                // If no tags selected, show all; otherwise, prompt must have at least one selected tag
+                const matchesTag = selectedTags.length === 0 ||
+                    (prompt.tags && prompt.tags.some(tag => selectedTags.includes(tag)));
+
+                // If no statuses selected, show all; otherwise, prompt must match one of the selected statuses
+                const matchesStatus = selectedStatuses.length === 0 ||
+                    selectedStatuses.includes(prompt.status);
+
+                return matchesSearch && matchesTag && matchesStatus;
+            });
+
+            renderPromptList();
+        }
+
+        // Render the prompt list in the sidebar
+        function renderPromptList() {
+            const listContainer = document.getElementById('prompt-list');
+
+            if (promptLibraryState.filteredPrompts.length === 0) {
+                listContainer.innerHTML = '<div class="prompt-list-loading">No prompts found</div>';
+                return;
+            }
+
+            listContainer.innerHTML = promptLibraryState.filteredPrompts.map(prompt => {
+                const isSelected = promptLibraryState.selectedPrompt?.id === prompt.id;
+                const tags = prompt.tags || [];
+
+                return `
+                    <div class="prompt-item ${isSelected ? 'selected' : ''}" data-prompt-id="${prompt.id}">
+                        <div class="prompt-item-header">
+                            <div class="prompt-item-name">${prompt.prompt_name}</div>
+                            <label class="toggle-switch" onclick="event.stopPropagation()">
+                                <input type="checkbox" ${prompt.is_active ? 'checked' : ''}
+                                       onchange="togglePromptActive('${prompt.id}', '${prompt.version_string}', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="prompt-item-footer">
+                            ${tags.map(tag => `<span class="prompt-tag ${tag}">${tag}</span>`).join('')}
+                            <span class="prompt-version-badge">v${prompt.version_string}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers to prompt items
+            document.querySelectorAll('.prompt-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const promptId = item.dataset.promptId;
+                    selectPrompt(promptId);
+                });
+            });
+        }
+
+        // Toggle prompt activation
+        async function togglePromptActive(promptId, versionString, isActive) {
+            try {
+                console.log(`Toggling ${promptId} v${versionString} to ${isActive ? 'active' : 'inactive'}`);
+
+                const response = await fetch(`/api/prompts/${promptId}/toggle-active`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        versionString: versionString,
+                        isActive: isActive
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update activation');
+
+                const result = await response.json();
+                console.log(`✅ ${result.message}`);
+
+                // Update local state
+                const prompt = promptLibraryState.allPrompts.find(p => p.id === promptId);
+                if (prompt) {
+                    prompt.is_active = isActive;
+                    prompt.status = isActive ? 'active' : 'draft';
+                }
+
+                // If we're viewing this prompt's versions, reload them to see the change
+                if (promptLibraryState.selectedPrompt?.prompt_id === promptId) {
+                    await selectPrompt(promptId);
+                }
+            } catch (error) {
+                console.error('Error updating activation:', error);
+                // Reload prompts to reset the toggle
+                await loadPrompts();
+            }
+        }
+
+        // Select a prompt and display it
+        async function selectPrompt(promptId) {
+            console.log('Selecting prompt:', promptId);
+            const prompt = promptLibraryState.allPrompts.find(p => p.id === promptId);
+
+            if (!prompt) {
+                console.error('Prompt not found:', promptId);
+                return;
+            }
+
+            console.log('Found prompt:', prompt.prompt_name);
+
+            try {
+                // Fetch all versions of this prompt
+                console.log('Fetching all versions for:', promptId);
+                const response = await fetch(`/api/prompts/${promptId}/versions`);
+                if (!response.ok) throw new Error('Failed to load versions');
+
+                const versions = await response.json();
+                console.log(`Loaded ${versions.length} versions:`, versions.map(v => v.version_string));
+
+                // Map versions to expected format
+                const mappedVersions = versions.map(v => ({
+                    id: v.id,
+                    prompt_id: v.prompt_id,
+                    prompt_name: v.prompt_name,
+                    version_string: v.version_string,
+                    system_prompt: v.system_prompt,
+                    description: v.description,
+                    is_active: v.is_active,
+                    is_visible: v.is_visible,
+                    tags: v.tags || [],
+                    category: v.category,
+                    status: v.status,
+                    major_version: v.major_version,
+                    minor_version: v.minor_version,
+                    patch_version: v.patch_version
+                }));
+
+                // Set as selected prompt
+                promptLibraryState.selectedPrompt = mappedVersions[0]; // Most recent version first
+                promptLibraryState.selectedVersionHistory = mappedVersions;
+                promptLibraryState.currentVersionIndex = 0;
+
+                renderPromptEditor();
+                renderPromptList(); // Re-render to update selection
+            } catch (error) {
+                console.error('Error loading versions:', error);
+                // Fallback to single version
+                promptLibraryState.selectedPrompt = prompt;
+                promptLibraryState.selectedVersionHistory = [prompt];
+                promptLibraryState.currentVersionIndex = 0;
+                renderPromptEditor();
+                renderPromptList();
+            }
+        }
+
+        // Navigate between versions
+        function navigateVersion(direction) {
+            const history = promptLibraryState.selectedVersionHistory;
+            let newIndex = promptLibraryState.currentVersionIndex + direction;
+
+            // Clamp to valid range
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= history.length) newIndex = history.length - 1;
+
+            if (newIndex !== promptLibraryState.currentVersionIndex) {
+                promptLibraryState.currentVersionIndex = newIndex;
+                promptLibraryState.selectedPrompt = history[newIndex];
+                renderPromptEditor();
+                console.log(`Navigated to version ${newIndex + 1}/${history.length}: v${history[newIndex].version_string}`);
+            }
+        }
+
+        // Render the prompt editor panel
+        function renderPromptEditor() {
+            const editorPanel = document.getElementById('prompt-editor-panel');
+            const prompt = promptLibraryState.selectedPrompt;
+
+            if (!prompt) {
+                editorPanel.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <h3>No Prompt Selected</h3>
+                        <p>Select a prompt from the list or create a new one</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const canGoPrev = promptLibraryState.currentVersionIndex > 0;
+            const canGoNext = promptLibraryState.currentVersionIndex < promptLibraryState.selectedVersionHistory.length - 1;
+
+            editorPanel.innerHTML = `
+                <!-- Header with version navigation -->
+                <div class="prompt-editor-header">
+                    <div class="prompt-editor-title">Prompt Editor</div>
+                    <div class="version-navigator">
+                        <button class="version-arrow" onclick="navigateVersion(-1)" ${!canGoPrev ? 'disabled' : ''}>
+                            ←
+                        </button>
+                        <div class="version-display">v${prompt.version_string}</div>
+                        <button class="version-arrow" onclick="navigateVersion(1)" ${!canGoNext ? 'disabled' : ''}>
+                            →
+                        </button>
+                        ${promptLibraryState.selectedVersionHistory.length > 1 ?
+                            '<button class="btn btn-compare" onclick="openCompareModal()" style="margin-left: 12px; padding: 6px 12px; font-size: 13px;">Compare</button>' : ''}
+                    </div>
+                </div>
+
+                <!-- Editor content -->
+                <div class="prompt-editor-content">
+                    <div class="form-group">
+                        <label class="form-label">Prompt Name</label>
+                        <input type="text" class="form-input" id="prompt-name-input"
+                               value="${prompt.prompt_name}" onchange="markDirty()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" id="prompt-description-input"
+                               value="${prompt.description || ''}" onchange="markDirty()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">System Prompt</label>
+                        <textarea class="form-input form-textarea" id="prompt-text-input"
+                                  onchange="markDirty()">${prompt.system_prompt}</textarea>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="prompt-editor-actions">
+                    <div class="action-group">
+                        <button class="btn btn-delete" onclick="deletePrompt()">Delete</button>
+                    </div>
+                    <div class="action-group">
+                        <button class="btn btn-save-draft" onclick="saveDraft()">Save Draft</button>
+                        <div class="version-selector">
+                            <button class="version-type-btn ${promptLibraryState.selectedVersionType === 'patch' ? 'selected' : ''}"
+                                    onclick="selectVersionType('patch')">Patch</button>
+                            <button class="version-type-btn ${promptLibraryState.selectedVersionType === 'minor' ? 'selected' : ''}"
+                                    onclick="selectVersionType('minor')">Minor</button>
+                            <button class="version-type-btn ${promptLibraryState.selectedVersionType === 'major' ? 'selected' : ''}"
+                                    onclick="selectVersionType('major')">Major</button>
+                        </div>
+                        <button class="btn btn-update-version" onclick="updateVersion()">Update Version</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Mark editor as dirty (has unsaved changes)
+        function markDirty() {
+            promptLibraryState.isDirty = true;
+        }
+
+        // Select version type for update
+        function selectVersionType(type) {
+            promptLibraryState.selectedVersionType = type;
+            renderPromptEditor();
+        }
+
+        // Save draft without creating new version
+        async function saveDraft() {
+            const prompt = promptLibraryState.selectedPrompt;
+            if (!prompt) return;
+
+            const name = document.getElementById('prompt-name-input').value;
+            const description = document.getElementById('prompt-description-input').value;
+            const systemPrompt = document.getElementById('prompt-text-input').value;
+
+            try {
+                console.log('Saving draft for prompt:', prompt.prompt_id);
+                const response = await fetch(`/api/prompts/${prompt.prompt_id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        promptName: name,         // Server expects camelCase
+                        description: description,
+                        systemPrompt: systemPrompt,  // Server expects camelCase
+                        commitMessage: 'Draft saved via dashboard'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error:', response.status, errorText);
+                    throw new Error(`Failed to save draft: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Draft saved response:', data);
+                promptLibraryState.isDirty = false;
+                await loadPrompts();
+                console.log('✅ Draft saved successfully');
+            } catch (error) {
+                console.error('Error saving draft:', error);
+                alert('Failed to save draft');
+            }
+        }
+
+        // Update version (create new version)
+        async function updateVersion() {
+            const prompt = promptLibraryState.selectedPrompt;
+            if (!prompt) return;
+
+            const name = document.getElementById('prompt-name-input').value;
+            const description = document.getElementById('prompt-description-input').value;
+            const systemPrompt = document.getElementById('prompt-text-input').value;
+            const versionType = promptLibraryState.selectedVersionType;
+
+            try {
+                console.log('Creating new version:', versionType, 'for prompt:', prompt.prompt_id);
+                const response = await fetch(`/api/prompts/${prompt.prompt_id}/versions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        promptName: name,              // Server expects camelCase
+                        systemPrompt: systemPrompt,    // Server expects camelCase
+                        versionType: versionType,      // Server expects camelCase
+                        commitMessage: `${versionType} version update via dashboard`,
+                        notes: description || '',
+                        createdBy: 'dashboard',
+                        activate: false
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error response:', response.status, errorText);
+                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Server response:', data);
+                promptLibraryState.isDirty = false;
+                await loadPrompts();
+                // Server returns versionId directly, not nested in .version
+                if (data.prompt_id || data.versionId) {
+                    await selectPrompt(data.prompt_id || data.versionId);
+                }
+                console.log(`✅ New ${versionType} version created: v${data.version_string}`);
+            } catch (error) {
+                console.error('Error creating version:', error);
+                alert(`Failed to create new version: ${error.message}`);
+            }
+        }
+
+        // Delete current version
+        async function deletePrompt() {
+            const prompt = promptLibraryState.selectedPrompt;
+            if (!prompt) return;
+
+            // Check if version is active
+            if (prompt.is_active) {
+                alert(`Cannot delete active version!\n\nPlease deactivate v${prompt.version_string} before deleting it.`);
+                return;
+            }
+
+            if (!confirm(`Delete version ${prompt.version_string} of "${prompt.prompt_name}"?\n\nThis cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                console.log(`Deleting ${prompt.prompt_id} v${prompt.version_string}`);
+
+                const response = await fetch(`/api/prompts/${prompt.prompt_id}/versions/${prompt.version_string}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to delete version');
+                }
+
+                const result = await response.json();
+                console.log(`✅ ${result.message}`);
+
+                // Reload prompts and clear selection
+                promptLibraryState.selectedPrompt = null;
+                promptLibraryState.selectedVersionHistory = [];
+                await loadPrompts();
+                renderPromptEditor();
+
+            } catch (error) {
+                console.error('Error deleting version:', error);
+                alert(`Failed to delete version: ${error.message}`);
+            }
+        }
+
+        // Create new prompt
+        async function createNewPrompt() {
+            const name = prompt('Enter prompt name:');
+            if (!name) return;
+
+            try {
+                const response = await fetch('/api/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt_name: name,
+                        system_prompt: 'Enter your system prompt here...',
+                        description: ''
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create prompt');
+
+                const data = await response.json();
+                await loadPrompts();
+                await selectPrompt(data.prompt.id);
+                console.log('New prompt created successfully');
+            } catch (error) {
+                console.error('Error creating prompt:', error);
+                alert('Failed to create new prompt');
+            }
+        }
+
+        // Setup event listeners for Prompt Library
+        function setupPromptLibraryEventListeners() {
+            // Search input
+            const searchInput = document.getElementById('prompt-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', filterAndRenderPrompts);
+            }
+
+            // Filter button toggle
+            const filterBtn = document.getElementById('filter-btn');
+            const filterPanel = document.getElementById('filter-panel');
+            if (filterBtn && filterPanel) {
+                filterBtn.addEventListener('click', () => {
+                    const isVisible = filterPanel.style.display !== 'none';
+                    filterPanel.style.display = isVisible ? 'none' : 'grid';
+                });
+            }
+
+            // Filter checkboxes
+            const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
+            const statusCheckboxes = document.querySelectorAll('.status-checkbox');
+            tagCheckboxes.forEach(cb => cb.addEventListener('change', filterAndRenderPrompts));
+            statusCheckboxes.forEach(cb => cb.addEventListener('change', filterAndRenderPrompts));
+
+            // New prompt button
+            const newPromptBtn = document.getElementById('new-prompt-btn');
+            if (newPromptBtn) {
+                newPromptBtn.addEventListener('click', createNewPrompt);
+            }
+        }
+
+        // ============================================================
+        // COMPARE VERSIONS MODAL FUNCTIONALITY
+        // ============================================================
+
+        // Compare versions state
+        let compareState = {
+            fromVersion: null,
+            toVersion: null,
+            versions: []
+        };
+
+        // Open compare modal
+        function openCompareModal() {
+            const prompt = promptLibraryState.selectedPrompt;
+            if (!prompt || !promptLibraryState.selectedVersionHistory) {
+                alert('Please select a prompt first');
+                return;
+            }
+
+            const versions = promptLibraryState.selectedVersionHistory;
+            if (versions.length < 2) {
+                alert('This prompt only has one version. Cannot compare.');
+                return;
+            }
+
+            compareState.versions = versions;
+
+            // Populate version selectors
+            const fromSelect = document.getElementById('compare-from-version');
+            const toSelect = document.getElementById('compare-to-version');
+
+            fromSelect.innerHTML = versions.map((v, i) =>
+                `<option value="${i}">${v.version_string}${v.is_active ? ' (active)' : ''}</option>`
+            ).join('');
+
+            toSelect.innerHTML = versions.map((v, i) =>
+                `<option value="${i}">${v.version_string}${v.is_active ? ' (active)' : ''}</option>`
+            ).join('');
+
+            // Default: compare current vs previous (or latest vs previous)
+            const currentIndex = promptLibraryState.currentVersionIndex || 0;
+            const previousIndex = Math.min(currentIndex + 1, versions.length - 1);
+
+            fromSelect.value = previousIndex;
+            toSelect.value = currentIndex;
+
+            compareState.fromVersion = versions[previousIndex];
+            compareState.toVersion = versions[currentIndex];
+
+            // Show modal
+            document.getElementById('compare-modal').style.display = 'flex';
+
+            // Update comparison
+            updateComparison();
+        }
+
+        // Close compare modal
+        function closeCompareModal() {
+            document.getElementById('compare-modal').style.display = 'none';
+        }
+
+        // Update comparison when selectors change
+        function updateComparison() {
+            const fromIndex = parseInt(document.getElementById('compare-from-version').value);
+            const toIndex = parseInt(document.getElementById('compare-to-version').value);
+
+            compareState.fromVersion = compareState.versions[fromIndex];
+            compareState.toVersion = compareState.versions[toIndex];
+
+            renderComparison();
+        }
+
+        // Render the comparison with diff highlighting
+        function renderComparison() {
+            const from = compareState.fromVersion;
+            const to = compareState.toVersion;
+
+            // Update headers
+            document.getElementById('compare-from-header').textContent =
+                `v${from.version_string}${from.is_active ? ' (active)' : ''}`;
+            document.getElementById('compare-to-header').textContent =
+                `v${to.version_string}${to.is_active ? ' (active)' : ''}`;
+
+            // Simple line-by-line diff
+            const fromLines = (from.system_prompt || '').split('\n');
+            const toLines = (to.system_prompt || '').split('\n');
+
+            const fromHtml = generateDiffHtml(fromLines, toLines, 'from');
+            const toHtml = generateDiffHtml(fromLines, toLines, 'to');
+
+            document.getElementById('compare-from-content').innerHTML = fromHtml;
+            document.getElementById('compare-to-content').innerHTML = toHtml;
+        }
+
+        // Generate diff HTML (simple line-based diff)
+        function generateDiffHtml(fromLines, toLines, side) {
+            const lines = side === 'from' ? fromLines : toLines;
+            const otherLines = side === 'from' ? toLines : fromLines;
+
+            let html = '';
+
+            lines.forEach((line, i) => {
+                let className = 'diff-unchanged';
+
+                if (i >= otherLines.length) {
+                    // Line was added/removed
+                    className = side === 'from' ? 'diff-removed' : 'diff-added';
+                } else if (line !== otherLines[i]) {
+                    // Line was changed
+                    if (side === 'from' && !toLines.includes(line)) {
+                        className = 'diff-removed';
+                    } else if (side === 'to' && !fromLines.includes(line)) {
+                        className = 'diff-added';
+                    } else {
+                        className = 'diff-changed';
+                    }
+                }
+
+                html += `<span class="diff-line ${className}">${escapeHtml(line)}\n</span>`;
+            });
+
+            return html;
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Override switchTab to initialize Prompt Library when tab is opened
+        const originalSwitchTab = window.switchTab;
+        window.switchTab = function(tabName, event) {
+            originalSwitchTab(tabName, event);
+            if (tabName === 'prompts') {
+                initializePromptLibrary();
+            }
+        };
     </script>
 </body>
 </html>
