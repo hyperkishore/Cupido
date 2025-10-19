@@ -2514,7 +2514,14 @@
 
         // Generate test list from TEST_FUNCTIONS
         function initializeTests() {
+            // CRITICAL: Add debugging and error handling for TEST_FUNCTIONS loading
+            console.log('🔍 initializeTests called');
+            console.log('🔍 window.TEST_FUNCTIONS available:', !!window.TEST_FUNCTIONS);
+            
             if (window.TEST_FUNCTIONS) {
+                const functionCount = Object.keys(window.TEST_FUNCTIONS).length;
+                console.log(`🔍 Found ${functionCount} test functions`);
+                
                 Object.keys(window.TEST_FUNCTIONS).forEach(testId => {
                     const [category, num] = testId.split('-');
                     const metadata = getTestMetadata(testId);
@@ -2529,6 +2536,31 @@
                         duration: null
                     });
                 });
+                
+                console.log(`🔍 Initialized ${tests.length} tests`);
+                logToConsole(`✅ Loaded ${functionCount} test functions successfully`, 'success');
+            } else {
+                console.error('❌ TEST_FUNCTIONS not available - comprehensive-test-functions.js may not have loaded');
+                logToConsole('❌ TEST_FUNCTIONS not loaded - checking in 1 second...', 'error');
+                
+                // Retry after 1 second to allow for script loading
+                setTimeout(() => {
+                    if (window.TEST_FUNCTIONS) {
+                        console.log('🔄 TEST_FUNCTIONS now available, retrying initialization...');
+                        logToConsole('🔄 TEST_FUNCTIONS loaded, retrying initialization...', 'info');
+                        
+                        // Clear tests array and reinitialize
+                        tests.length = 0;
+                        initializeTests();
+                        renderTestTable();
+                        updateStats();
+                    } else {
+                        console.error('❌ TEST_FUNCTIONS still not available after retry');
+                        logToConsole('❌ CRITICAL: TEST_FUNCTIONS failed to load after retry', 'error');
+                        logToConsole('💡 Try refreshing the page or check browser console for errors', 'warning');
+                    }
+                }, 1000);
+                return; // Don't render table if no tests loaded
             }
             renderTestTable();
         }
