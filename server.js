@@ -411,11 +411,11 @@ app.post('/api/extract-profile', async (req, res) => {
   }
 });
 
-// Error logger integration (disabled for now)
-// const errorLogger = require('./error-logger');
+// Error logger integration
+const errorLogger = require('./error-logger');
 
 // Start error logger file watcher
-// errorLogger.startWatching();
+errorLogger.startWatching();
 
 // Test results storage (in-memory for simplicity)
 let latestTestResults = null;
@@ -466,25 +466,36 @@ app.get('/api/test-results/history', (req, res) => {
 // ERROR LOGGING ENDPOINTS
 // ============================================
 
-// POST endpoint to log console errors (disabled - error logger not available)
+// POST endpoint to log console errors
 app.post('/api/log-error', (req, res) => {
   try {
-    console.log('Error logged:', req.body);
-    res.json({ success: true, message: 'Error logged to console' });
+    const result = errorLogger.logError(req.body);
+    res.json(result);
   } catch (error) {
     console.error('Error logging error:', error);
     res.status(500).json({ error: 'Failed to log error' });
   }
 });
 
-// POST endpoint to log test failures (disabled - error logger not available)
+// POST endpoint to log test failures
 app.post('/api/log-test-failure', (req, res) => {
   try {
-    console.log('Test failure logged:', req.body);
-    res.json({ success: true, message: 'Test failure logged to console' });
+    const result = errorLogger.logTestFailure(req.body);
+    res.json(result);
   } catch (error) {
     console.error('Error logging test failure:', error);
     res.status(500).json({ error: 'Failed to log test failure' });
+  }
+});
+
+// GET endpoint to retrieve error statistics
+app.get('/api/error-stats', async (req, res) => {
+  try {
+    const stats = await errorLogger.getErrorStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error retrieving error stats:', error);
+    res.status(500).json({ error: 'Failed to retrieve error stats' });
   }
 });
 

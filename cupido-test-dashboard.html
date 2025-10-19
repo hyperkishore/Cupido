@@ -1576,6 +1576,119 @@
         .btn-compare:hover {
             background: #0077ed;
         }
+
+        /* Error Monitoring Styles */
+        .error-monitoring-container {
+            padding: 24px;
+        }
+
+        .error-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .error-stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .error-stat-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #6e6e73;
+            font-weight: 500;
+        }
+
+        .error-count {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ff3b30;
+            margin: 8px 0;
+        }
+
+        .error-count.success {
+            color: #34c759;
+        }
+
+        .error-count.critical {
+            color: #ff3b30;
+            animation: pulse 2s infinite;
+        }
+
+        .error-label {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .error-patterns-section,
+        .recent-errors-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .error-patterns-section h3,
+        .recent-errors-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: #1d1d1f;
+        }
+
+        .error-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f2f2f7;
+        }
+
+        .error-item:last-child {
+            border-bottom: none;
+        }
+
+        .error-message {
+            flex: 1;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            color: #1d1d1f;
+        }
+
+        .error-count-badge {
+            background: #ff3b30;
+            color: white;
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .error-timestamp {
+            font-size: 11px;
+            color: #8e8e93;
+            margin-left: 12px;
+        }
+
+        .auto-fix-badge {
+            background: #34c759;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -1594,6 +1707,7 @@
         <div class="tab" onclick="switchTab('live', event)">Live Preview</div>
         <div class="tab" onclick="switchTab('console', event)">Console</div>
         <div class="tab" onclick="switchTab('history', event)">History</div>
+        <div class="tab" onclick="switchTab('error-monitoring', event)">Error Monitor</div>
         <div class="tab" onclick="switchTab('prompts', event)">Prompt Library</div>
     </div>
 
@@ -1605,7 +1719,7 @@
             <div class="controls-bar">
                 <div class="controls-left">
                     <select id="test-scope">
-                        <option value="all">All Tests (58)</option>
+                        <option value="all" id="all-tests-option">All Tests (66)</option>
                         <option value="console">Console Error Detection (5)</option>
                         <option value="message">Message Flow & UI (8)</option>
                         <option value="profile">Profile Extraction (6)</option>
@@ -1914,6 +2028,51 @@
             </div>
         </div>
 
+        <!-- Error Monitoring Tab -->
+        <div class="tab-content" id="error-monitoring-tab">
+            <div class="error-monitoring-container">
+                <div class="error-stats-grid">
+                    <!-- Error Statistics Cards -->
+                    <div class="error-stat-card">
+                        <h4>Last 24 Hours</h4>
+                        <div class="error-count" id="errors-24h">-</div>
+                        <div class="error-label">Total Errors</div>
+                    </div>
+                    <div class="error-stat-card">
+                        <h4>Last Week</h4>
+                        <div class="error-count" id="errors-week">-</div>
+                        <div class="error-label">Total Errors</div>
+                    </div>
+                    <div class="error-stat-card">
+                        <h4>Auto-Fixed</h4>
+                        <div class="error-count success" id="errors-fixed">-</div>
+                        <div class="error-label">Automatically Resolved</div>
+                    </div>
+                    <div class="error-stat-card">
+                        <h4>Critical</h4>
+                        <div class="error-count critical" id="errors-critical">-</div>
+                        <div class="error-label">Requires Attention</div>
+                    </div>
+                </div>
+
+                <!-- Error Patterns -->
+                <div class="error-patterns-section">
+                    <h3>Error Patterns</h3>
+                    <div class="error-patterns-list" id="error-patterns-list">
+                        <div class="loading">Loading error patterns...</div>
+                    </div>
+                </div>
+
+                <!-- Recent Errors -->
+                <div class="recent-errors-section">
+                    <h3>Recent Errors</h3>
+                    <div class="recent-errors-list" id="recent-errors-list">
+                        <div class="loading">Loading recent errors...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Prompt Library Tab -->
         <div class="tab-content" id="prompts-tab">
             <div class="prompt-library-container">
@@ -2039,13 +2198,16 @@
         
         // Test configuration from comprehensive test functions
         const testConfig = {
+            foundation: { name: 'Foundation Tests', count: 5 },
+            prompts: { name: 'Prompt Management', count: 3 },
             console: { name: 'Console Error Detection', count: 5 },
             message: { name: 'Message Flow & UI', count: 8 },
             profile: { name: 'Profile Extraction', count: 6 },
             database: { name: 'Database Operations', count: 5 },
             error: { name: 'Error Handling', count: 6 },
             state: { name: 'State Management', count: 6 },
-            api: { name: 'API & Performance', count: 4 }
+            api: { name: 'API & Performance', count: 4 },
+            simulator: { name: 'Simulator Testing', count: 18 }
         };
 
         // Initialize tests
@@ -4052,12 +4214,122 @@ Include the exact code snippets that need to be changed.`;
             }
         }
 
+        // Update test scope dropdown with actual counts
+        function updateTestScopeDropdown() {
+            const dropdown = document.getElementById('test-scope');
+            if (!dropdown) return;
+            
+            // Update "All Tests" option
+            const allOption = dropdown.querySelector('option[value="all"]');
+            if (allOption) {
+                allOption.textContent = `All Tests (${tests.length})`;
+            }
+            
+            // Update category counts
+            Object.keys(testConfig).forEach(category => {
+                const option = dropdown.querySelector(`option[value="${category}"]`);
+                if (option) {
+                    option.textContent = `${testConfig[category].name} (${testConfig[category].count})`;
+                }
+            });
+        }
+
+        // Error monitoring functions
+        async function loadErrorStats() {
+            try {
+                const response = await fetch('/api/error-stats');
+                const stats = await response.json();
+                
+                document.getElementById('errors-24h').textContent = stats.last24h;
+                document.getElementById('errors-week').textContent = stats.lastWeek;
+                
+                const autoFixed = stats.topErrors.filter(e => e.autoFixed).length;
+                document.getElementById('errors-fixed').textContent = autoFixed;
+                
+                const critical = stats.topErrors.filter(e => !e.autoFixed).length;
+                document.getElementById('errors-critical').textContent = critical;
+                
+                // Render error patterns
+                const patternsContainer = document.getElementById('error-patterns-list');
+                if (stats.patterns.length === 0) {
+                    patternsContainer.innerHTML = '<div class="loading">No error patterns detected</div>';
+                } else {
+                    patternsContainer.innerHTML = stats.patterns.slice(0, 10).map(pattern => `
+                        <div class="error-item">
+                            <div class="error-message">${pattern.pattern}</div>
+                            <div>
+                                <span class="error-count-badge">${pattern.count}</span>
+                                <span class="error-timestamp">${new Date(pattern.lastSeen).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                // Render recent errors
+                const errorsContainer = document.getElementById('recent-errors-list');
+                if (stats.topErrors.length === 0) {
+                    errorsContainer.innerHTML = '<div class="loading">No recent errors</div>';
+                } else {
+                    errorsContainer.innerHTML = stats.topErrors.map(error => `
+                        <div class="error-item">
+                            <div class="error-message">${error.message}</div>
+                            <div>
+                                ${error.autoFixed ? '<span class="auto-fix-badge">Auto-Fixed</span>' : ''}
+                                <span class="error-timestamp">${new Date(error.timestamp).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+            } catch (error) {
+                console.error('Failed to load error stats:', error);
+                document.getElementById('errors-24h').textContent = 'Error';
+                document.getElementById('errors-week').textContent = 'Error';
+                document.getElementById('errors-fixed').textContent = 'Error';
+                document.getElementById('errors-critical').textContent = 'Error';
+            }
+        }
+
+        // Enhanced tab switching to load error monitoring data
+        const originalSwitchTab = window.switchTab || function(tabName, event) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        };
+
+        function switchTab(tabName, event) {
+            originalSwitchTab(tabName, event);
+            
+            // Load error monitoring data when switching to error monitoring tab
+            if (tabName === 'error-monitoring') {
+                loadErrorStats();
+                // Auto-refresh every 30 seconds
+                if (window.errorMonitoringInterval) {
+                    clearInterval(window.errorMonitoringInterval);
+                }
+                window.errorMonitoringInterval = setInterval(loadErrorStats, 30000);
+            } else {
+                // Clear auto-refresh when leaving error monitoring tab
+                if (window.errorMonitoringInterval) {
+                    clearInterval(window.errorMonitoringInterval);
+                    window.errorMonitoringInterval = null;
+                }
+            }
+            
+            if (tabName === 'prompts') {
+                initializePromptLibrary();
+            }
+        };
+
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
             initializeTests();
+            updateTestScopeDropdown();
+            renderTestTable();
             loadSimulatorPersonas();
             logToConsole('Cupido Test Dashboard initialized', 'info');
-            logToConsole('40 tests loaded across 7 categories', 'info');
+            logToConsole(`${tests.length} tests loaded across ${Object.keys(testConfig).length} categories`, 'info');
             logToConsole('Test logging enabled - all runs saved to localStorage', 'info');
 
             // Show previous test count
