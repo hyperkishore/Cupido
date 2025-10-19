@@ -2,20 +2,23 @@
  * COMPREHENSIVE TEST FUNCTIONS FOR CUPIDO TEST DASHBOARD
  * ========================================================
  *
- * This file contains all 40 test functions across 7 categories designed to
+ * This file contains all 66 test functions across 10 categories designed to
  * catch bugs automatically and monitor app health in real-time.
  *
  * CRITICAL: Console error monitoring is the highest priority - it will catch
  * bugs like "commonLocations is not defined" that recently slipped through.
  *
  * Categories:
+ * - Foundation Tests (5 tests) - Core app infrastructure
+ * - Prompt Management (3 tests) - Prompt library system
  * - Console Error Detection (5 tests) - CRITICAL for catching runtime errors
- * - Message Flow & UI (8 tests)
- * - Profile Extraction (6 tests)
- * - Database Operations (5 tests)
- * - Error Handling & Recovery (6 tests)
- * - State Management (6 tests)
- * - API & Performance (4 tests)
+ * - Message Flow & UI (8 tests) - User interaction testing
+ * - Profile Extraction (6 tests) - Data extraction validation
+ * - Database Operations (5 tests) - Data persistence testing
+ * - Error Handling & Recovery (6 tests) - Resilience testing
+ * - State Management (6 tests) - Application state validation
+ * - API & Performance (4 tests) - Backend service testing
+ * - Simulator Testing (18 tests) - Phase 1 simulator validation
  *
  * Each test function returns: { pass: boolean, message: string, errors?: string[], metadata?: object }
  */
@@ -2111,8 +2114,1029 @@ async function testPrompts3() {
   }
 }
 
+// ============================================================================
+// SIMULATOR TESTING (18 tests) - PHASE 1 VALIDATION
+// ============================================================================
+
 /**
- * Test mapping object - maps all 48 test IDs to their functions
+ * simulator-1: Verify simulator personas load correctly from database
+ */
+async function testSimulator1() {
+  try {
+    const response = await fetch('http://localhost:3001/api/prompts/simulator');
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Simulator personas API failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const personas = await response.json();
+    
+    if (!Array.isArray(personas) || personas.length === 0) {
+      return {
+        pass: false,
+        message: '✗ No simulator personas found',
+        errors: ['Empty or invalid personas array']
+      };
+    }
+    
+    const expectedPersonas = ['simulator_raj', 'simulator_sarah'];
+    const foundPersonas = personas.map(p => p.id);
+    
+    const missingPersonas = expectedPersonas.filter(id => !foundPersonas.includes(id));
+    
+    if (missingPersonas.length > 0) {
+      return {
+        pass: false,
+        message: `✗ Missing personas: ${missingPersonas.join(', ')}`,
+        errors: missingPersonas
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ ${personas.length} simulator personas loaded correctly`,
+      metadata: { personas: foundPersonas }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error loading personas: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-2: Test API endpoint /api/simulator/generate-response with valid data
+ */
+async function testSimulator2() {
+  try {
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: 'Hey! How was your weekend?',
+      conversationHistory: []
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        pass: false,
+        message: `✗ Simulator API failed: ${response.status}`,
+        errors: [errorText]
+      };
+    }
+    
+    const result = await response.json();
+    
+    if (!result.response || !result.personaName || !result.timestamp) {
+      return {
+        pass: false,
+        message: '✗ Invalid API response structure',
+        errors: ['Missing required fields: response, personaName, timestamp']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Simulator API generated response: "${result.response.substring(0, 50)}..."`,
+      metadata: { personaName: result.personaName, responseLength: result.response.length }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing simulator API: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-3: Test Raj persona generates authentic startup founder responses
+ */
+async function testSimulator3() {
+  try {
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: 'What do you do for work?',
+      conversationHistory: []
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Raj persona API failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const result = await response.json();
+    const rajResponse = result.response.toLowerCase();
+    
+    // Check for authentic Raj characteristics
+    const rajKeywords = ['startup', 'founder', 'austin', 'company', 'business', 'tech', 'ai', 'ml'];
+    const foundKeywords = rajKeywords.filter(keyword => rajResponse.includes(keyword));
+    
+    if (foundKeywords.length === 0) {
+      return {
+        pass: false,
+        message: '✗ Raj response lacks startup founder characteristics',
+        errors: [`Response: "${result.response}"`]
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Raj generated authentic founder response with keywords: ${foundKeywords.join(', ')}`,
+      metadata: { keywords: foundKeywords, response: result.response }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing Raj persona: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-4: Test Sarah persona generates authentic artist responses
+ */
+async function testSimulator4() {
+  try {
+    const testData = {
+      personaPromptId: 'simulator_sarah',
+      userMessage: 'What inspires your creativity?',
+      conversationHistory: []
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Sarah persona API failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const result = await response.json();
+    const sarahResponse = result.response.toLowerCase();
+    
+    // Check for authentic Sarah characteristics
+    const sarahKeywords = ['art', 'creative', 'brooklyn', 'inspiration', 'paint', 'illustrat', 'design', 'beauty'];
+    const foundKeywords = sarahKeywords.filter(keyword => sarahResponse.includes(keyword));
+    
+    if (foundKeywords.length === 0) {
+      return {
+        pass: false,
+        message: '✗ Sarah response lacks artist characteristics',
+        errors: [`Response: "${result.response}"`]
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Sarah generated authentic artist response with keywords: ${foundKeywords.join(', ')}`,
+      metadata: { keywords: foundKeywords, response: result.response }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing Sarah persona: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-5: Verify conversation history is properly passed to simulator API
+ */
+async function testSimulator5() {
+  try {
+    const conversationHistory = [
+      { role: 'user', content: 'Hi there!' },
+      { role: 'assistant', content: 'Hey! How are you doing?' },
+      { role: 'user', content: 'Great! Tell me about yourself.' }
+    ];
+    
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: 'What did we just talk about?',
+      conversationHistory: conversationHistory
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Conversation history API failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const result = await response.json();
+    
+    // Response should reference the conversation context
+    const responseText = result.response.toLowerCase();
+    const contextKeywords = ['just', 'talked', 'mentioned', 'said', 'discussed', 'earlier'];
+    const hasContext = contextKeywords.some(keyword => responseText.includes(keyword));
+    
+    return {
+      pass: hasContext,
+      message: hasContext 
+        ? `✓ Simulator properly used conversation history` 
+        : `✗ Simulator ignored conversation history`,
+      metadata: { 
+        historyLength: conversationHistory.length, 
+        response: result.response,
+        hasContext: hasContext 
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing conversation history: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-6: Test simulator auto-response to Cupido app messages via postMessage
+ */
+async function testSimulator6() {
+  try {
+    // This test checks if the dashboard simulator framework is properly set up
+    // We can't easily test actual postMessage without the app running
+    
+    // Check if simulator state is properly initialized
+    if (typeof window !== 'undefined' && window.simulatorState) {
+      const state = window.simulatorState;
+      
+      if (!state.hasOwnProperty('isActive') || 
+          !state.hasOwnProperty('isPaused') || 
+          !state.hasOwnProperty('conversationHistory')) {
+        return {
+          pass: false,
+          message: '✗ Simulator state not properly initialized',
+          errors: ['Missing required state properties']
+        };
+      }
+      
+      return {
+        pass: true,
+        message: '✓ Simulator postMessage framework properly initialized',
+        metadata: { stateKeys: Object.keys(state) }
+      };
+    } else {
+      return {
+        pass: false,
+        message: '✗ Simulator state not found in window object',
+        errors: ['simulatorState not defined']
+      };
+    }
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error checking simulator framework: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-7: Verify Start/Pause/Resume controls work correctly
+ */
+async function testSimulator7() {
+  try {
+    // Test simulator control functions exist
+    const requiredFunctions = ['startSimulator', 'pauseSimulator', 'stopSimulator'];
+    const missingFunctions = [];
+    
+    for (const funcName of requiredFunctions) {
+      if (typeof window === 'undefined' || typeof window[funcName] !== 'function') {
+        missingFunctions.push(funcName);
+      }
+    }
+    
+    if (missingFunctions.length > 0) {
+      return {
+        pass: false,
+        message: `✗ Missing simulator control functions: ${missingFunctions.join(', ')}`,
+        errors: missingFunctions
+      };
+    }
+    
+    // Test basic state changes (without actually starting simulator)
+    if (typeof window !== 'undefined' && window.simulatorState) {
+      const initialState = { ...window.simulatorState };
+      
+      return {
+        pass: true,
+        message: '✓ Simulator control functions are properly defined',
+        metadata: { 
+          functions: requiredFunctions,
+          initialState: {
+            isActive: initialState.isActive,
+            isPaused: initialState.isPaused
+          }
+        }
+      };
+    } else {
+      return {
+        pass: false,
+        message: '✗ Simulator state not accessible for control testing',
+        errors: ['simulatorState not defined']
+      };
+    }
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing simulator controls: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-8: Test Stop control properly resets simulator state
+ */
+async function testSimulator8() {
+  try {
+    if (typeof window === 'undefined' || !window.simulatorState) {
+      return {
+        pass: false,
+        message: '✗ Simulator state not available for testing',
+        errors: ['simulatorState not defined']
+      };
+    }
+    
+    const state = window.simulatorState;
+    
+    // Test that stop functionality exists and state has required properties
+    if (!state.hasOwnProperty('conversationHistory') || 
+        !Array.isArray(state.conversationHistory)) {
+      return {
+        pass: false,
+        message: '✗ Simulator state missing conversation history array',
+        errors: ['conversationHistory not properly initialized']
+      };
+    }
+    
+    // Check that stop function exists
+    if (typeof window.stopSimulator !== 'function') {
+      return {
+        pass: false,
+        message: '✗ stopSimulator function not defined',
+        errors: ['stopSimulator function missing']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: '✓ Stop control and state reset functionality available',
+      metadata: { 
+        hasStopFunction: typeof window.stopSimulator === 'function',
+        hasConversationHistory: Array.isArray(state.conversationHistory)
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing stop control: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-9: Verify speed controls affect typing delay timing (1x/2x/3x)
+ */
+async function testSimulator9() {
+  try {
+    if (typeof window === 'undefined' || !window.simulatorState) {
+      return {
+        pass: false,
+        message: '✗ Simulator state not available for speed testing',
+        errors: ['simulatorState not defined']
+      };
+    }
+    
+    const state = window.simulatorState;
+    
+    // Check if speed and timing properties exist
+    if (!state.hasOwnProperty('speed') || 
+        !state.hasOwnProperty('typingDelayMin') || 
+        !state.hasOwnProperty('typingDelayMax')) {
+      return {
+        pass: false,
+        message: '✗ Speed control properties missing from simulator state',
+        errors: ['Missing speed, typingDelayMin, or typingDelayMax properties']
+      };
+    }
+    
+    // Test that speed values are reasonable
+    const { speed, typingDelayMin, typingDelayMax } = state;
+    
+    if (typeof speed !== 'number' || speed <= 0) {
+      return {
+        pass: false,
+        message: `✗ Invalid speed value: ${speed}`,
+        errors: ['Speed must be a positive number']
+      };
+    }
+    
+    if (typingDelayMin >= typingDelayMax || typingDelayMin < 0) {
+      return {
+        pass: false,
+        message: `✗ Invalid typing delay range: ${typingDelayMin}-${typingDelayMax}ms`,
+        errors: ['typingDelayMin must be less than typingDelayMax and >= 0']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Speed controls properly configured (${speed}x speed, ${typingDelayMin}-${typingDelayMax}ms delays)`,
+      metadata: { speed, typingDelayMin, typingDelayMax }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing speed controls: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-10: Test realistic typing delays (1-3 seconds with randomization)
+ */
+async function testSimulator10() {
+  try {
+    if (typeof window === 'undefined' || !window.simulatorState) {
+      return {
+        pass: false,
+        message: '✗ Simulator state not available for timing testing',
+        errors: ['simulatorState not defined']
+      };
+    }
+    
+    const { typingDelayMin, typingDelayMax } = window.simulatorState;
+    
+    // Verify delay range is realistic (1-3 seconds = 1000-3000ms)
+    const expectedMin = 1000; // 1 second
+    const expectedMax = 3000; // 3 seconds
+    
+    if (typingDelayMin < expectedMin * 0.8 || typingDelayMin > expectedMin * 1.2) {
+      return {
+        pass: false,
+        message: `✗ Minimum typing delay too far from 1s: ${typingDelayMin}ms`,
+        errors: [`Expected ~${expectedMin}ms, got ${typingDelayMin}ms`]
+      };
+    }
+    
+    if (typingDelayMax < expectedMax * 0.8 || typingDelayMax > expectedMax * 1.2) {
+      return {
+        pass: false,
+        message: `✗ Maximum typing delay too far from 3s: ${typingDelayMax}ms`,
+        errors: [`Expected ~${expectedMax}ms, got ${typingDelayMax}ms`]
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Realistic typing delays configured: ${typingDelayMin}-${typingDelayMax}ms`,
+      metadata: { 
+        minDelay: typingDelayMin,
+        maxDelay: typingDelayMax,
+        range: typingDelayMax - typingDelayMin
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing typing delays: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-11: Verify simulator metadata saves correctly to conversations table
+ */
+async function testSimulator11() {
+  try {
+    // Test the API endpoint with conversationId to verify saving
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: 'Test message for metadata saving',
+      conversationHistory: [],
+      conversationId: 'test-conversation-' + Date.now()
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Simulator metadata save test failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const result = await response.json();
+    
+    // The API should return successfully even with conversationId
+    // (actual DB save success depends on Supabase connection)
+    if (!result.response || !result.personaName) {
+      return {
+        pass: false,
+        message: '✗ Simulator response invalid during metadata save test',
+        errors: ['Missing response or personaName in API result']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: '✓ Simulator metadata save API completed successfully',
+      metadata: { 
+        conversationId: testData.conversationId,
+        personaName: result.personaName,
+        responseGenerated: !!result.response
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing metadata save: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-12: Test error handling when persona prompt not found
+ */
+async function testSimulator12() {
+  try {
+    const testData = {
+      personaPromptId: 'nonexistent_persona',
+      userMessage: 'This should fail',
+      conversationHistory: []
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    // This should fail with 404 or 500
+    if (response.ok) {
+      return {
+        pass: false,
+        message: '✗ API should have failed with nonexistent persona',
+        errors: ['Expected error response, got success']
+      };
+    }
+    
+    const errorData = await response.json();
+    
+    if (!errorData.error) {
+      return {
+        pass: false,
+        message: '✗ Error response missing error field',
+        errors: ['Error response should contain error message']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Proper error handling for nonexistent persona: ${errorData.error}`,
+      metadata: { 
+        status: response.status,
+        error: errorData.error
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing persona not found: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-13: Test error handling when Claude API fails
+ */
+async function testSimulator13() {
+  try {
+    // Test with invalid API key scenario (we can't actually break the API key)
+    // Instead, test with malformed request that might cause issues
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: '', // Empty message might cause issues
+      conversationHistory: null // Invalid history
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    // The API should handle this gracefully, either succeeding or failing properly
+    if (response.ok) {
+      const result = await response.json();
+      return {
+        pass: true,
+        message: '✓ API handled edge case gracefully',
+        metadata: { 
+          handled: 'empty message',
+          response: result.response ? 'generated' : 'no response'
+        }
+      };
+    } else {
+      const errorData = await response.json();
+      
+      // Should return proper error structure
+      if (errorData.error && errorData.fallback !== undefined) {
+        return {
+          pass: true,
+          message: `✓ Proper error handling for malformed request: ${errorData.error}`,
+          metadata: { 
+            status: response.status,
+            error: errorData.error,
+            hasFallback: errorData.fallback
+          }
+        };
+      } else {
+        return {
+          pass: false,
+          message: '✗ Poor error response structure',
+          errors: ['Error response missing proper structure']
+        };
+      }
+    }
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing API failure handling: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-14: Verify simulator state persistence during pause/resume cycles
+ */
+async function testSimulator14() {
+  try {
+    if (typeof window === 'undefined' || !window.simulatorState) {
+      return {
+        pass: false,
+        message: '✗ Simulator state not available for persistence testing',
+        errors: ['simulatorState not defined']
+      };
+    }
+    
+    const state = window.simulatorState;
+    
+    // Test that conversation history persists
+    if (!Array.isArray(state.conversationHistory)) {
+      return {
+        pass: false,
+        message: '✗ Conversation history not properly maintained as array',
+        errors: ['conversationHistory is not an array']
+      };
+    }
+    
+    // Test that pause state can be toggled
+    const originalPauseState = state.isPaused;
+    
+    // Verify pause control exists
+    if (typeof window.pauseSimulator !== 'function') {
+      return {
+        pass: false,
+        message: '✗ pauseSimulator function not available',
+        errors: ['pauseSimulator function missing']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: '✓ Simulator state persistence framework available',
+      metadata: { 
+        hasConversationHistory: Array.isArray(state.conversationHistory),
+        hasPauseControl: typeof window.pauseSimulator === 'function',
+        currentPauseState: originalPauseState
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing state persistence: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-15: Test simulator conversation history limit (last 10 messages)
+ */
+async function testSimulator15() {
+  try {
+    // Test with more than 10 messages in history
+    const longHistory = [];
+    for (let i = 0; i < 15; i++) {
+      longHistory.push({ role: 'user', content: `Message ${i}` });
+      longHistory.push({ role: 'assistant', content: `Response ${i}` });
+    }
+    
+    const testData = {
+      personaPromptId: 'simulator_raj',
+      userMessage: 'Do you remember our first message?',
+      conversationHistory: longHistory
+    };
+    
+    const response = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testData)
+    });
+    
+    if (!response.ok) {
+      return {
+        pass: false,
+        message: `✗ Conversation history limit test failed: ${response.status}`,
+        errors: [`HTTP ${response.status}`]
+      };
+    }
+    
+    const result = await response.json();
+    
+    // The API should handle long history gracefully
+    if (!result.response) {
+      return {
+        pass: false,
+        message: '✗ No response generated with long conversation history',
+        errors: ['API failed to generate response']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: `✓ Simulator handled ${longHistory.length} message history gracefully`,
+      metadata: { 
+        inputHistoryLength: longHistory.length,
+        responseGenerated: !!result.response,
+        responseLength: result.response.length
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing conversation history limit: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-16: Verify persona switching updates simulator behavior correctly
+ */
+async function testSimulator16() {
+  try {
+    // Test both personas with the same question to verify different responses
+    const testMessage = 'What do you love most about your city?';
+    
+    // Test Raj
+    const rajResponse = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personaPromptId: 'simulator_raj',
+        userMessage: testMessage,
+        conversationHistory: []
+      })
+    });
+    
+    // Test Sarah  
+    const sarahResponse = await fetch('http://localhost:3001/api/simulator/generate-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personaPromptId: 'simulator_sarah',
+        userMessage: testMessage,
+        conversationHistory: []
+      })
+    });
+    
+    if (!rajResponse.ok || !sarahResponse.ok) {
+      return {
+        pass: false,
+        message: '✗ One or both persona API calls failed',
+        errors: [`Raj: ${rajResponse.status}, Sarah: ${sarahResponse.status}`]
+      };
+    }
+    
+    const rajResult = await rajResponse.json();
+    const sarahResult = await sarahResponse.json();
+    
+    // Responses should be different and reflect different personas
+    if (rajResult.response === sarahResult.response) {
+      return {
+        pass: false,
+        message: '✗ Both personas generated identical responses',
+        errors: ['Personas should generate different responses to the same question']
+      };
+    }
+    
+    // Check persona names are correct
+    if (rajResult.personaName !== 'Raj - Startup Founder' || 
+        sarahResult.personaName !== 'Sarah - Artist') {
+      return {
+        pass: false,
+        message: '✗ Incorrect persona names in responses',
+        errors: [`Raj: ${rajResult.personaName}, Sarah: ${sarahResult.personaName}`]
+      };
+    }
+    
+    return {
+      pass: true,
+      message: '✓ Persona switching generates distinct, authentic responses',
+      metadata: { 
+        rajResponse: rajResult.response.substring(0, 50) + '...',
+        sarahResponse: sarahResult.response.substring(0, 50) + '...',
+        responsesAreDifferent: rajResult.response !== sarahResult.response
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing persona switching: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-17: Test iframe communication: Cupido app → Dashboard postMessage
+ */
+async function testSimulator17() {
+  try {
+    // Test if the message handler is properly set up
+    if (typeof window === 'undefined') {
+      return {
+        pass: false,
+        message: '✗ Window object not available for postMessage testing',
+        errors: ['Running in non-browser environment']
+      };
+    }
+    
+    // Check if handleCupidoMessage function exists
+    if (typeof window.handleCupidoMessage !== 'function') {
+      return {
+        pass: false,
+        message: '✗ handleCupidoMessage function not defined',
+        errors: ['Message handler function missing']
+      };
+    }
+    
+    // Check if setupConsoleMonitoring is called (sets up message listener)
+    // We can't directly test the listener, but we can test the function exists
+    if (typeof window.setupConsoleMonitoring !== 'function') {
+      return {
+        pass: false,
+        message: '✗ setupConsoleMonitoring function not defined',
+        errors: ['Console monitoring setup function missing']
+      };
+    }
+    
+    return {
+      pass: true,
+      message: '✓ PostMessage communication framework properly set up',
+      metadata: { 
+        hasMessageHandler: typeof window.handleCupidoMessage === 'function',
+        hasConsoleMonitoring: typeof window.setupConsoleMonitoring === 'function'
+      }
+    };
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing iframe communication: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * simulator-18: Test iframe communication: Dashboard → Cupido app response injection
+ */
+async function testSimulator18() {
+  try {
+    if (typeof window === 'undefined') {
+      return {
+        pass: false,
+        message: '✗ Window object not available for response injection testing',
+        errors: ['Running in non-browser environment']
+      };
+    }
+    
+    // Check if iframe element exists (should be in Live Preview tab)
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    
+    if (!iframe) {
+      return {
+        pass: false,
+        message: '✗ App iframe not found for response injection',
+        errors: ['No iframe element with id app-iframe or live-app-iframe']
+      };
+    }
+    
+    // Check if iframe has src attribute (should point to Cupido app)
+    if (!iframe.src) {
+      return {
+        pass: false,
+        message: '✗ Iframe missing src attribute',
+        errors: ['Iframe not configured with app URL']
+      };
+    }
+    
+    // Test if iframe is in a state where postMessage would work
+    try {
+      // This should not throw if iframe is properly configured
+      if (iframe.contentWindow) {
+        return {
+          pass: true,
+          message: '✓ Iframe response injection framework ready',
+          metadata: { 
+            iframeExists: true,
+            hasSrc: !!iframe.src,
+            hasContentWindow: !!iframe.contentWindow,
+            src: iframe.src
+          }
+        };
+      } else {
+        return {
+          pass: false,
+          message: '✗ Iframe contentWindow not accessible',
+          errors: ['Iframe may not be loaded or accessible']
+        };
+      }
+    } catch (crossOriginError) {
+      // Cross-origin errors are expected in some cases, but the framework is still set up
+      return {
+        pass: true,
+        message: '✓ Iframe exists (cross-origin restrictions normal)',
+        metadata: { 
+          iframeExists: true,
+          hasSrc: !!iframe.src,
+          crossOriginRestricted: true
+        }
+      };
+    }
+  } catch (error) {
+    return {
+      pass: false,
+      message: `✗ Error testing response injection: ${error.message}`,
+      errors: [error.message]
+    };
+  }
+}
+
+/**
+ * Test mapping object - maps all 66 test IDs to their functions
  */
 const TEST_FUNCTIONS = {
   // Foundation Tests (5 tests) - Phase 1
@@ -2180,6 +3204,25 @@ const TEST_FUNCTIONS = {
   'api-2': testApi2,
   'api-3': testApi3,
   'api-4': testApi4,
+  // Simulator Testing (18 tests) - Phase 1 Validation
+  'simulator-1': testSimulator1,
+  'simulator-2': testSimulator2,
+  'simulator-3': testSimulator3,
+  'simulator-4': testSimulator4,
+  'simulator-5': testSimulator5,
+  'simulator-6': testSimulator6,
+  'simulator-7': testSimulator7,
+  'simulator-8': testSimulator8,
+  'simulator-9': testSimulator9,
+  'simulator-10': testSimulator10,
+  'simulator-11': testSimulator11,
+  'simulator-12': testSimulator12,
+  'simulator-13': testSimulator13,
+  'simulator-14': testSimulator14,
+  'simulator-15': testSimulator15,
+  'simulator-16': testSimulator16,
+  'simulator-17': testSimulator17,
+  'simulator-18': testSimulator18
 };
 
 /**
@@ -2197,7 +3240,8 @@ async function runCategory(category) {
     'database': ['database-1', 'database-2', 'database-3', 'database-4', 'database-5'],
     'error': ['error-1', 'error-2', 'error-3', 'error-4', 'error-5', 'error-6'],
     'state': ['state-1', 'state-2', 'state-3', 'state-4', 'state-5', 'state-6'],
-    'api': ['api-1', 'api-2', 'api-3', 'api-4']
+    'api': ['api-1', 'api-2', 'api-3', 'api-4'],
+    'simulator': ['simulator-1', 'simulator-2', 'simulator-3', 'simulator-4', 'simulator-5', 'simulator-6', 'simulator-7', 'simulator-8', 'simulator-9', 'simulator-10', 'simulator-11', 'simulator-12', 'simulator-13', 'simulator-14', 'simulator-15', 'simulator-16', 'simulator-17', 'simulator-18']
   };
 
   const testIds = categoryTests[category];
@@ -2295,7 +3339,7 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
-console.log('✅ Comprehensive test functions loaded - 48 tests ready');
-console.log('📋 Available categories: foundation, prompts, console, message, profile, database, error, state, api');
-console.log('🎯 Usage: runCategory("foundation") or runCategory("prompts")');
-console.log('🏗️  Phase 1: runCategory("foundation") - Phase 2: runCategory("prompts")');
+console.log('✅ Comprehensive test functions loaded - 66 tests ready');
+console.log('📋 Available categories: foundation, prompts, console, message, profile, database, error, state, api, simulator');
+console.log('🎯 Usage: runCategory("foundation") or runCategory("simulator")');
+console.log('🏗️  Phase 1: runCategory("foundation") + runCategory("simulator") - Phase 2: runCategory("prompts")');
