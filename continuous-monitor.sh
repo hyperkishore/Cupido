@@ -54,41 +54,40 @@ info() {
     log_with_timestamp "INFO: $1"
 }
 
-# Health check function
+# Health check function - uses the comprehensive health-check.sh
 perform_health_check() {
-    local check_passed=true
-    
-    # Quick service availability checks
-    if ! curl -s http://localhost:3001 > /dev/null 2>&1; then
-        alert "Node.js server (localhost:3001) is DOWN"
-        check_passed=false
+    # Run the comprehensive health check script
+    if ./health-check.sh > /dev/null 2>&1; then
+        return 0  # Success
+    else
+        # If health check fails, run individual checks for detailed alerts
+        local check_passed=true
+        
+        # Quick service availability checks
+        if ! curl -s http://localhost:3001 > /dev/null 2>&1; then
+            alert "Node.js server (localhost:3001) is DOWN"
+            check_passed=false
+        fi
+        
+        if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
+            alert "Expo server (localhost:8081) is DOWN"
+            check_passed=false
+        fi
+        
+        # Dashboard functionality
+        if ! curl -s http://localhost:3001/cupido-test-dashboard | grep -q "Cupido Test Dashboard" 2>/dev/null; then
+            alert "Test dashboard is NOT responding correctly"
+            check_passed=false
+        fi
+        
+        # API endpoints
+        if ! curl -s http://localhost:3001/api/error-stats | grep -q "total" 2>/dev/null; then
+            alert "Error stats API is NOT working"
+            check_passed=false
+        fi
+        
+        return 1  # Failure
     fi
-    
-    if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
-        alert "Expo server (localhost:8081) is DOWN"
-        check_passed=false
-    fi
-    
-    # Dashboard functionality
-    if ! curl -s http://localhost:3001/cupido-test-dashboard | grep -q "Cupido Test Dashboard" 2>/dev/null; then
-        alert "Test dashboard is NOT responding correctly"
-        check_passed=false
-    fi
-    
-    # API endpoints
-    if ! curl -s http://localhost:3001/api/error-stats | grep -q "total" 2>/dev/null; then
-        alert "Error stats API is NOT working"
-        check_passed=false
-    fi
-    
-    # Test count validation
-    TEST_COUNT=$(curl -s http://localhost:3001/cupido-test-dashboard 2>/dev/null | grep -o 'id="total-tests">[0-9]*' | grep -o '[0-9]*')
-    if [ "$TEST_COUNT" != "66" ]; then
-        alert "Test count is incorrect: $TEST_COUNT (expected 66)"
-        check_passed=false
-    fi
-    
-    return $check_passed
 }
 
 # Function to handle failures
