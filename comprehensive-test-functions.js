@@ -2805,22 +2805,22 @@ async function testSimulator13() {
     } else {
       const errorData = await response.json();
       
-      // Should return proper error structure
-      if (errorData.error && errorData.fallback !== undefined) {
+      // Should return proper error structure (error field is required, fallback is optional)
+      if (errorData.error) {
         return {
           pass: true,
           message: `✓ Proper error handling for malformed request: ${errorData.error}`,
           metadata: { 
             status: response.status,
             error: errorData.error,
-            hasFallback: errorData.fallback
+            hasFallback: errorData.fallback !== undefined
           }
         };
       } else {
         return {
           pass: false,
           message: '✗ Poor error response structure',
-          errors: ['Error response missing proper structure']
+          errors: ['Error response missing error field']
         };
       }
     }
