@@ -50,6 +50,7 @@ export const PixelPerfectProfileScreen = () => {
   };
 
   const handleDeleteAccount = async () => {
+    // First confirmation
     Alert.alert(
       'Delete All Data',
       'This will permanently delete all your conversations, messages, and profile data. This action cannot be undone.',
@@ -59,9 +60,22 @@ export const PixelPerfectProfileScreen = () => {
           style: 'cancel',
         },
         {
-          text: 'Delete Everything',
+          text: 'Continue',
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Warning - Delete All Data',
+              '⚠️ LAST CHANCE: This will completely erase ALL your data from both the app and our servers (Supabase). You will lose:\n\n• All conversations\n• All messages\n• Your complete profile\n• All stored preferences\n\nThis action is IRREVERSIBLE. Are you absolutely certain?',
+              [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+                {
+                  text: 'YES, DELETE EVERYTHING',
+                  style: 'destructive',
+                  onPress: async () => {
             try {
               // Get current user ID
               let userId: string | null = null;
@@ -140,6 +154,10 @@ export const PixelPerfectProfileScreen = () => {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'An error occurred while deleting your data.');
             }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
