@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { DEMO_MODE } from '../config/demo';
 
 export interface ChatConversation {
   id: string;
@@ -53,6 +54,7 @@ class ChatDatabaseService {
   async getOrCreateUser(phoneNumber: string, name?: string, isDemo?: boolean): Promise<UserProfile | null> {
     try {
       console.log(`👤 Looking for user with phone: ${phoneNumber}${isDemo ? ' (Demo User)' : ''}`);
+      console.log('🔍 Query parameters:', { phoneNumber, name, isDemo });
 
       // First try to get existing user
       const { data: existingUser, error: fetchError } = await supabase
@@ -60,6 +62,8 @@ class ChatDatabaseService {
         .select('*')
         .eq('phone_number', phoneNumber)
         .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
+      
+      console.log('📊 Query result:', { existingUser, fetchError });
 
       if (existingUser && !fetchError) {
         console.log(`✅ Found existing user: ${existingUser.id} (${existingUser.name})`);
@@ -291,7 +295,14 @@ class ChatDatabaseService {
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching conversations:', error);
+        console.error('Error fetching conversations:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          userId: userId,
+          fullError: error
+        });
         return [];
       }
 
@@ -394,51 +405,130 @@ class ChatDatabaseService {
     }
   }
 
-  // Delete all user data
+  // Delete all user data (requires valid Supabase UUID)
   async deleteAllUserData(userId: string): Promise<boolean> {
     try {
-      console.log(`🗑️ Starting to delete all data for user: ${userId}`);
+      console.log(`🗑️ Starting to delete all data for Supabase user: ${userId}`);
+      console.log(`🔍 Database client mode: ${DEMO_MODE ? 'DEMO (fake operations)' : 'REAL (actual Supabase)'}`);
+      
+      // Check if we're using demo client which won't actually delete anything
+      if (DEMO_MODE) {
+        console.warn('⚠️ WARNING: Using demo Supabase client - deletions will be fake!');
+      }
+      
+      // Validate this is a proper Supabase UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(userId)) {
+        console.error('❌ Invalid UUID format for user deletion (expected Supabase UUID):', userId);
+        console.error('❌ This function should only be called with valid Supabase UUIDs, not local identifiers');
+        return false;
+      }
+      
+      console.log('✅ Valid Supabase UUID confirmed, proceeding with deletion...');
 
       // Get all user conversations
       const conversations = await this.getUserConversations(userId);
       const conversationIds = conversations.map(c => c.id);
 
       if (conversationIds.length > 0) {
+        console.log(`🔍 Found ${conversationIds.length} conversations to delete:`, conversationIds);
+        
         // Delete all messages in user's conversations
-        const { error: messagesError } = await supabase
+        console.log(`🗑️ Step 1: Deleting messages for conversations...`);
+        const { data: deletedMessages, error: messagesError } = await supabase
           .from('chat_messages')
           .delete()
-          .in('conversation_id', conversationIds);
+          .in('conversation_id', conversationIds)
+          .select();
 
         if (messagesError) {
-          console.error('Error deleting messages:', messagesError);
+          console.error('❌ Error deleting messages:', {
+            code: messagesError.code,
+            message: messagesError.message,
+            details: messagesError.details,
+            hint: messagesError.hint,
+            conversationIds: conversationIds,
+            fullError: messagesError
+          });
           return false;
         }
 
-        console.log(`✅ Deleted all messages for ${conversationIds.length} conversations`);
+        console.log(`✅ Deleted ${deletedMessages?.length || 0} messages for ${conversationIds.length} conversations`);
 
         // Delete all conversations
-        const { error: conversationsError } = await supabase
+        console.log(`🗑️ Step 2: Deleting conversations...`);
+        const { data: deletedConversations, error: conversationsError } = await supabase
           .from('chat_conversations')
           .delete()
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .select();
 
         if (conversationsError) {
-          console.error('Error deleting conversations:', conversationsError);
+          console.error('❌ Error deleting conversations:', {
+            code: conversationsError.code,
+            message: conversationsError.message,
+            details: conversationsError.details,
+            hint: conversationsError.hint,
+            userId: userId,
+            fullError: conversationsError
+          });
           return false;
         }
 
-        console.log(`✅ Deleted all conversations for user`);
+        console.log(`✅ Deleted ${deletedConversations?.length || 0} conversations for user`);
+      } else {
+        console.log(`ℹ️ No conversations found for user ${userId}`);
       }
 
       // Delete the user profile
-      const { error: profileError } = await supabase
+      console.log(`🗑️ Step 3: Deleting user profile...`);
+      const { data: deletedProfile, error: profileError } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
 
       if (profileError) {
-        console.error('Error deleting profile:', profileError);
+        console.error('❌ Error deleting profile:', {
+          code: profileError.code,
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          userId: userId,
+          fullError: profileError
+        });
+        return false;
+      }
+
+      console.log(`✅ Deleted ${deletedProfile?.length || 0} user profile records`);
+      if (deletedProfile && deletedProfile.length > 0) {
+        console.log(`🔍 Deleted profile details:`, deletedProfile[0]);
+      } else {
+        console.warn(`⚠️ No profile records were deleted for user ${userId}`);
+      }
+
+      // Verify deletion by checking if records still exist
+      console.log(`🔍 Verifying deletion - checking if records still exist...`);
+      
+      const remainingConversations = await this.getUserConversations(userId);
+      console.log(`🔍 Remaining conversations after deletion: ${remainingConversations.length}`);
+      
+      const { data: remainingProfile, error: verifyError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (verifyError) {
+        console.log(`🔍 Error checking remaining profile:`, verifyError);
+      } else {
+        console.log(`🔍 Remaining profile after deletion:`, remainingProfile ? 'EXISTS' : 'DELETED');
+      }
+      
+      if (remainingConversations.length > 0 || remainingProfile) {
+        console.error(`❌ DELETION FAILED: Records still exist after deletion attempt`);
+        console.error(`- Remaining conversations: ${remainingConversations.length}`);
+        console.error(`- Profile still exists: ${remainingProfile ? 'YES' : 'NO'}`);
         return false;
       }
 
