@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Fragment } from 'react';
 import {
   View,
   Text,
@@ -1133,16 +1133,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         {messages.map((message, index) => {
           // Check if message has new image attachments
           if (message.imageAttachments && message.imageAttachments.length > 0) {
-            return message.imageAttachments.map((attachment, imgIndex) => (
-              <ImageMessage
-                key={`${message.id}-img-${imgIndex}`}
-                imageAttachment={attachment}
-                isFromUser={!message.isBot}
-                message={imgIndex === 0 ? message.text : undefined} // Only show text on first image
-                timestamp={message.timestamp.toISOString()}
-                showMetadata={false}
-              />
-            ));
+            return (
+              <Fragment key={message.id}>
+                {message.imageAttachments.map((attachment, imgIndex) => (
+                  <ImageMessage
+                    key={`${message.id}-img-${imgIndex}`}
+                    imageAttachment={attachment}
+                    isFromUser={!message.isBot}
+                    message={imgIndex === 0 && message.text ? message.text : undefined} // Only show text on first image if not empty
+                    timestamp={message.timestamp.toISOString()}
+                    showMetadata={false}
+                  />
+                ))}
+              </Fragment>
+            );
           }
           
           // Legacy support for imageUri (existing images)
