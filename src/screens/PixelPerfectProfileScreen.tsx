@@ -13,10 +13,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppMode } from '../contexts/AppModeContext';
 import { chatDatabase } from '../services/chatDatabase';
 import { userProfileService } from '../services/userProfileService';
+import { ConfirmationDialog } from '../components/ConfirmationDialog';
 
 export const PixelPerfectProfileScreen = () => {
   const [profile, setProfile] = useState<PersonalityProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showFirstConfirmation, setShowFirstConfirmation] = useState(false);
+  const [showSecondConfirmation, setShowSecondConfirmation] = useState(false);
   const { user, signOut } = useAuth();
   const { mode, setMode } = useAppMode();
 
@@ -49,119 +52,136 @@ export const PixelPerfectProfileScreen = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    // First confirmation
-    Alert.alert(
-      'Delete All Data',
-      'This will permanently delete all your conversations, messages, and profile data. This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: () => {
-            // Second confirmation
-            Alert.alert(
-              'Final Warning - Delete All Data',
-              '⚠️ LAST CHANCE: This will completely erase ALL your data from both the app and our servers (Supabase). You will lose:\n\n• All conversations\n• All messages\n• Your complete profile\n• All stored preferences\n\nThis action is IRREVERSIBLE. Are you absolutely certain?',
-              [
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                },
-                {
-                  text: 'YES, DELETE EVERYTHING',
-                  style: 'destructive',
-                  onPress: async () => {
-            try {
-              // Get current user ID
-              let userId: string | null = null;
+  const performDataDeletion = async () => {
+    try {
+      console.log('🔍 Getting Supabase UUID for data deletion...');
+      
+      // Get phone number for UUID lookup
+      let phoneNumber: string | null = null;
+      let supabaseUserId: string | null = null;
 
-              if (user?.id) {
-                // Authenticated user
-                userId = user.id;
-              } else {
-                // Demo user - get from localStorage or AsyncStorage
-                if (Platform.OS === 'web') {
-                  const storedSession = window.localStorage.getItem('cupido_chat_session_demo_user');
-                  if (storedSession) {
-                    // Get the user profile from the database using the session ID
-                    const userProfile = await chatDatabase.getOrCreateUser(storedSession, 'Demo User');
-                    userId = userProfile?.id || null;
-                  }
-                }
-              }
+      if (user?.phoneNumber) {
+        // Authenticated user - use their phone number
+        phoneNumber = user.phoneNumber;
+        console.log('📱 Using authenticated user phone number:', phoneNumber);
+      } else {
+        // Demo user - get phone number from localStorage
+        if (Platform.OS === 'web') {
+          const storedSession = window.localStorage.getItem('cupido_chat_session_demo_user');
+          console.log('🔍 Found stored demo session:', storedSession);
+          
+          if (storedSession) {
+            phoneNumber = storedSession;
+            console.log('🎮 Using demo phone number:', phoneNumber);
+          }
+        }
+      }
 
-              if (!userId) {
-                Alert.alert('Error', 'Could not identify user account');
-                return;
-              }
+      if (!phoneNumber) {
+        console.error('❌ Error: Could not identify phone number for user account');
+        return;
+      }
 
-              // Delete all user data from Supabase
-              const success = await chatDatabase.deleteAllUserData(userId);
+      // Retrieve the Supabase UUID using phone number
+      console.log('🔄 Looking up Supabase profile by phone number:', phoneNumber);
+      const supabaseProfile = await chatDatabase.getOrCreateUser(phoneNumber);
+      supabaseUserId = supabaseProfile?.id || null;
+      
+      console.log('📊 Retrieved Supabase profile:', supabaseProfile);
+      console.log('📊 Extracted Supabase UUID:', supabaseUserId);
 
-              if (success) {
-                // Clear local storage - remove all cupido_chat_session keys
-                if (Platform.OS === 'web') {
-                  // Clear specific session keys for this user
-                  const keysToRemove = [];
-                  for (let i = 0; i < window.localStorage.length; i++) {
-                    const key = window.localStorage.key(i);
-                    if (key && key.startsWith('cupido_chat_session')) {
-                      keysToRemove.push(key);
-                    }
-                  }
-                  keysToRemove.forEach(key => window.localStorage.removeItem(key));
+      let success = false;
+      
+      if (supabaseUserId) {
+        // Valid Supabase UUID - attempt database deletion
+        console.log('🗑️ Found valid Supabase UUID - attempting database deletion...');
+        success = await chatDatabase.deleteAllUserData(supabaseUserId);
+        console.log('🗑️ Database deletion result:', success);
+      } else {
+        // Unable to resolve Supabase UUID - skip remote deletion
+        console.warn('⚠️ Unable to resolve Supabase UUID; skipping remote deletion');
+        console.log('🎮 Proceeding with local cleanup only (demo user or profile not found)');
+        success = true; // Proceed with local cleanup so demo users still clear out
+      }
 
-                  // Also clear any other Cupido-related data
-                  window.localStorage.removeItem('cupido_demo_user');
-                  window.localStorage.removeItem('cupido_errors');
-                }
-
-                // Clear personality insights
-                await personalityInsightsService.clearAllData();
-
-                // Clear user profile service
-                await userProfileService.clearProfile();
-
-                Alert.alert(
-                  'Success',
-                  'All your data has been deleted successfully.',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: async () => {
-                        // Log out and restart fresh
-                        if (mode === 'demo') {
-                          await setMode('local');
-                        }
-                        await signOut();
-                        // Force reload to start fresh
-                        if (Platform.OS === 'web') {
-                          window.location.reload();
-                        }
-                      },
-                    },
-                  ]
-                );
-              } else {
-                Alert.alert('Error', 'Failed to delete all data. Please try again.');
-              }
-            } catch (error) {
-              console.error('Error deleting account:', error);
-              Alert.alert('Error', 'An error occurred while deleting your data.');
+      if (success) {
+        // Clear local storage - remove all cupido_chat_session keys
+        if (Platform.OS === 'web') {
+          // Clear specific session keys for this user
+          const keysToRemove = [];
+          for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (key && key.startsWith('cupido_chat_session')) {
+              keysToRemove.push(key);
             }
-                  },
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
+          }
+          keysToRemove.forEach(key => window.localStorage.removeItem(key));
+
+          // Also clear any other Cupido-related data
+          window.localStorage.removeItem('cupido_demo_user');
+          window.localStorage.removeItem('cupido_errors');
+        }
+
+        // Clear personality insights
+        console.log('🧹 Clearing personality insights...');
+        await personalityInsightsService.clearAllData();
+
+        // Clear user profile service
+        console.log('🧹 Clearing user profile service...');
+        await userProfileService.clearProfile();
+
+        console.log('✅ Data deletion completed successfully');
+        
+        // Success - log out and restart fresh
+        console.log('🚪 Logging out and restarting...');
+        if (mode === 'demo') {
+          await setMode('local');
+        }
+        await signOut();
+        
+        // Force reload to start fresh after a brief delay
+        if (Platform.OS === 'web') {
+          console.log('🔄 Reloading page in 1 second...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } else {
+        console.error('❌ Error: Failed to delete all data. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting account:', error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    console.log('🗑️ DELETE BUTTON PRESSED - handleDeleteAccount called');
+    console.log('🕐 Timestamp:', new Date().toISOString());
+    
+    // Show first confirmation dialog
+    setShowFirstConfirmation(true);
+  };
+
+  const handleFirstConfirmation = () => {
+    console.log('➡️ First confirmation - User confirmed, showing second dialog');
+    setShowFirstConfirmation(false);
+    setShowSecondConfirmation(true);
+  };
+
+  const handleSecondConfirmation = async () => {
+    console.log('💥 Second confirmation - User confirmed, starting deletion process');
+    setShowSecondConfirmation(false);
+    await performDataDeletion();
+  };
+
+  const handleCancelFirst = () => {
+    console.log('❌ First confirmation - User cancelled');
+    setShowFirstConfirmation(false);
+  };
+
+  const handleCancelSecond = () => {
+    console.log('❌ Second confirmation - User cancelled');
+    setShowSecondConfirmation(false);
   };
 
   if (loading) {
@@ -279,7 +299,13 @@ export const PixelPerfectProfileScreen = () => {
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutButtonText}>Log out</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+            <TouchableOpacity 
+              style={styles.deleteButton} 
+              onPress={() => {
+                console.log('🔴 Delete button TouchableOpacity pressed');
+                handleDeleteAccount();
+              }}
+            >
               <Text style={styles.deleteButtonText}>Delete All Data</Text>
             </TouchableOpacity>
           </View>
@@ -287,6 +313,36 @@ export const PixelPerfectProfileScreen = () => {
       </View>
 
       <View style={styles.bottomPadding} />
+
+      {/* Custom Confirmation Dialogs */}
+      <ConfirmationDialog
+        visible={showFirstConfirmation}
+        title="Delete All Data"
+        message="This will permanently delete all your conversations, messages, and profile data. This action cannot be undone."
+        confirmText="Continue"
+        cancelText="Cancel"
+        confirmStyle="destructive"
+        onConfirm={handleFirstConfirmation}
+        onCancel={handleCancelFirst}
+      />
+
+      <ConfirmationDialog
+        visible={showSecondConfirmation}
+        title="⚠️ Final Warning"
+        message="LAST CHANCE: This will completely erase ALL your data from both the app and our servers (Supabase). You will lose:
+
+• All conversations
+• All messages  
+• Your complete profile
+• All stored preferences
+
+This action is IRREVERSIBLE. Are you absolutely certain?"
+        confirmText="YES, DELETE EVERYTHING"
+        cancelText="Cancel"
+        confirmStyle="destructive"
+        onConfirm={handleSecondConfirmation}
+        onCancel={handleCancelSecond}
+      />
     </ScrollView>
   );
 };
