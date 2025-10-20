@@ -3315,7 +3315,7 @@ async function testMonitor1() {
     
     const html = await response.text();
     const hasTestTable = html.includes('Test Name') && html.includes('Description');
-    const hasControls = html.includes('Run All Tests') || html.includes('Run Selected');
+    const hasControls = html.includes('Run Tests') || html.includes('Run All Tests') || html.includes('Run Selected');
     
     if (hasTestTable && hasControls && responseTime < 5000) {
       return {
@@ -3352,9 +3352,23 @@ async function testMonitor1() {
  */
 async function testMonitor2() {
   try {
-    // Check if CLAUDE.md exists and has recent content
-    const claudeMdExists = require('fs').existsSync('/Users/kishore/Desktop/Claude-experiments/Cupido/CLAUDE.md');
-    const sessionLoggerExists = require('fs').existsSync('/Users/kishore/Desktop/Claude-experiments/Cupido/session-logger.js');
+    // Check if CLAUDE.md and session-logger.js exist by trying to fetch them
+    let claudeMdExists = false;
+    let sessionLoggerExists = false;
+    
+    try {
+      const claudeResponse = await fetch('/CLAUDE.md');
+      claudeMdExists = claudeResponse.ok;
+    } catch (e) {
+      claudeMdExists = false;
+    }
+    
+    try {
+      const sessionResponse = await fetch('/session-logger.js');
+      sessionLoggerExists = sessionResponse.ok;
+    } catch (e) {
+      sessionLoggerExists = false;
+    }
     
     if (!claudeMdExists) {
       return {
@@ -3371,12 +3385,6 @@ async function testMonitor2() {
         errors: ['Session logging automation not found']
       };
     }
-    
-    // Check if CLAUDE.md has been updated recently (within last 24 hours)
-    const fs = require('fs');
-    const claudeStats = fs.statSync('/Users/kishore/Desktop/Claude-experiments/Cupido/CLAUDE.md');
-    const lastModified = claudeStats.mtime;
-    const hoursAge = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60);
     
     return {
       pass: true,

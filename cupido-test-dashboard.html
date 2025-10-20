@@ -2185,6 +2185,210 @@
             animation: pulse-running 1.5s ease-in-out infinite;
         }
 
+        /* Active Script Panel Styles */
+        .active-script-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        .active-script-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .active-script-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .active-script-icon {
+            font-size: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .active-script-stop {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .active-script-stop:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .active-script-info {
+            margin-bottom: 16px;
+        }
+
+        .active-script-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .active-script-status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00c851, #007e33);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: progress-shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes progress-shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Script Categories Filter Styles */
+        .script-categories {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .category-filter {
+            padding: 8px 16px;
+            border: 1px solid #d2d2d7;
+            background: #f2f2f7;
+            color: #1d1d1f;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .category-filter:hover {
+            background: #e8e8ed;
+            border-color: #007aff;
+        }
+
+        .category-filter.active {
+            background: #007aff;
+            color: white;
+            border-color: #007aff;
+        }
+
+        /* Script Output Panel Styles */
+        .script-output-container {
+            margin-top: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e5ea;
+            background: white;
+            overflow: hidden;
+        }
+
+        .script-output-header {
+            background: #f2f2f7;
+            padding: 16px 20px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .script-output-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .script-output-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .script-output-actions button {
+            padding: 6px 12px;
+            border: 1px solid #d2d2d7;
+            background: white;
+            color: #007aff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .script-output-actions button:hover {
+            background: #f0f7ff;
+            border-color: #007aff;
+        }
+
+        .script-output-content {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 16px 20px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: #fafafa;
+        }
+
+        .script-output-empty {
+            color: #8e8e93;
+            font-style: italic;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .script-output-line {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .script-output-timestamp {
+            color: #6e6e73;
+            flex-shrink: 0;
+            font-size: 11px;
+        }
+
+        .script-output-message {
+            flex: 1;
+        }
+
+        .script-output-error {
+            color: #ff3b30;
+        }
+
+        .script-output-success {
+            color: #34c759;
+        }
+
+        .script-output-info {
+            color: #1d1d1f;
+        }
+
         .health-summary {
             display: flex;
             gap: 24px;
@@ -2276,6 +2480,7 @@
                         <option value="infra">Infrastructure Validation (6)</option>
                     </select>
                     <button class="btn btn-primary" onclick="runSelectedTests()">Run Tests</button>
+                    <button class="btn btn-danger" onclick="forceResetTests()" title="Force reset stuck tests">Reset Tests</button>
                 </div>
                 <div class="controls-right">
                     <div class="toggle-container">
@@ -2285,6 +2490,14 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
+                    <div class="toggle-container">
+                        <label class="toggle-label">Verbose</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="verbose-logs" onchange="toggleVerboseLogging()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button class="btn btn-secondary" onclick="clearConsoleLogs()" title="Clear console logs">Clear</button>
                 </div>
             </div>
 
@@ -2523,8 +2736,30 @@
             <div class="console-header">
                 <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">Console Output</h3>
                 <div class="console-controls">
+                    <!-- Source Filters -->
+                    <div class="console-filters">
+                        <span style="font-size: 12px; color: #8E8E93; margin-right: 8px;">Source:</span>
+                        <label class="console-filter-item">
+                            <input type="radio" name="console-source" value="all" checked onchange="filterConsole('all')">
+                            <span class="console-filter-label">All</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="radio" name="console-source" value="test" onchange="filterConsole('test')">
+                            <span class="console-filter-label">Tests</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="radio" name="console-source" value="script" onchange="filterConsole('script')">
+                            <span class="console-filter-label">Scripts</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="radio" name="console-source" value="dashboard" onchange="filterConsole('dashboard')">
+                            <span class="console-filter-label">Dashboard</span>
+                        </label>
+                    </div>
+                    
                     <!-- Log Level Filters -->
                     <div class="console-filters">
+                        <span style="font-size: 12px; color: #8E8E93; margin-right: 8px;">Level:</span>
                         <label class="console-filter-item">
                             <input type="checkbox" id="filter-info" checked onchange="filterLogLevels()">
                             <span class="console-filter-label info">Info</span>
@@ -2732,6 +2967,26 @@
         <!-- Scripts Tab -->
         <div class="tab-content active" id="health-tab">
             <div class="health-check-container">
+                <!-- Active Script Indicator -->
+                <div id="active-script-indicator" class="active-script-panel" style="display: none;">
+                    <div class="active-script-header">
+                        <div class="active-script-title">
+                            <span class="active-script-icon">⚡</span>
+                            <span>Currently Running</span>
+                        </div>
+                        <button class="active-script-stop" onclick="stopActiveScript()">Stop</button>
+                    </div>
+                    <div class="active-script-info">
+                        <div class="active-script-name" id="active-script-name">-</div>
+                        <div class="active-script-status" id="active-script-status">Initializing...</div>
+                    </div>
+                    <div class="active-script-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="script-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="health-header">
                     <h2>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: text-top; margin-right: 8px;">
@@ -2755,16 +3010,26 @@
                     </div>
                 </div>
 
+                <!-- Script Categories Filter -->
+                <div class="script-categories">
+                    <button class="category-filter active" onclick="filterScriptCategory('all', this)">All Scripts</button>
+                    <button class="category-filter" onclick="filterScriptCategory('health', this)">Health Checks</button>
+                    <button class="category-filter" onclick="filterScriptCategory('development', this)">Development</button>
+                    <button class="category-filter" onclick="filterScriptCategory('testing', this)">Testing</button>
+                    <button class="category-filter" onclick="filterScriptCategory('analytics', this)">Analytics</button>
+                </div>
+
                 <!-- System Health Table -->
                 <div class="health-table-container">
                     <table class="health-table">
                         <thead>
                             <tr>
                                 <th>Status</th>
-                                <th>Test Name</th>
+                                <th>Script Name</th>
                                 <th>Category</th>
                                 <th>Module</th>
                                 <th>Last Run</th>
+                                <th>Duration</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -2772,6 +3037,21 @@
                             <!-- Tests will be populated here -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Script Output Panel -->
+                <div id="script-output-panel" class="script-output-container" style="display: none;">
+                    <div class="script-output-header">
+                        <h3>Script Output</h3>
+                        <div class="script-output-actions">
+                            <button onclick="clearScriptOutput()">Clear</button>
+                            <button onclick="copyScriptOutput()">Copy</button>
+                            <button onclick="toggleScriptOutput()">Hide</button>
+                        </div>
+                    </div>
+                    <div class="script-output-content" id="script-output-content">
+                        <div class="script-output-empty">No script output yet. Run a script to see output here.</div>
+                    </div>
                 </div>
                 
                 <!-- Summary Stats -->
@@ -2817,6 +3097,70 @@
     <script src="infrastructure-tests.js"></script>
 
     <script>
+        // Tab switching function - defined first to be available to HTML elements
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Update URL hash without triggering page reload (use user-friendly names)
+            if (event && !event.skipUrlUpdate) {
+                const friendlyNames = {
+                    'health': 'scripts',
+                    'tests': 'tests', 
+                    'live': 'live',
+                    'console': 'console',
+                    'history': 'history',
+                    'error-monitoring': 'errors',
+                    'prompts': 'prompts'
+                };
+                const friendlyName = friendlyNames[tabName] || tabName;
+                window.history.pushState({}, '', `#${friendlyName}`);
+            }
+            
+            // Initialize tab-specific content
+            if (tabName === 'health') {
+                initializeHealthCheck();
+            }
+            
+            // Retry loading simulator personas when switching to live tab
+            if (tabName === 'live') {
+                // If personas failed to load before, retry (but don't reload if successful)
+                const personaSelect = document.getElementById('simulator-persona');
+                if (personaSelect && (!simulatorPersonasInitialized || personaSelect.children.length <= 1)) {
+                    logToConsole('Retrying simulator personas load...', 'info', 'app');
+                    loadSimulatorPersonas(true); // Force reload
+                }
+            }
+            
+            // Load error monitoring data when switching to error monitoring tab
+            if (tabName === 'error-monitoring') {
+                loadErrorStats();
+                // Auto-refresh every 30 seconds
+                if (window.errorMonitoringInterval) {
+                    clearInterval(window.errorMonitoringInterval);
+                }
+                window.errorMonitoringInterval = setInterval(loadErrorStats, 30000);
+            } else {
+                // Clear auto-refresh when leaving error monitoring tab
+                if (window.errorMonitoringInterval) {
+                    clearInterval(window.errorMonitoringInterval);
+                    window.errorMonitoringInterval = null;
+                }
+            }
+            
+            // Initialize prompt library when switching to prompts tab
+            if (tabName === 'prompts') {
+                initializePromptLibrary();
+            }
+            
+            console.log(`📍 Switched to ${tabName} tab - URL: ${window.location.href}`);
+        }
+
         // Simulator state management - exposed on window for test access
         const simulatorState = {
             isActive: false,
@@ -2854,6 +3198,7 @@
         let testResults = {};
         let selectedTests = new Set();
         let currentTest = null;
+        let lastTestCompletionTime = 0;
         let currentTestRun = {
             id: null,
             startTime: null,
@@ -2904,18 +3249,67 @@
                 if (!simulatorState.isActive || simulatorState.isPaused) return;
                 
                 try {
-                    // Generate response from simulator API
-                    const response = await fetch('/api/simulator/generate-response', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            personaPromptId: simulatorState.selectedPersonaId,
-                            conversationHistory: simulatorState.conversationHistory.slice(-10), // Last 10 messages
-                            userMessage: userMessage
-                        })
-                    });
+                    // Check if this is a fallback persona (multiple detection methods)
+                    const personaSelect = document.getElementById('simulator-persona');
+                    const selectedOption = personaSelect?.options[personaSelect.selectedIndex];
+                    const hasPromptData = selectedOption?.dataset?.promptData;
                     
-                    const data = await response.json();
+                    const isFallbackPersona = simulatorState.selectedPersonaId && (
+                        // Method 1: Check if it exists in SIMULATOR_PERSONAS
+                        (typeof SIMULATOR_PERSONAS !== 'undefined' && SIMULATOR_PERSONAS[simulatorState.selectedPersonaId]) ||
+                        // Method 2: Check if the option lacks promptData (indicates fallback)
+                        (selectedOption && !hasPromptData && selectedOption.textContent.includes('(fallback)'))
+                    );
+                    
+                    let data;
+                    
+                    if (isFallbackPersona) {
+                        // Use local fallback response generation
+                        const persona = SIMULATOR_PERSONAS[simulatorState.selectedPersonaId];
+                        if (persona) {
+                            const fallbackResponses = [
+                                `Hey! As a ${persona.occupation.toLowerCase()}, I think that's interesting.`,
+                                `That reminds me of something from my work in ${persona.location}.`,
+                                `I'm ${persona.name}, and I'd love to hear more about that!`,
+                                `Being ${persona.age}, I've seen how things change over time.`,
+                                `That's fascinating! Let me tell you about my experience with that.`,
+                                `I can relate to that from my perspective as someone in ${persona.location}.`
+                            ];
+                            data = { 
+                                response: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)],
+                                personaName: persona.name 
+                            };
+                            logToConsole(`Using fallback persona response for ${persona.name}`, 'info', 'simulator');
+                        } else {
+                            // Generic fallback if persona data is missing
+                            data = {
+                                response: "I understand what you're saying. That's really interesting to think about.",
+                                personaName: simulatorState.selectedPersonaId || 'Fallback'
+                            };
+                            logToConsole('Using generic fallback response (no persona data)', 'warning', 'simulator');
+                        }
+                    } else {
+                        // Generate response from simulator API
+                        const response = await fetch('/api/simulator/generate-response', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                personaPromptId: simulatorState.selectedPersonaId,
+                                conversationHistory: simulatorState.conversationHistory.slice(-10), // Last 10 messages
+                                userMessage: userMessage
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Simulator API error: ${response.status} - ${response.statusText}`);
+                        }
+                        
+                        data = await response.json();
+                        
+                        if (!data.response) {
+                            throw new Error('No response generated from simulator API');
+                        }
+                    }
                     
                     if (data.response) {
                         // Add AI response to history
@@ -3483,7 +3877,7 @@
             const testsToShow = filteredTests || tests;
             tbody.innerHTML = testsToShow.map(test => `
                 <tr id="test-row-${test.id}">
-                    <td><input type="checkbox" class="test-checkbox" value="${test.id}" onchange="toggleTestSelection('${test.id}')"></td>
+                    <td><input type="checkbox" class="test-checkbox" value="${test.id}" ${selectedTests.has(test.id) ? 'checked' : ''} onchange="toggleTestSelection('${test.id}')"></td>
                     <td>${test.name}</td>
                     <td style="color: #6e6e73; font-size: 13px;">${test.description}</td>
                     <td><span class="category-badge">${test.module}</span></td>
@@ -3519,59 +3913,6 @@
             logToConsole(`✅ Showing ${filteredTests.length} tests in category: ${testConfig[selectedCategory]?.name || selectedCategory}`, 'success');
         }
 
-        // Tab switching with URL routing
-        function switchTab(tabName, event) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
-            document.getElementById(tabName + '-tab').classList.add('active');
-            
-            // Update URL hash without triggering page reload (use user-friendly names)
-            if (event && !event.skipUrlUpdate) {
-                const friendlyNames = {
-                    'health': 'scripts',
-                    'tests': 'tests', 
-                    'live': 'live',
-                    'console': 'console',
-                    'history': 'history',
-                    'error-monitoring': 'errors',
-                    'prompts': 'prompts'
-                };
-                const friendlyName = friendlyNames[tabName] || tabName;
-                window.history.pushState({}, '', `#${friendlyName}`);
-            }
-            
-            // Initialize tab-specific content
-            if (tabName === 'health') {
-                initializeHealthCheck();
-            }
-            
-            // Load error monitoring data when switching to error monitoring tab
-            if (tabName === 'error-monitoring') {
-                loadErrorStats();
-                // Auto-refresh every 30 seconds
-                if (window.errorMonitoringInterval) {
-                    clearInterval(window.errorMonitoringInterval);
-                }
-                window.errorMonitoringInterval = setInterval(loadErrorStats, 30000);
-            } else {
-                // Clear auto-refresh when leaving error monitoring tab
-                if (window.errorMonitoringInterval) {
-                    clearInterval(window.errorMonitoringInterval);
-                    window.errorMonitoringInterval = null;
-                }
-            }
-            
-            // Initialize prompt library when switching to prompts tab
-            if (tabName === 'prompts') {
-                initializePromptLibrary();
-            }
-            
-            console.log(`📍 Switched to ${tabName} tab - URL: ${window.location.href}`);
-        }
         
         // Handle URL hash changes (back/forward browser navigation)
         function handleHashChange() {
@@ -3658,25 +3999,130 @@
 
         // Console logging
         function logToConsole(message, type = 'info', source = 'test') {
+            // Critical logs always get through - bypass all performance checks
+            const isTestCritical = source === 'test' || message.includes('TEST:') || 
+                                 message.includes('PASSED') || message.includes('FAILED') ||
+                                 message.includes('Started test:') || window.activeTestExecution;
+            
+            // Script execution logs are also critical when scripts are running
+            const isScriptCritical = (source === 'health' || source === 'script') && window.activeScriptExecution;
+            
+            const isCritical = isTestCritical || isScriptCritical;
+            
+            // Performance check - early return if logging disabled (except for critical logs)
+            if (!isCritical && (!LOG_CONFIG.enabled || !LOG_CONFIG.logLevels[type])) {
+                return;
+            }
+            
+            // Rate limiting check (bypass for critical logs)
+            if (!isCritical) {
+                const now = Date.now();
+                if (LOG_CONFIG.rateLimiting.enabled) {
+                    if (now - LOG_CONFIG.rateLimiting.lastLogTime < 1000) {
+                        LOG_CONFIG.rateLimiting.logCount++;
+                        if (LOG_CONFIG.rateLimiting.logCount > LOG_CONFIG.rateLimiting.maxPerSecond) {
+                            return; // Skip this log to prevent spam
+                        }
+                    } else {
+                        LOG_CONFIG.rateLimiting.lastLogTime = now;
+                        LOG_CONFIG.rateLimiting.logCount = 1;
+                    }
+                }
+            }
+
             const console = document.getElementById('unified-console');
             if (!console) return;
 
             const timestamp = new Date().toLocaleTimeString();
-            const line = document.createElement('div');
-            line.className = 'console-line';
-            line.setAttribute('data-source', source);
-            line.innerHTML = `
-                <span class="console-timestamp">[${timestamp}]</span>
-                <span style="color: #6e6e73;">[${source.toUpperCase()}]</span>
-                <span class="console-${type}">${message}</span>
-            `;
-            console.appendChild(line);
-            console.scrollTop = console.scrollHeight;
+            
+            // Store in console buffer for export functionality
+            const logEntry = {
+                timestamp,
+                message,
+                type,
+                source,
+                fullTimestamp: new Date().toISOString()
+            };
+            
+            // Initialize if needed and add to buffer with size limit
+            if (!window.consoleMessages) window.consoleMessages = [];
+            window.consoleMessages.push(logEntry);
+            
+            // Keep only configured max entries for performance
+            if (window.consoleMessages.length > LOG_CONFIG.maxEntries) {
+                window.consoleMessages = window.consoleMessages.slice(-LOG_CONFIG.maxEntries);
+            }
+            
+            // Always render critical logs and errors/warnings
+            const shouldRender = isCritical || type === 'error' || type === 'warning';
+            
+            if (shouldRender) {
+                const line = document.createElement('div');
+                line.className = 'console-line';
+                line.setAttribute('data-source', source);
+                line.innerHTML = `
+                    <span class="console-timestamp">[${timestamp}]</span>
+                    <span style="color: #6e6e73;">[${source.toUpperCase()}]</span>
+                    <span class="console-${type}">${message}</span>
+                `;
+                console.appendChild(line);
+                console.scrollTop = console.scrollHeight;
+                
+                // Limit DOM elements to prevent UI lag
+                const lines = console.querySelectorAll('.console-line');
+                if (lines.length > 200) {
+                    for (let i = 0; i < lines.length - 200; i++) {
+                        lines[i].remove();
+                    }
+                }
+            }
+        }
+
+        // Enhanced logging system with performance controls
+        window.consoleMessages = window.consoleMessages || [];
+        
+        // Logging configuration for performance
+        const LOG_CONFIG = {
+            enabled: true,
+            maxEntries: 500, // Reduced from unlimited
+            logLevels: {
+                debug: false,   // Disable debug logs by default
+                info: true,
+                warning: true,
+                error: true,
+                success: true
+            },
+            rateLimiting: {
+                enabled: true,
+                maxPerSecond: 10, // Max 10 logs per second
+                lastLogTime: 0,
+                logCount: 0
+            }
+        };
+
+        // Enhanced logging controls
+        function toggleVerboseLogging() {
+            const checkbox = document.getElementById('verbose-logs');
+            const isVerbose = checkbox.checked;
+            
+            // Update log levels based on verbose setting
+            LOG_CONFIG.logLevels.debug = isVerbose;
+            LOG_CONFIG.rateLimiting.enabled = !isVerbose; // Disable rate limiting in verbose mode
+            LOG_CONFIG.maxEntries = isVerbose ? 1000 : 500; // Allow more entries in verbose mode
+            
+            logToConsole(`Verbose logging ${isVerbose ? 'enabled' : 'disabled'}`, 'info', 'system');
+        }
+        
+        function clearConsoleLogs() {
+            clearUnifiedConsole();
+            logToConsole('Console logs cleared for performance', 'info', 'system');
         }
 
         // Unified console functions
         function clearUnifiedConsole() {
             const console = document.getElementById('unified-console');
+            window.consoleMessages = []; // Clear the buffer too
+            LOG_CONFIG.rateLimiting.logCount = 0; // Reset rate limiting
             if (console) {
                 console.innerHTML = '<div class="console-line"><span class="console-timestamp">[' + new Date().toLocaleTimeString() + ']</span><span class="console-info">Console cleared</span></div>';
             }
@@ -3705,8 +4151,8 @@
             
             const lines = document.querySelectorAll('#unified-console .console-line');
             lines.forEach(line => {
-                // Skip if already hidden by source filter
-                if (line.style.display === 'none') return;
+                // Reset display first, don't skip lines
+                // (line.style.display check was causing filters to not work properly)
                 
                 const hasInfo = line.querySelector('.console-info');
                 const hasWarning = line.querySelector('.console-warning');
@@ -3966,8 +4412,39 @@
             testResults = {};
             apiCalls.length = 0;
 
+            // Reset all selected tests to pending before batch execution
+            testsToRun.forEach(testId => {
+                const test = tests.find(t => t.id === testId);
+                if (test) {
+                    test.status = 'pending';
+                }
+            });
+            renderTestTable(); // Render the reset state
+            
             for (const testId of testsToRun) {
-                await runSingleTest(testId);
+                // Update test status to running and render table
+                const test = tests.find(t => t.id === testId);
+                if (test) {
+                    test.status = 'running';
+                    test.lastRun = new Date().toISOString();
+                    renderTestTable(); // Ensure the running state is captured
+                    logToConsole(`🚀 Starting test: ${testId}`, 'info');
+                }
+                
+                await runSingleTest(testId, true); // managedByBatch = true
+                
+                // Small delay to ensure test completion is processed
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Ensure final status is properly recorded
+                if (test) {
+                    testResults[testId] = test.status === 'pass';
+                    renderTestTable(); // Capture the final status
+                    logToConsole(`${test.status === 'pass' ? '✅' : '❌'} Completed: ${testId} - ${test.status.toUpperCase()}`, test.status === 'pass' ? 'success' : 'error');
+                    // Add explicit PASSED/FAILED log for dashboard-5 test
+                    logToConsole(`Status: ${test.status === 'pass' ? 'PASSED' : 'FAILED'} ✓`, test.status === 'pass' ? 'success' : 'error');
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
@@ -3996,28 +4473,46 @@
             updateStats();
         }
 
-        async function runSingleTest(testId) {
-            if (currentTest) {
-                logToConsole('Another test is running, please wait...', 'warning');
+        async function runSingleTest(testId, managedByBatch = false) {
+            // Prevent rapid re-execution and concurrent tests
+            const now = Date.now();
+            if (currentTest && currentTest !== testId) {
+                // Don't spam the same message - log once and return quietly for batch mode
+                if (!managedByBatch) {
+                    logToConsole(`Another test is running: ${currentTest}, please wait...`, 'warning');
+                }
+                return;
+            }
+            
+            // Add small debounce to prevent rapid re-execution
+            if (now - lastTestCompletionTime < 100) {
+                if (!managedByBatch) {
+                    logToConsole(`Please wait a moment before running another test...`, 'warning');
+                }
                 return;
             }
 
-            // Start test run logging for single test
-            testLogger.startTestRun();
+            // Start test run logging only if not managed by batch
+            if (!managedByBatch) {
+                testLogger.startTestRun();
+            }
 
             const test = tests.find(t => t.id === testId);
             if (!test) return;
 
             currentTest = testId;
+            window.activeTestExecution = true; // Enable verbose logging during tests
             test.status = 'running';
-            test.lastRun = new Date().toLocaleTimeString();
+            test.lastRun = new Date().toISOString();
             renderTestTable();
             
             // Brief delay to ensure UI updates before execution
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Log detailed test start with clear separation
-            logToConsole('═'.repeat(60), 'info');
+            // Log detailed test start with clear separation (always log, even in batch)
+            if (!managedByBatch) {
+                logToConsole('═'.repeat(60), 'info');
+            }
             logToConsole(`🧪 TEST: ${testId}`, 'info');
             logToConsole(`📝 Name: ${test.name}`, 'info');
             logToConsole(`📂 Category: ${test.category}`, 'info');
@@ -4187,21 +4682,27 @@
                 });
 
                 testResults[testId] = false;
+            } finally {
+                // Always reset test state, even if there are uncaught exceptions
+                logToConsole('═══════════════════════════════════════════════════════════', 'info');
+                logToConsole('', 'info'); // Blank line for spacing
+                
+                // Always reset test state
+                currentTest = null;
+                window.activeTestExecution = false; // Disable verbose logging after tests
+                lastTestCompletionTime = Date.now();
+                
+                // Clear API call tracking reference
+                window.currentTestApiCalls = null;
+                
+                // End test run logging only if not managed by batch
+                if (!managedByBatch) {
+                    testLogger.endTestRun();
+                }
+                
+                renderTestTable();
+                updateStats();
             }
-
-            logToConsole('═══════════════════════════════════════════════════════════', 'info');
-            logToConsole('', 'info'); // Blank line for spacing
-
-            currentTest = null;
-            
-            // Clear API call tracking reference
-            window.currentTestApiCalls = null;
-            
-            // End test run logging for single test
-            testLogger.endTestRun();
-            
-            renderTestTable();
-            updateStats();
         }
 
         // Update stats - automatically calculated from TEST_FUNCTIONS
@@ -4223,6 +4724,28 @@
             if (tests.length !== actualTestCount) {
                 console.warn(`Test count mismatch: tests.length=${tests.length}, TEST_FUNCTIONS=${actualTestCount}`);
                 logToConsole(`⚠️  Test count mismatch detected: ${tests.length} vs ${actualTestCount}`, 'warning');
+            }
+        }
+
+        // Force reset tests - clears stuck test state
+        function forceResetTests() {
+            if (confirm('Force reset all test states? This will clear any stuck tests.')) {
+                currentTest = null;
+                window.currentTestApiCalls = null;
+                
+                // Reset all test statuses to pending
+                tests.forEach(test => {
+                    test.status = 'pending';
+                    test.lastRun = null;
+                    test.duration = null;
+                });
+                
+                // Clear test results
+                testResults = {};
+                
+                logToConsole('🔄 Force reset completed - all tests cleared', 'info');
+                renderTestTable();
+                updateStats();
             }
         }
 
@@ -4734,6 +5257,19 @@ Include the exact code snippets that need to be changed.`;
 
                 // Final metrics update
                 updateMetrics();
+                
+                // Fix Issue #46: Reset metrics after automation stops to prevent infinite updates
+                setTimeout(() => {
+                    testMetrics.messagesSent = 0;
+                    testMetrics.responseTimes = [];
+                    testMetrics.lastMessageTime = null;
+                    testMetrics.engagementScore = 0;
+                    // Update display one final time to show reset
+                    document.getElementById('metric-messages').textContent = '0';
+                    document.getElementById('metric-response-time').textContent = '--';
+                    document.getElementById('metric-engagement').textContent = '--';
+                    logToConsole('📊 Metrics reset after automation completion', 'info', 'dashboard');
+                }, 10000); // Reset after 10 seconds to show final results briefly
             }
         }
 
@@ -4753,9 +5289,9 @@ Include the exact code snippets that need to be changed.`;
 
             logToConsole(`📋 Loading "${templateType}" template (${template.length} messages)`, 'info', 'app');
 
-            // Override the natural message flow temporarily
-            const originalMessages = getNextNaturalMessage.messages;
-            getNextNaturalMessage.messages = [...template];
+            // Cache and override the natural message flow temporarily
+            const originalMessages = window.NATURAL_TEST_MESSAGES ? [...window.NATURAL_TEST_MESSAGES] : [];
+            window.NATURAL_TEST_MESSAGES = [...template];
 
             // Start automated conversation with template length
             setTimeout(() => {
@@ -4763,7 +5299,8 @@ Include the exact code snippets that need to be changed.`;
 
                 // Restore original messages after template completes
                 setTimeout(() => {
-                    getNextNaturalMessage.messages = originalMessages;
+                    window.NATURAL_TEST_MESSAGES = originalMessages;
+                    logToConsole(`📋 Restored original natural messages (${originalMessages.length} messages)`, 'info', 'app');
                 }, template.length * parseInt(document.getElementById('message-delay').value) * 1000 + 1000);
             }, 100);
         }
@@ -4935,7 +5472,7 @@ Include the exact code snippets that need to be changed.`;
                     totalDuration: testMetrics.startTime ? Date.now() - testMetrics.startTime : 0
                 },
                 testHistory: testLogger.getHistory() || [],
-                consoleLog: consoleMessages.slice(-100) || [] // Last 100 console messages
+                consoleLog: (window.consoleMessages || []).slice(-100) // Last 100 console messages
             };
 
             // Create downloadable JSON file
@@ -4949,19 +5486,31 @@ Include the exact code snippets that need to be changed.`;
             URL.revokeObjectURL(url);
 
             logToConsole('📥 Test results exported successfully', 'success', 'app');
-            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${(testLogger.getHistory() || []).length} tests, ${(consoleMessages || []).length} log entries`, 'info', 'app');
+            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${(testLogger.getHistory() || []).length} tests, ${(window.consoleMessages || []).length} log entries`, 'info', 'app');
         }
 
+        // Global metrics interval tracking - Fix Issue #46
+        let metricsUpdateInterval = null;
+        
         // Initialize scenarios dropdown on load
         function initializeAdvancedFeatures() {
             updateScenarioDropdown();
 
-            // Update metrics display periodically
-            setInterval(() => {
-                if (autoConversationInterval || testMetrics.messagesSent > 0) {
-                    updateMetrics();
-                }
-            }, 1000);
+            // Update metrics display periodically - Fix Issue #46: Track interval ID
+            if (!metricsUpdateInterval) {
+                metricsUpdateInterval = setInterval(() => {
+                    // Only update metrics when automation is actively running
+                    if (autoConversationInterval) {
+                        updateMetrics();
+                    } else if (testMetrics.messagesSent > 0 && testMetrics.lastMessageTime) {
+                        // Continue for 10 seconds after last message, then stop
+                        const timeSinceLastMessage = Date.now() - testMetrics.lastMessageTime;
+                        if (timeSinceLastMessage < 10000) {
+                            updateMetrics();
+                        }
+                    }
+                }, 1000);
+            }
         }
 
         // ============================================
@@ -5013,9 +5562,16 @@ Include the exact code snippets that need to be changed.`;
             logToConsole('═'.repeat(60), 'warning');
             logToConsole(`Found ${count} failed tests out of ${total} total`, 'error', 'dashboard');
             
-            // Show brief summary of failed tests
+            // Show brief summary of failed tests with better error handling
             failures.failedTests.slice(0, 3).forEach(test => {
-                logToConsole(`❌ ${test.id}: ${test.name}`, 'error', 'dashboard');
+                const testId = test.id || test.testId || 'unknown-test';
+                const testName = test.name || test.message || 'Test failed';
+                const testError = test.error || test.errors?.[0] || 'No error details';
+                
+                logToConsole(`❌ ${testId}: ${testName}`, 'error', 'dashboard');
+                if (testError !== 'No error details') {
+                    logToConsole(`   Error: ${testError}`, 'error', 'dashboard');
+                }
             });
             
             if (failures.failedTests.length > 3) {
@@ -5132,6 +5688,7 @@ Include the exact code snippets that need to be changed.`;
                         // Handle chat export response from TestBridge
                         const exportedChatData = event.data.payload;
                         if (exportedChatData && event.data.success) {
+                            downloadChatExport(exportedChatData);
                             logToConsole(`✅ Chat exported: ${exportedChatData.messageCount} messages`, 'success', 'app');
                         } else {
                             logToConsole('❌ Chat export failed', 'error', 'app');
@@ -5199,11 +5756,11 @@ Include the exact code snippets that need to be changed.`;
         let simulatorPersonasInitialized = false;
 
         // Load simulator-tagged prompts for persona selector
-        async function loadSimulatorPersonas() {
-            if (simulatorPersonasInitialized) {
+        async function loadSimulatorPersonas(forceReload = false) {
+            if (simulatorPersonasInitialized && !forceReload) {
                 return; // Prevent duplicate initialization
             }
-            simulatorPersonasInitialized = true;
+            
             try {
                 const response = await fetch('/api/prompts');
                 if (!response.ok) throw new Error('Failed to load prompts');
@@ -5243,6 +5800,9 @@ Include the exact code snippets that need to be changed.`;
                         logToConsole(`Loaded ${simulatorPrompts.length} simulator persona(s) from Supabase`, 'success', 'app');
                     }
                 }
+                
+                // Only mark as initialized on successful load from Supabase
+                simulatorPersonasInitialized = true;
             } catch (error) {
                 console.error('Failed to load simulator personas:', error);
                 logToConsole('Failed to load simulator personas from Supabase, using fallback', 'warn', 'app');
@@ -5259,8 +5819,11 @@ Include the exact code snippets that need to be changed.`;
                         personaSelect.appendChild(option);
                     });
                     logToConsole(`Loaded ${Object.keys(SIMULATOR_PERSONAS).length} fallback persona(s)`, 'success', 'app');
+                    // Don't set simulatorPersonasInitialized = true for fallback, so it can retry Supabase later
                 } else {
-                    simulatorPersonasInitialized = false; // Reset on error to allow retry
+                    // No personas available at all, don't block future retries
+                    simulatorPersonasInitialized = false;
+                    logToConsole('No personas available - will retry on next load', 'warn', 'app');
                 }
             }
         }
@@ -5616,12 +6179,24 @@ Include the exact code snippets that need to be changed.`;
                 const result = await response.json();
                 console.log(`✅ ${result.message}`);
 
-                // Update local state
+                // Update local state - Fix Issue #45: Clear all other active flags when setting one active
+                if (isActive) {
+                    // When activating a prompt, deactivate all others
+                    promptLibraryState.allPrompts.forEach(p => {
+                        p.is_active = false;
+                        p.status = 'draft';
+                    });
+                }
+                
+                // Now set the target prompt's state
                 const prompt = promptLibraryState.allPrompts.find(p => p.id === promptId);
                 if (prompt) {
                     prompt.is_active = isActive;
                     prompt.status = isActive ? 'active' : 'draft';
                 }
+                
+                // Re-render the prompt list to update all toggle states
+                renderPromptList();
 
                 // If we're viewing this prompt's versions, reload them to see the change
                 if (promptLibraryState.selectedPrompt?.prompt_id === promptId) {
@@ -6380,24 +6955,33 @@ Include the exact code snippets that need to be changed.`;
                     categoryElement.appendChild(scriptElement);
                 }
 
-                countElement.textContent = `${categoryRunning}/${scripts.length}`;
+                if (countElement) {
+                    countElement.textContent = `${categoryRunning}/${scripts.length}`;
+                }
             }
 
-            // Update overview stats
-            document.getElementById('total-scripts').textContent = totalScripts;
-            document.getElementById('running-services').textContent = runningServices;
-            document.getElementById('failed-services').textContent = failedServices;
+            // Update overview stats with null safety
+            const totalScriptsEl = document.getElementById('total-scripts');
+            const runningServicesEl = document.getElementById('running-services');
+            const failedServicesEl = document.getElementById('failed-services');
+            const systemHealthEl = document.getElementById('system-health');
+            
+            if (totalScriptsEl) totalScriptsEl.textContent = totalScripts;
+            if (runningServicesEl) runningServicesEl.textContent = runningServices;
+            if (failedServicesEl) failedServicesEl.textContent = failedServices;
             
             const healthPercentage = totalScripts > 0 ? Math.round((runningServices / totalScripts) * 100) : 100;
-            document.getElementById('system-health').textContent = healthPercentage + '%';
-            
-            const healthElement = document.getElementById('system-health');
-            if (healthPercentage >= 80) {
-                healthElement.style.color = '#34c759';
-            } else if (healthPercentage >= 60) {
-                healthElement.style.color = '#ff9500';
-            } else {
-                healthElement.style.color = '#ff3b30';
+            if (systemHealthEl) {
+                systemHealthEl.textContent = healthPercentage + '%';
+                
+                // Update color based on health percentage
+                if (healthPercentage >= 80) {
+                    systemHealthEl.style.color = '#34c759';
+                } else if (healthPercentage >= 60) {
+                    systemHealthEl.style.color = '#ff9500';
+                } else {
+                    systemHealthEl.style.color = '#ff3b30';
+                }
             }
 
             logToHealthCheck(`✅ Health check complete: ${runningServices}/${totalScripts} services running (${healthPercentage}%)`, 'success');
@@ -6407,23 +6991,30 @@ Include the exact code snippets that need to be changed.`;
         async function checkScriptStatus(script) {
             try {
                 if (script.port) {
-                    // Check if service is running on port
+                    // Check if service is running on port via server-side ping
                     try {
-                        const response = await fetch(`${window.location.origin.replace(/:\d+/, '')}:${script.port}/`, { 
-                            method: 'HEAD',
-                            mode: 'no-cors'
-                        });
+                        const response = await fetch(`/api/ping-service/${script.port}`);
+                        const result = await response.json();
                         
-                        return {
-                            running: true,
-                            status: 'running',
-                            message: `Service active on port ${script.port}`
-                        };
+                        if (result.success) {
+                            return {
+                                running: true,
+                                status: 'running',
+                                message: `Service active on port ${script.port}`
+                            };
+                        } else {
+                            return {
+                                running: false,
+                                status: 'stopped',
+                                message: result.message || `Service not responding on port ${script.port}`
+                            };
+                        }
                     } catch (error) {
                         return {
                             running: false,
-                            status: 'stopped',
-                            message: `Service not responding on port ${script.port}`
+                            status: 'error',
+                            error: true,
+                            message: `Health check failed: ${error.message}`
                         };
                     }
                 } else if (script.status === 'active') {
@@ -6507,6 +7098,10 @@ Include the exact code snippets that need to be changed.`;
             }
             
             updateHealthLogs();
+            
+            // Fix Issue: Forward health logs to unified console for visibility
+            const consoleLevel = level === 'error' ? 'error' : level === 'success' ? 'success' : 'info';
+            logToConsole(message, consoleLevel, 'health');
         }
 
         // Update health logs display
@@ -6543,17 +7138,8 @@ Include the exact code snippets that need to be changed.`;
         }
 
         // Populate the health table with consolidated health scripts
-        function populateHealthTable() {
-            const tableBody = document.getElementById('health-table-body');
-            if (!tableBody) return;
-
-            // Initialize healthTableData if it doesn't exist
-            if (!window.healthTableData) {
-                window.healthTableData = {};
-            }
-
-            // Define all available scripts
-            const availableScripts = {
+        // Global script definitions - shared between populateHealthTable and runScript
+        const HEALTH_SCRIPTS = {
                 // Health & Monitoring Scripts
                 'system-health': {
                     name: 'System Health',
@@ -6675,12 +7261,41 @@ Include the exact code snippets that need to be changed.`;
                 }
             };
 
-            const rows = Object.entries(availableScripts).map(([scriptId, metadata]) => {
+        function populateHealthTable() {
+            const tableBody = document.getElementById('health-table-body');
+            if (!tableBody) return;
+
+            // Initialize healthTableData if it doesn't exist
+            if (!window.healthTableData) {
+                window.healthTableData = {};
+            }
+
+            const rows = Object.entries(HEALTH_SCRIPTS).map(([scriptId, metadata]) => {
                 const status = window.healthTableData[scriptId] || { status: 'pending', lastRun: null, message: null };
                 return createHealthScriptRow(scriptId, metadata, status);
             }).join('');
 
             tableBody.innerHTML = rows;
+            
+            // Add "Currently Running" indicator and disable button - EXACTLY like Tests tab
+            if (currentScript) {
+                const runningRow = tableBody.querySelector(`tr[data-script-id="${currentScript}"]`);
+                if (runningRow) {
+                    const nameCell = runningRow.cells[1]; // Script Name column
+                    const strong = nameCell.querySelector('strong');
+                    if (strong && !strong.querySelector('.currently-running')) {
+                        strong.innerHTML += '<span class="currently-running" style="color: #007AFF; font-weight: bold; margin-left: 8px;">(Currently Running)</span>';
+                    }
+                    
+                    // Disable the Run button for currently running script
+                    const runButton = runningRow.querySelector('button');
+                    if (runButton) {
+                        runButton.disabled = true;
+                        runButton.textContent = 'Running...';
+                        runButton.style.opacity = '0.6';
+                    }
+                }
+            }
         }
 
         // Create a table row for a health script
@@ -6707,7 +7322,7 @@ Include the exact code snippets that need to be changed.`;
                     <td>${metadata.module}</td>
                     <td>${lastRun}</td>
                     <td>
-                        <button class="test-action-btn" onclick="runSingleHealthScript('${scriptId}')">
+                        <button class="test-action-btn" onclick="runScript('${scriptId}')">
                             Run
                         </button>
                     </td>
@@ -6758,138 +7373,15 @@ Include the exact code snippets that need to be changed.`;
             }
         }
 
-        // Update health table with script results
-        function updateHealthTableWithScript(scriptId, name, description, status, message) {
-            // Initialize healthTableData if it doesn't exist for scripts
-            if (!window.healthTableData) {
-                window.healthTableData = {};
-            }
-            
-            window.healthTableData[scriptId] = {
-                status: status,
-                lastRun: new Date().toISOString(),
-                message: message || ''
-            };
-            
-            // Create a simple health table entry for scripts
-            const tableBody = document.getElementById('health-table-body');
-            if (!tableBody) return;
-            
-            const statusIcon = getStatusIcon(status);
-            const lastRun = new Date().toLocaleTimeString();
-            
-            // Find existing row or create new one
-            let existingRow = document.querySelector(`tr[data-script-id="${scriptId}"]`);
-            
-            const rowHTML = `
-                <tr data-script-id="${scriptId}">
-                    <td>
-                        <span class="health-status ${status}">
-                            ${statusIcon}
-                            ${status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                    </td>
-                    <td>
-                        <strong>${name}</strong>
-                        <div style="font-size: 12px; color: #8E8E93; margin-top: 2px;">
-                            ${description}
-                        </div>
-                    </td>
-                    <td>Health Check</td>
-                    <td>System</td>
-                    <td>${lastRun}</td>
-                    <td>
-                        <button class="test-action-btn" onclick="runSingleHealthScript('${scriptId}')">
-                            Run
-                        </button>
-                    </td>
-                </tr>
-            `;
-            
-            if (existingRow) {
-                existingRow.outerHTML = rowHTML;
-            } else {
-                tableBody.insertAdjacentHTML('beforeend', rowHTML);
-            }
-        }
 
-        // Run a single health script
-        async function runSingleHealthScript(scriptId) {
-            console.log(`Running health script: ${scriptId}`);
-            
-            try {
-                const response = await fetch(`/api/run-script/${scriptId}`);
-                const output = await response.text();
-                
-                if (response.ok) {
-                    console.log(`${scriptId} completed successfully`);
-                    logToHealthCheck(`✅ ${scriptId} completed successfully`, 'success');
-                    
-                    const scriptNames = {
-                        'system-health': 'System Health',
-                        'development-health': 'Development Environment', 
-                        'testing-health': 'Testing Infrastructure',
-                        'continuous-monitor': 'Continuous Monitor',
-                        'dev-server': 'Development Server',
-                        'init': 'Context Initialization',
-                        'setup-context-automation': 'Setup Context Automation',
-                        'install-claude-hooks': 'Install Claude Hooks',
-                        'auto-test-reflect': 'Auto Test Reflect',
-                        'debug-browser-reality': 'Debug Browser Reality',
-                        'deploy': 'Deploy',
-                        'version-control': 'Version Control',
-                        'analyze-supabase-data': 'Analyze Supabase Data',
-                        'test-simulator': 'Test Simulator',
-                        'import-prompts': 'Import Prompts',
-                        'check-supabase-schema': 'Check Supabase Schema',
-                        'session-logger': 'Session Logger',
-                        'auto-init': 'Auto Initialize'
-                    };
-                    
-                    const scriptDescriptions = {
-                        'system-health': 'System core components and connectivity',
-                        'development-health': 'Development tools and environment validation',
-                        'testing-health': 'Testing framework and automation validation',
-                        'continuous-monitor': '24/7 production monitoring with alerting',
-                        'dev-server': 'Enhanced development server with coordination',
-                        'init': 'Initialize Cupido context for Claude Code sessions',
-                        'setup-context-automation': 'Configure automated context preservation',
-                        'install-claude-hooks': 'Install Claude Code hooks for seamless workflow',
-                        'auto-test-reflect': 'Automated Chrome-based UI testing',
-                        'debug-browser-reality': 'Advanced browser state debugging',
-                        'deploy': 'Build for web and deploy to Surge',
-                        'version-control': 'App.tsx backup/restore system',
-                        'analyze-supabase-data': 'Comprehensive Supabase database analysis',
-                        'test-simulator': 'Test simulator API endpoints and responses',
-                        'import-prompts': 'Import prompts from JSON to Supabase',
-                        'check-supabase-schema': 'Validate Supabase database schema',
-                        'session-logger': 'Log and track development session activities',
-                        'auto-init': 'Automatic context initialization'
-                    };
-                    
-                    updateHealthTableWithScript(
-                        scriptId, 
-                        scriptNames[scriptId] || scriptId, 
-                        scriptDescriptions[scriptId] || 'Health check script',
-                        'passed', 
-                        'Health check completed successfully'
-                    );
-                } else {
-                    console.error(`${scriptId} failed`);
-                    logToHealthCheck(`❌ ${scriptId} failed`, 'error');
-                    updateHealthTableWithScript(scriptId, scriptId, 'Health check script', 'failed', 'Health check failed');
-                }
-            } catch (error) {
-                console.error(`Error running ${scriptId}:`, error);
-                logToHealthCheck(`❌ ${scriptId} error: ${error.message}`, 'error');
-                updateHealthTableWithScript(scriptId, scriptId, 'Health check script', 'failed', error.message);
-            }
-        }
-
-        // Run all health checks using consolidated scripts
+        // Run ALL health checks - Fixed to cover every available script
         async function runAllHealthChecks() {
-            console.log('🚀 Starting system health checks...');
-            logToHealthCheck('🚀 Starting comprehensive system health check...', 'info');
+            logToConsole('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info', 'health');
+            logToHealthCheck('🚀 Starting comprehensive health check...', 'info');
+            
+            // Show script output panel for comprehensive health check
+            showScriptOutputPanel();
+            logToScriptOutput('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info');
             
             const button = document.querySelector('.health-run-btn');
             if (button) {
@@ -6901,87 +7393,112 @@ Include the exact code snippets that need to be changed.`;
                     Running...
                 `;
             }
+            
+            // Use shared script definitions for consistency
+            const scriptIds = Object.keys(HEALTH_SCRIPTS);
+            const totalScripts = scriptIds.length;
+            let healthChecksPassed = 0;
+            let healthChecksFailed = 0;
+            
+            logToConsole(`📋 Running ${totalScripts} health scripts total`, 'info', 'health');
+            logToHealthCheck(`Running ${totalScripts} health scripts...`, 'info');
 
             try {
-                let healthChecksPassed = 0;
-                let totalHealthChecks = 3; // We have 3 consolidated scripts
-
-                // Run System Health Check
-                try {
-                    logToHealthCheck('🔄 Running system health check...', 'info');
-                    const systemHealthResponse = await fetch('/api/run-script/system-health');
-                    const systemHealthText = await systemHealthResponse.text();
+                // Run ALL scripts sequentially
+                for (let i = 0; i < scriptIds.length; i++) {
+                    const scriptId = scriptIds[i];
+                    const scriptInfo = HEALTH_SCRIPTS[scriptId];
+                    const progress = `(${i + 1}/${totalScripts})`;
                     
-                    if (systemHealthResponse.ok) {
-                        logToHealthCheck('✅ System health check completed', 'success');
-                        console.log('System Health Output:', systemHealthText);
-                        healthChecksPassed++;
+                    try {
+                        logToConsole(`🔄 ${progress} Running ${scriptId} (${scriptInfo.name})...`, 'info', 'health');
+                        logToHealthCheck(`🔄 ${progress} Running ${scriptInfo.name}...`, 'info');
+                        logToScriptOutput(`🔄 ${progress} Running ${scriptInfo.name}...`, 'info');
                         
-                        // Update health table with system health status
-                        updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'passed', 'All system components operational');
-                    } else {
-                        logToHealthCheck('❌ System health check failed', 'error');
-                        updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'failed', 'System health check failed');
-                    }
-                } catch (error) {
-                    console.error('System health check error:', error);
-                    logToHealthCheck(`❌ System health check failed: ${error.message}`, 'error');
-                    updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'failed', error.message);
-                }
-
-                // Run Development Health Check
-                try {
-                    logToHealthCheck('🔄 Running development environment check...', 'info');
-                    const devHealthResponse = await fetch('/api/run-script/development-health');
-                    const devHealthText = await devHealthResponse.text();
-                    
-                    if (devHealthResponse.ok) {
-                        logToHealthCheck('✅ Development environment check completed', 'success');
-                        console.log('Development Health Output:', devHealthText);
-                        healthChecksPassed++;
+                        // Update table to show running status
+                        window.healthTableData = window.healthTableData || {};
+                        window.healthTableData[scriptId] = {
+                            status: 'running',
+                            lastRun: new Date().toISOString(),
+                            message: 'Running...'
+                        };
+                        populateHealthTable();
                         
-                        updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'passed', 'Development environment healthy');
-                    } else {
-                        logToHealthCheck('❌ Development environment check failed', 'error');
-                        updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'failed', 'Development environment check failed');
-                    }
-                } catch (error) {
-                    console.error('Development health check error:', error);
-                    logToHealthCheck(`❌ Development environment check failed: ${error.message}`, 'error');
-                    updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'failed', error.message);
-                }
-
-                // Run Testing Infrastructure Health Check
-                try {
-                    logToHealthCheck('🔄 Running testing infrastructure check...', 'info');
-                    const testingHealthResponse = await fetch('/api/run-script/testing-health');
-                    const testingHealthText = await testingHealthResponse.text();
-                    
-                    if (testingHealthResponse.ok) {
-                        logToHealthCheck('✅ Testing infrastructure check completed', 'success');
-                        console.log('Testing Health Output:', testingHealthText);
-                        healthChecksPassed++;
+                        // Make API call
+                        const response = await fetch(`/api/run-script/${scriptId}`);
+                        const output = await response.text();
                         
-                        updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'passed', 'Testing infrastructure healthy');
-                    } else {
-                        logToHealthCheck('❌ Testing infrastructure check failed', 'error');
-                        updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'failed', 'Testing infrastructure check failed');
+                        if (response.ok) {
+                            healthChecksPassed++;
+                            logToConsole(`✅ ${progress} ${scriptInfo.name} completed successfully`, 'success', 'health');
+                            logToHealthCheck(`✅ ${scriptInfo.name} completed`, 'success');
+                            logToScriptOutput(`✅ ${progress} ${scriptInfo.name} completed successfully`, 'success');
+                            
+                            // Update table with success
+                            window.healthTableData[scriptId] = {
+                                status: 'passed',
+                                lastRun: new Date().toISOString(),
+                                message: 'Completed successfully'
+                            };
+                        } else {
+                            healthChecksFailed++;
+                            logToConsole(`❌ ${progress} ${scriptInfo.name} failed`, 'error', 'health');
+                            logToHealthCheck(`❌ ${scriptInfo.name} failed`, 'error');
+                            logToScriptOutput(`❌ ${progress} ${scriptInfo.name} failed`, 'error');
+                            
+                            // Update table with failure
+                            window.healthTableData[scriptId] = {
+                                status: 'failed',
+                                lastRun: new Date().toISOString(),
+                                message: output.substring(0, 100) || 'Script failed'
+                            };
+                        }
+                        
+                        populateHealthTable();
+                        updateHealthSummary();
+                        
+                        // Brief delay between scripts
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                    } catch (error) {
+                        healthChecksFailed++;
+                        logToConsole(`💥 ${progress} ${scriptInfo.name} error: ${error.message}`, 'error', 'health');
+                        logToHealthCheck(`💥 ${scriptInfo.name} error: ${error.message}`, 'error');
+                        logToScriptOutput(`💥 ${progress} ${scriptInfo.name} error: ${error.message}`, 'error');
+                        
+                        // Update table with error
+                        window.healthTableData[scriptId] = {
+                            status: 'failed',
+                            lastRun: new Date().toISOString(),
+                            message: error.message
+                        };
+                        populateHealthTable();
+                        updateHealthSummary();
                     }
-                } catch (error) {
-                    console.error('Testing health check error:', error);
-                    logToHealthCheck(`❌ Testing infrastructure check failed: ${error.message}`, 'error');
-                    updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'failed', error.message);
                 }
                 
-                // Summary
-                logToHealthCheck(`🏁 Health check complete: ${healthChecksPassed}/${totalHealthChecks} health checks passed`, 'info');
+                // Final summary
+                const successRate = Math.round((healthChecksPassed / totalScripts) * 100);
+                logToConsole('═'.repeat(60), 'info', 'health');
+                logToConsole(`🏁 COMPREHENSIVE HEALTH CHECK COMPLETE`, 'info', 'health');
+                logToConsole(`📊 Results: ${healthChecksPassed} passed, ${healthChecksFailed} failed, ${totalScripts} total`, healthChecksPassed === totalScripts ? 'success' : 'warning', 'health');
+                logToConsole(`📈 Success Rate: ${successRate}%`, successRate >= 80 ? 'success' : successRate >= 60 ? 'warning' : 'error', 'health');
+                logToConsole('═'.repeat(60), 'info', 'health');
                 
-                // Update summary display
+                logToHealthCheck(`🏁 Health check complete: ${healthChecksPassed}/${totalScripts} scripts passed (${successRate}%)`, healthChecksPassed === totalScripts ? 'success' : 'info');
+                
+                // Summary to script output panel
+                logToScriptOutput(`🏁 COMPREHENSIVE HEALTH CHECK COMPLETE`, 'info');
+                logToScriptOutput(`📊 Results: ${healthChecksPassed} passed, ${healthChecksFailed} failed, ${totalScripts} total`, healthChecksPassed === totalScripts ? 'success' : 'warning');
+                logToScriptOutput(`📈 Success Rate: ${successRate}%`, successRate >= 80 ? 'success' : successRate >= 60 ? 'warning' : 'error');
+                
+                // Final table and summary update
+                populateHealthTable();
                 updateHealthSummary();
                 
             } catch (error) {
-                console.error('Health check failed:', error);
-                logToHealthCheck(`❌ Health check failed: ${error.message}`, 'error');
+                logToConsole(`💥 CRITICAL ERROR during health check sequence: ${error.message}`, 'error', 'health');
+                logToHealthCheck(`❌ Health check sequence failed: ${error.message}`, 'error');
             } finally {
                 if (button) {
                     button.disabled = false;
@@ -6997,63 +7514,182 @@ Include the exact code snippets that need to be changed.`;
             }
         }
 
-        // Run a script
-        async function runScript(scriptId) {
-            // Available scripts with actual server endpoints
-            const availableScripts = {
-                'system-health': { name: 'System Health' },
-                'development-health': { name: 'Development Environment' },
-                'testing-health': { name: 'Testing Infrastructure' },
-                'continuous-monitor': { name: 'Continuous Monitor' },
-                'dev-server': { name: 'Development Server' },
-                'init': { name: 'Context Initialization' },
-                'setup-context-automation': { name: 'Setup Context Automation' },
-                'install-claude-hooks': { name: 'Install Claude Hooks' },
-                'debug-browser-reality': { name: 'Debug Browser Reality' },
-                'auto-test-reflect': { name: 'Auto Test Reflect' },
-                'auto-init': { name: 'Auto Init' },
-                'session-logger': { name: 'Session Logger' }
-            };
+        // Global script execution state (mirroring test execution pattern)
+        let currentScript = null;
+        window.activeScriptExecution = false;
+        
+        // Enhanced batch health script runner - Fixed to run ALL scripts
+        async function runHealthScriptSequence() {
+            console.log('🚀 Starting comprehensive health check sequence...');
+            logToConsole('🚀 Starting FULL health check sequence - all available scripts', 'info', 'script');
+            
+            // Use shared script definitions for consistency
+            const scriptIds = Object.keys(HEALTH_SCRIPTS);
+            let passed = 0;
+            let failed = 0;
+            
+            logToConsole(`📋 Running ${scriptIds.length} scripts total`, 'info', 'script');
+            
+            for (const scriptId of scriptIds) {
+                try {
+                    logToConsole(`🔄 Running ${scriptId} (${HEALTH_SCRIPTS[scriptId].name})...`, 'info', 'script');
+                    await runScript(scriptId);
+                    
+                    // Check result
+                    const result = window.healthTableData[scriptId];
+                    if (result && result.status === 'passed') {
+                        passed++;
+                        logToConsole(`✅ ${scriptId} completed successfully`, 'success', 'script');
+                    } else {
+                        failed++;
+                        logToConsole(`❌ ${scriptId} failed`, 'error', 'script');
+                    }
+                    
+                    // Brief delay between scripts for UX
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    
+                } catch (error) {
+                    failed++;
+                    logToConsole(`💥 ${scriptId} error: ${error.message}`, 'error', 'script');
+                }
+            }
+            
+            // Final summary
+            const total = scriptIds.length;
+            const successRate = Math.round((passed / total) * 100);
+            logToConsole('═'.repeat(60), 'info', 'script');
+            logToConsole(`🏁 COMPREHENSIVE HEALTH CHECK COMPLETE`, 'info', 'script');
+            logToConsole(`📊 Results: ${passed} passed, ${failed} failed, ${total} total`, passed === total ? 'success' : 'warning', 'script');
+            logToConsole(`📈 Success Rate: ${successRate}%`, successRate >= 80 ? 'success' : successRate >= 60 ? 'warning' : 'error', 'script');
+            logToConsole('═'.repeat(60), 'info', 'script');
+            
+            // Update summary display
+            updateHealthSummary();
+            
+            return { passed, failed, total, successRate };
+        }
 
-            if (!availableScripts[scriptId]) {
+        // Run a script - EXACTLY mirroring the test execution pattern
+        async function runScript(scriptId) {
+            // Use shared script definitions for consistency with populateHealthTable
+            if (!HEALTH_SCRIPTS[scriptId]) {
                 console.warn(`Script not found: ${scriptId}`);
                 return;
             }
 
-            window.healthTableData = window.healthTableData || {};
-            window.healthTableData[scriptId] = { status: 'running', lastRun: new Date(), message: 'Running...' };
-            populateHealthTable();
+            // Block if another script is running
+            if (currentScript) {
+                logToConsole(`⚠️ Script ${currentScript} is currently running. Please wait for it to complete.`, 'warning', 'script');
+                return;
+            }
+
+            // Initialize script execution state - MIRROR TEST PATTERN
+            currentScript = scriptId;
+            window.activeScriptExecution = true; // Enable verbose logging during scripts
             
-            logToConsole(`🚀 Started script: ${availableScripts[scriptId]?.name || scriptId}`, 'info', 'script');
+            // Show script output panel for execution details
+            showScriptOutputPanel();
+            
+            // Update script status and table - MIRROR TEST PATTERN
+            window.healthTableData = window.healthTableData || {};
+            window.healthTableData[scriptId] = { 
+                status: 'running', 
+                lastRun: new Date().toISOString(), 
+                message: 'Running...'
+            };
+            populateHealthTable(); // Ensure the running state is captured
+            
+            // Force immediate DOM update for status visibility
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Double-check status is visible
+            const statusElement = document.querySelector(`tr[data-script-id="${scriptId}"] .health-status`);
+            if (statusElement) {
+                statusElement.className = 'health-status running';
+                statusElement.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Running
+                `;
+            }
+            
+            // Log script start with clear separation - MIRROR TEST PATTERN
+            logToConsole('═'.repeat(60), 'info', 'script');
+            logToConsole(`🚀 SCRIPT EXECUTION: ${HEALTH_SCRIPTS[scriptId].name}`, 'info', 'script');
+            logToConsole(`Script ID: ${scriptId}`, 'info', 'script');
+            logToConsole(`Category: ${HEALTH_SCRIPTS[scriptId].category}`, 'info', 'script');
+            
+            // Also log to script output panel
+            logToScriptOutput(`🚀 Starting: ${HEALTH_SCRIPTS[scriptId].name}`, 'info');
+            logToScriptOutput(`Script ID: ${scriptId}`, 'info');
+            logToScriptOutput(`Category: ${HEALTH_SCRIPTS[scriptId].category}`, 'info');
+            logToConsole('═'.repeat(60), 'info', 'script');
+            
+            // Brief delay to ensure UI updates before execution - MIRROR TEST PATTERN
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
                 const response = await fetch(`/api/run-script/${scriptId}`);
                 const result = await response.text();
                 const success = response.ok;
                 
+                // Log full bash output to console for review
+                logToConsole(`📋 Script Output:`, 'info', 'script');
+                logToScriptOutput(`📋 Script Output:`, 'info');
+                
+                if (result.trim()) {
+                    result.split('\n').forEach(line => {
+                        if (line.trim()) {
+                            logToConsole(`   ${line}`, success ? 'info' : 'error', 'script');
+                            logToScriptOutput(`${line}`, success ? 'info' : 'error');
+                        }
+                    });
+                } else {
+                    logToConsole('   (No output)', 'info', 'script');
+                    logToScriptOutput('(No output)', 'info');
+                }
+                
+                // Update final status
                 window.healthTableData[scriptId] = {
                     status: success ? 'passed' : 'failed',
-                    lastRun: new Date(),
+                    lastRun: new Date().toISOString(),
                     message: success ? 'Completed successfully' : result.substring(0, 100)
                 };
                 populateHealthTable();
                 
-                const scriptName = availableScripts[scriptId]?.name || scriptId;
+                const scriptName = HEALTH_SCRIPTS[scriptId]?.name || scriptId;
                 if (success) {
-                    logToConsole(`✅ Script completed: ${scriptName}`, 'info', 'script');
+                    logToConsole(`✅ SCRIPT COMPLETED: ${scriptName}`, 'success', 'script');
+                    logToScriptOutput(`✅ COMPLETED: ${scriptName}`, 'success');
                 } else {
-                    logToConsole(`❌ Script failed: ${scriptName} - ${result.substring(0, 50)}`, 'error', 'script');
+                    logToConsole(`❌ SCRIPT FAILED: ${scriptName}`, 'error', 'script');
+                    logToScriptOutput(`❌ FAILED: ${scriptName}`, 'error');
                 }
+                
             } catch (error) {
                 window.healthTableData[scriptId] = {
                     status: 'failed',
-                    lastRun: new Date(),
+                    lastRun: new Date().toISOString(),
                     message: error.message
                 };
                 populateHealthTable();
                 
-                const scriptName = availableScripts[scriptId]?.name || scriptId;
-                logToConsole(`💥 Script error: ${scriptName} - ${error.message}`, 'error', 'script');
+                const scriptName = HEALTH_SCRIPTS[scriptId]?.name || scriptId;
+                logToConsole(`💥 SCRIPT ERROR: ${scriptName} - ${error.message}`, 'error', 'script');
+                logToScriptOutput(`💥 ERROR: ${scriptName} - ${error.message}`, 'error');
+            } finally {
+                // End script execution logging - MIRROR TEST PATTERN
+                logToConsole('═'.repeat(60), 'info', 'script');
+                logToConsole('', 'info', 'script'); // Blank line for spacing
+                
+                // Always reset script state - MIRROR TEST PATTERN
+                currentScript = null;
+                window.activeScriptExecution = false; // Disable verbose logging after scripts
+                
+                // Update table to remove "Currently Running" indicator
+                populateHealthTable();
             }
 
             updateHealthSummary();
@@ -7082,26 +7718,15 @@ Include the exact code snippets that need to be changed.`;
 
         // Update health summary stats
         function updateHealthSummary() {
-            // Available scripts for health summary
-            const availableScripts = {
-                'system-health': { name: 'System Health' },
-                'development-health': { name: 'Development Environment' },
-                'testing-health': { name: 'Testing Infrastructure' },
-                'continuous-monitor': { name: 'Continuous Monitor' },
-                'dev-server': { name: 'Development Server' },
-                'init': { name: 'Context Initialization' },
-                'setup-context-automation': { name: 'Setup Context Automation' },
-                'install-claude-hooks': { name: 'Install Claude Hooks' },
-                'debug-browser-reality': { name: 'Debug Browser Reality' },
-                'auto-test-reflect': { name: 'Auto Test Reflect' },
-                'auto-init': { name: 'Auto Init' },
-                'session-logger': { name: 'Session Logger' }
-            };
+            // Use shared script definitions for consistency - count ALL available scripts
+            const totalScripts = Object.keys(HEALTH_SCRIPTS).length;
             
-            const totalScripts = Object.keys(availableScripts).length;
-            const passedScripts = Object.values(window.healthTableData || {}).filter(script => script.status === 'passed').length;
-            const failedScripts = Object.values(window.healthTableData || {}).filter(script => script.status === 'failed').length;
-            const availableCount = totalScripts; // All scripts are available
+            // Count from actual healthTableData to get real-time status
+            const healthData = window.healthTableData || {};
+            const passedScripts = Object.values(healthData).filter(script => script.status === 'passed').length;
+            const failedScripts = Object.values(healthData).filter(script => script.status === 'failed').length;
+            const runningScripts = Object.values(healthData).filter(script => script.status === 'running').length;
+            const pendingScripts = totalScripts - passedScripts - failedScripts - runningScripts;
             const healthPercentage = totalScripts > 0 ? Math.round((passedScripts / totalScripts) * 100) : 0;
 
             // Update summary display
@@ -7112,7 +7737,7 @@ Include the exact code snippets that need to be changed.`;
 
             if (passedEl) passedEl.textContent = passedScripts;
             if (failedEl) failedEl.textContent = failedScripts;
-            if (pendingEl) pendingEl.textContent = availableCount;
+            if (pendingEl) pendingEl.textContent = Math.max(0, pendingScripts); // Fix: Show actual pending count
             if (healthEl) healthEl.textContent = `${healthPercentage}%`;
         }
 
@@ -7122,6 +7747,181 @@ Include the exact code snippets that need to be changed.`;
                 refreshHealthTable();
             }
         }, 30000);
+
+        // ============================================
+        // SCRIPT UX ENHANCEMENT FUNCTIONS
+        // ============================================
+
+        // Global active script tracking
+        let activeScript = null;
+        let scriptStartTime = null;
+
+        // Show active script indicator
+        function showActiveScriptIndicator(scriptId, scriptName) {
+            const indicator = document.getElementById('active-script-indicator');
+            const nameElement = document.getElementById('active-script-name');
+            const statusElement = document.getElementById('active-script-status');
+            
+            if (indicator && nameElement && statusElement) {
+                nameElement.textContent = scriptName;
+                statusElement.textContent = 'Initializing...';
+                indicator.style.display = 'block';
+                updateScriptProgress(0);
+            }
+        }
+
+        // Hide active script indicator
+        function hideActiveScriptIndicator() {
+            const indicator = document.getElementById('active-script-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Update active script status
+        function updateActiveScriptStatus(status) {
+            const statusElement = document.getElementById('active-script-status');
+            if (statusElement) {
+                statusElement.textContent = status;
+            }
+        }
+
+        // Update script progress bar
+        function updateScriptProgress(percentage) {
+            const progressFill = document.getElementById('script-progress-fill');
+            if (progressFill) {
+                progressFill.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+            }
+        }
+
+        // Stop active script
+        function stopActiveScript() {
+            if (activeScript) {
+                logToConsole(`🛑 Stopping script: ${activeScript}`, 'warning', 'script');
+                logToScriptOutput('🛑 Script execution stopped by user', 'warning');
+                
+                // Mark as stopped in health table
+                if (window.healthTableData && window.healthTableData[activeScript]) {
+                    window.healthTableData[activeScript].status = 'failed';
+                    window.healthTableData[activeScript].message = 'Stopped by user';
+                    populateHealthTable();
+                }
+                
+                hideActiveScriptIndicator();
+                activeScript = null;
+                scriptStartTime = null;
+            }
+        }
+
+        // Show script output panel
+        function showScriptOutputPanel() {
+            const panel = document.getElementById('script-output-panel');
+            if (panel) {
+                panel.style.display = 'block';
+                clearScriptOutput(); // Start fresh
+            }
+        }
+
+        // Toggle script output panel visibility
+        function toggleScriptOutput() {
+            const panel = document.getElementById('script-output-panel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Log to script output panel
+        function logToScriptOutput(message, type = 'info') {
+            const content = document.getElementById('script-output-content');
+            if (!content) return;
+            
+            // Remove empty state if present
+            const emptyState = content.querySelector('.script-output-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'script-output-line';
+            line.innerHTML = `
+                <span class="script-output-timestamp">${timestamp}</span>
+                <span class="script-output-message script-output-${type}">${message}</span>
+            `;
+            
+            content.appendChild(line);
+            
+            // Auto-scroll to bottom
+            content.scrollTop = content.scrollHeight;
+            
+            // Limit to 200 lines for performance
+            const lines = content.querySelectorAll('.script-output-line');
+            if (lines.length > 200) {
+                lines[0].remove();
+            }
+        }
+
+        // Clear script output
+        function clearScriptOutput() {
+            const content = document.getElementById('script-output-content');
+            if (content) {
+                content.innerHTML = '<div class="script-output-empty">Script output cleared. Run a script to see output here.</div>';
+            }
+        }
+
+        // Copy script output to clipboard
+        function copyScriptOutput() {
+            const content = document.getElementById('script-output-content');
+            if (!content) return;
+            
+            const lines = content.querySelectorAll('.script-output-line');
+            let text = '';
+            lines.forEach(line => {
+                const messageElement = line.querySelector('.script-output-message');
+                if (messageElement) {
+                    text += messageElement.textContent + '\n';
+                }
+            });
+            
+            if (text.trim()) {
+                navigator.clipboard.writeText(text).then(() => {
+                    logToScriptOutput('✅ Output copied to clipboard', 'success');
+                }).catch(() => {
+                    logToScriptOutput('❌ Failed to copy to clipboard', 'error');
+                });
+            } else {
+                logToScriptOutput('⚠️ No output to copy', 'warning');
+            }
+        }
+
+        // Filter scripts by category
+        function filterScriptCategory(category, buttonElement) {
+            // Update active filter button
+            document.querySelectorAll('.category-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            }
+            
+            // Filter table rows based on category
+            const rows = document.querySelectorAll('#health-table-body tr');
+            rows.forEach(row => {
+                const categoryCell = row.cells[2]; // Category is 3rd column (0-indexed)
+                if (category === 'all' || !categoryCell) {
+                    row.style.display = '';
+                } else {
+                    const rowCategory = categoryCell.textContent.toLowerCase();
+                    const shouldShow = (
+                        (category === 'health' && rowCategory.includes('health')) ||
+                        (category === 'development' && (rowCategory.includes('development') || rowCategory.includes('dev'))) ||
+                        (category === 'testing' && rowCategory.includes('testing')) ||
+                        (category === 'analytics' && rowCategory.includes('analytics'))
+                    );
+                    row.style.display = shouldShow ? '' : 'none';
+                }
+            });
+        }
     </script>
 </body>
 </html>

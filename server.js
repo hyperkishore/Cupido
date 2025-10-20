@@ -566,6 +566,40 @@ app.get('/api/error-stats', async (req, res) => {
   }
 });
 
+// Ping service endpoint for health checking
+app.get('/api/ping-service/:port', async (req, res) => {
+  const port = parseInt(req.params.port);
+  
+  if (!port || port < 1 || port > 65535) {
+    return res.json({ 
+      success: false, 
+      message: 'Invalid port number' 
+    });
+  }
+
+  try {
+    // Import fetch dynamically for compatibility
+    const fetch = globalThis.fetch || (await import('node-fetch')).default;
+    
+    const response = await fetch(`http://localhost:${port}/`, {
+      method: 'HEAD',
+      timeout: 5000
+    });
+    
+    res.json({
+      success: response.ok,
+      message: response.ok 
+        ? `Service responding on port ${port}` 
+        : `Service returned ${response.status} on port ${port}`
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: `Connection failed to port ${port}: ${error.message}`
+    });
+  }
+});
+
 // ============================================
 // INFRASTRUCTURE TESTING ENDPOINTS
 // ============================================
@@ -1896,6 +1930,15 @@ app.post('/api/simulator/generate-response', async (req, res) => {
     
     if (fetchError) {
       console.error('Error fetching persona prompt:', fetchError);
+      // Check if this might be a fallback persona ID - provide a generic response
+      if (fetchError.code === 'PGRST116' || fetchError.message.includes('No rows found')) {
+        console.log('🔄 Providing fallback response for unknown persona ID:', personaPromptId);
+        return res.json({
+          response: "That's really interesting! I'd love to hear more about your thoughts on that.",
+          personaName: personaPromptId || 'Assistant',
+          fallback: true
+        });
+      }
       return res.status(404).json({ error: 'Persona prompt not found', details: fetchError.message });
     }
     
@@ -2071,6 +2114,25 @@ app.get('/cupido-test-dashboard', (req, res) => {
     res.sendFile(dashboardPath);
   } else {
     res.status(404).send('Cupido test dashboard not found');
+  }
+});
+
+// Serve debug test files
+app.get('/debug-test.html', (req, res) => {
+  const debugPath = path.join(__dirname, 'debug-test.html');
+  if (fs.existsSync(debugPath)) {
+    res.sendFile(debugPath);
+  } else {
+    res.status(404).send('Debug test not found');
+  }
+});
+
+app.get('/minimal-dashboard-test.html', (req, res) => {
+  const minimalPath = path.join(__dirname, 'minimal-dashboard-test.html');
+  if (fs.existsSync(minimalPath)) {
+    res.sendFile(minimalPath);
+  } else {
+    res.status(404).send('Minimal dashboard test not found');
   }
 });
 
@@ -2336,7 +2398,10 @@ app.use('/', createProxyMiddleware({
       'infrastructure-tests.js',
       'comprehensive-test-functions.js', 
       'promptManager.js',
-      'error-logger.js'
+      'error-logger.js',
+      'cupido-test-dashboard',
+      'debug-test.html',
+      'minimal-dashboard-test.html'
     ];
     
     // Don't proxy our dashboard files
