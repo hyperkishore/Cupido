@@ -5990,6 +5990,9 @@ Include the exact code snippets that need to be changed.`;
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
+            // Setup production-grade error boundaries first
+            setupErrorBoundaries();
+            
             initializeTests();
             updateTestScopeDropdown();
             renderTestTable();
@@ -5998,7 +6001,7 @@ Include the exact code snippets that need to be changed.`;
             // Initialize URL routing
             initializeUrlRouting();
             
-            logToConsole('Cupido Test Dashboard initialized', 'info');
+            logToConsole('Cupido Test Dashboard initialized with error boundaries', 'info');
             logToConsole(`${tests.length} tests loaded across ${Object.keys(testConfig).length} categories`, 'info');
             logToConsole('Test logging enabled - all runs saved to localStorage', 'info');
 
@@ -7376,12 +7379,20 @@ Include the exact code snippets that need to be changed.`;
 
         // Run ALL health checks - Fixed to cover every available script
         async function runAllHealthChecks() {
-            logToConsole('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info', 'health');
-            logToHealthCheck('🚀 Starting comprehensive health check...', 'info');
+            // Check for concurrent execution before starting
+            if (!checkScriptExecutionLock('comprehensive health check')) {
+                return;
+            }
             
-            // Show script output panel for comprehensive health check
-            showScriptOutputPanel();
-            logToScriptOutput('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info');
+            lockScriptExecution('ALL_HEALTH_CHECKS', 'comprehensive health check');
+            
+            try {
+                logToConsole('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info', 'health');
+                logToHealthCheck('🚀 Starting comprehensive health check...', 'info');
+                
+                // Show script output panel for comprehensive health check
+                showScriptOutputPanel();
+                logToScriptOutput('🚀 Starting COMPREHENSIVE health check (all scripts)', 'info');
             
             const button = document.querySelector('.health-run-btn');
             if (button) {
@@ -7424,8 +7435,8 @@ Include the exact code snippets that need to be changed.`;
                         };
                         populateHealthTable();
                         
-                        // Make API call
-                        const response = await fetch(`/api/run-script/${scriptId}`);
+                        // Make API call with timeout handling
+                        const response = await fetchWithTimeout(`/api/run-script/${scriptId}`);
                         const output = await response.text();
                         
                         if (response.ok) {
@@ -7500,6 +7511,9 @@ Include the exact code snippets that need to be changed.`;
                 logToConsole(`💥 CRITICAL ERROR during health check sequence: ${error.message}`, 'error', 'health');
                 logToHealthCheck(`❌ Health check sequence failed: ${error.message}`, 'error');
             } finally {
+                // Always release the execution lock
+                unlockScriptExecution();
+                
                 if (button) {
                     button.disabled = false;
                     button.innerHTML = `
@@ -7514,9 +7528,112 @@ Include the exact code snippets that need to be changed.`;
             }
         }
 
-        // Global script execution state (mirroring test execution pattern)
+        // Production-grade API call with timeout handling
+        async function fetchWithTimeout(url, timeoutMs = 120000) { // 2 minutes default
+            const abortController = new AbortController();
+            const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+            
+            try {
+                const response = await fetch(url, {
+                    signal: abortController.signal,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error(`Request timeout after ${timeoutMs/1000} seconds`);
+                }
+                throw error;
+            }
+        }
+
+        // Production-grade error boundary system
+        function setupErrorBoundaries() {
+            // Global error handler for unhandled JavaScript errors
+            window.addEventListener('error', (event) => {
+                console.error('Global JavaScript error caught:', event.error);
+                logToConsole(`🚨 JavaScript Error: ${event.error?.message || 'Unknown error'}`, 'error', 'system');
+                logToScriptOutput(`🚨 JavaScript Error: ${event.error?.message || 'Unknown error'}`, 'error');
+                
+                // Ensure script execution isn't stuck if error occurred during script run
+                if (isScriptExecutionLocked) {
+                    logToConsole('🔓 Releasing script lock due to error', 'warning', 'system');
+                    unlockScriptExecution();
+                }
+            });
+            
+            // Handle unhandled promise rejections
+            window.addEventListener('unhandledrejection', (event) => {
+                console.error('Unhandled promise rejection:', event.reason);
+                logToConsole(`🚨 Promise Rejection: ${event.reason?.message || 'Unknown error'}`, 'error', 'system');
+                logToScriptOutput(`🚨 Promise Rejection: ${event.reason?.message || 'Unknown error'}`, 'error');
+                
+                // Prevent default browser handling
+                event.preventDefault();
+            });
+        }
+        
+        // Wrap function execution with error boundary
+        function withErrorBoundary(fn, functionName) {
+            return async function(...args) {
+                try {
+                    return await fn.apply(this, args);
+                } catch (error) {
+                    console.error(`Error in ${functionName}:`, error);
+                    logToConsole(`🚨 Error in ${functionName}: ${error.message}`, 'error', 'system');
+                    logToScriptOutput(`🚨 Error in ${functionName}: ${error.message}`, 'error');
+                    
+                    // Ensure script execution isn't stuck
+                    if (isScriptExecutionLocked && (functionName.includes('script') || functionName.includes('health'))) {
+                        logToConsole('🔓 Releasing script lock due to function error', 'warning', 'system');
+                        unlockScriptExecution();
+                    }
+                    
+                    // Return null/undefined to allow graceful degradation
+                    return null;
+                }
+            };
+        }
+        
+        // Production-grade script execution state management
         let currentScript = null;
+        let scriptExecutionQueue = [];
+        let isScriptExecutionLocked = false;
         window.activeScriptExecution = false;
+        
+        // Prevent concurrent script execution with proper error handling
+        function checkScriptExecutionLock(operationType) {
+            if (isScriptExecutionLocked || currentScript) {
+                const runningInfo = currentScript ? `Script "${currentScript}" is currently running` : 'Script execution is locked';
+                logToConsole(`⚠️ ${runningInfo}. Cannot start ${operationType}. Please wait for completion.`, 'warning', 'script');
+                logToScriptOutput(`⚠️ ${runningInfo}. Cannot start ${operationType}.`, 'warning');
+                return false;
+            }
+            return true;
+        }
+        
+        // Lock script execution to prevent concurrent runs
+        function lockScriptExecution(scriptId, operationType) {
+            isScriptExecutionLocked = true;
+            currentScript = scriptId;
+            window.activeScriptExecution = true;
+            logToConsole(`🔒 Locked script execution for ${operationType}: ${scriptId}`, 'info', 'script');
+        }
+        
+        // Unlock script execution after completion
+        function unlockScriptExecution() {
+            const wasLocked = isScriptExecutionLocked;
+            isScriptExecutionLocked = false;
+            currentScript = null;
+            window.activeScriptExecution = false;
+            if (wasLocked) {
+                logToConsole(`🔓 Released script execution lock`, 'info', 'script');
+            }
+        }
         
         // Enhanced batch health script runner - Fixed to run ALL scripts
         async function runHealthScriptSequence() {
@@ -7577,15 +7694,12 @@ Include the exact code snippets that need to be changed.`;
                 return;
             }
 
-            // Block if another script is running
-            if (currentScript) {
-                logToConsole(`⚠️ Script ${currentScript} is currently running. Please wait for it to complete.`, 'warning', 'script');
+            // Check for concurrent execution before starting
+            if (!checkScriptExecutionLock(`script "${scriptId}"`)) {
                 return;
             }
 
-            // Initialize script execution state - MIRROR TEST PATTERN
-            currentScript = scriptId;
-            window.activeScriptExecution = true; // Enable verbose logging during scripts
+            lockScriptExecution(scriptId, 'individual script');
             
             // Show script output panel for execution details
             showScriptOutputPanel();
@@ -7631,7 +7745,7 @@ Include the exact code snippets that need to be changed.`;
             await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
-                const response = await fetch(`/api/run-script/${scriptId}`);
+                const response = await fetchWithTimeout(`/api/run-script/${scriptId}`);
                 const result = await response.text();
                 const success = response.ok;
                 
@@ -7684,9 +7798,8 @@ Include the exact code snippets that need to be changed.`;
                 logToConsole('═'.repeat(60), 'info', 'script');
                 logToConsole('', 'info', 'script'); // Blank line for spacing
                 
-                // Always reset script state - MIRROR TEST PATTERN
-                currentScript = null;
-                window.activeScriptExecution = false; // Disable verbose logging after scripts
+                // Always reset script state - using production-grade unlock
+                unlockScriptExecution();
                 
                 // Update table to remove "Currently Running" indicator
                 populateHealthTable();
@@ -7851,13 +7964,30 @@ Include the exact code snippets that need to be changed.`;
             
             content.appendChild(line);
             
+            // Production-grade memory management for script output
+            manageScriptOutputMemory(content);
+            
             // Auto-scroll to bottom
             content.scrollTop = content.scrollHeight;
-            
-            // Limit to 200 lines for performance
+        }
+
+        // Production-grade memory management for script output panel
+        function manageScriptOutputMemory(content) {
             const lines = content.querySelectorAll('.script-output-line');
-            if (lines.length > 200) {
-                lines[0].remove();
+            const maxLines = 300; // Increased limit for production use
+            const trimToLines = 200; // When limit exceeded, trim to this amount
+            
+            if (lines.length > maxLines) {
+                // Batch remove lines for efficiency
+                const linesToRemove = lines.length - trimToLines;
+                for (let i = 0; i < linesToRemove; i++) {
+                    if (lines[i] && lines[i].parentNode) {
+                        lines[i].remove();
+                    }
+                }
+                
+                // Log memory cleanup (but don't create recursive logging)
+                console.log(`Script output: Cleaned up ${linesToRemove} lines (${lines.length} -> ${trimToLines})`);
             }
         }
 
@@ -7869,8 +7999,8 @@ Include the exact code snippets that need to be changed.`;
             }
         }
 
-        // Copy script output to clipboard
-        function copyScriptOutput() {
+        // Production-safe clipboard copy with fallback for non-HTTPS environments
+        async function copyScriptOutput() {
             const content = document.getElementById('script-output-content');
             if (!content) return;
             
@@ -7883,15 +8013,56 @@ Include the exact code snippets that need to be changed.`;
                 }
             });
             
-            if (text.trim()) {
-                navigator.clipboard.writeText(text).then(() => {
-                    logToScriptOutput('✅ Output copied to clipboard', 'success');
-                }).catch(() => {
-                    logToScriptOutput('❌ Failed to copy to clipboard', 'error');
-                });
-            } else {
+            if (!text.trim()) {
                 logToScriptOutput('⚠️ No output to copy', 'warning');
+                return;
             }
+            
+            try {
+                // Try modern clipboard API first (works in HTTPS environments)
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    logToScriptOutput('✅ Output copied to clipboard', 'success');
+                } else {
+                    // Fallback for non-HTTPS or older browsers
+                    await copyToClipboardFallback(text);
+                    logToScriptOutput('✅ Output copied to clipboard (fallback method)', 'success');
+                }
+            } catch (error) {
+                console.error('Clipboard copy failed:', error);
+                logToScriptOutput('❌ Failed to copy to clipboard', 'error');
+            }
+        }
+        
+        // Fallback clipboard copy for production environments without HTTPS
+        function copyToClipboardFallback(text) {
+            return new Promise((resolve, reject) => {
+                // Create temporary textarea element
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-999999px';
+                textarea.style.top = '-999999px';
+                document.body.appendChild(textarea);
+                
+                try {
+                    textarea.focus();
+                    textarea.select();
+                    
+                    // Use deprecated but widely supported execCommand
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    
+                    if (successful) {
+                        resolve();
+                    } else {
+                        reject(new Error('execCommand copy failed'));
+                    }
+                } catch (error) {
+                    document.body.removeChild(textarea);
+                    reject(error);
+                }
+            });
         }
 
         // Filter scripts by category
