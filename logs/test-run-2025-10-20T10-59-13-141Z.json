@@ -1,0 +1,34 @@
+{
+  "id": "test_run_1760957951726_n6wqrm3",
+  "startTime": "2025-10-20T10:59:11.726Z",
+  "endTime": "2025-10-20T10:59:13.134Z",
+  "tests": [
+    {
+      "testId": "phase2-4",
+      "testName": "Variable Management System",
+      "status": "fail",
+      "message": "Dating app-specific templates missing",
+      "timestamp": "2025-10-20T10:59:13.134Z",
+      "duration": 5,
+      "apiCalls": [],
+      "errors": [
+        "Dating app-specific templates missing"
+      ],
+      "metadata": {}
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957951726
+  },
+  "totalDuration": 1408,
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": "0.0"
+  },
+  "receivedAt": "2025-10-20T10:59:13.141Z"
+}

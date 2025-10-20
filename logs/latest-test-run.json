@@ -1,0 +1,1057 @@
+{
+  "id": "test_run_1760966375158_1ozz2xh",
+  "startTime": "2025-10-20T13:19:35.158Z",
+  "endTime": "2025-10-20T13:30:23.586Z",
+  "tests": [
+    {
+      "testId": "dashboard-4",
+      "testName": "Batch Test Execution Flow",
+      "status": "fail",
+      "message": "✗ Issues with batch test execution transitions",
+      "timestamp": "2025-10-20T13:27:23.750Z",
+      "duration": 468560,
+      "apiCalls": [],
+      "errors": [
+        "✗ Issues with batch test execution transitions"
+      ],
+      "metadata": {
+        "testedIds": [
+          "foundation-1",
+          "foundation-2"
+        ],
+        "statusChanges": {}
+      }
+    },
+    {
+      "testId": "dashboard-5",
+      "testName": "Console Logging During Tests",
+      "status": "fail",
+      "message": "✗ Console logging issues during test execution",
+      "timestamp": "2025-10-20T13:27:24.411Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [
+        "✗ Console logging issues during test execution"
+      ],
+      "metadata": {
+        "newLogCount": 1,
+        "testedId": "foundation-1",
+        "logTypes": [
+          "warning"
+        ]
+      }
+    },
+    {
+      "testId": "profile-1",
+      "testName": "Basic Profile Data Extraction",
+      "status": "pass",
+      "message": "✓ Name extracted: \"Alex\"",
+      "timestamp": "2025-10-20T13:27:27.067Z",
+      "duration": 2004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "extractedName": "Alex"
+      }
+    },
+    {
+      "testId": "profile-2",
+      "testName": "Advanced Field Recognition",
+      "status": "pass",
+      "message": "✓ City name not confused with user name",
+      "timestamp": "2025-10-20T13:27:29.716Z",
+      "duration": 2004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "profile": {
+          "name": "Jamie",
+          "location": "Boston",
+          "interests": [
+            "startup life",
+            "adventure"
+          ],
+          "jobTitle": "startup founder",
+          "age": 28,
+          "lookingFor": [],
+          "relationshipGoals": "casual",
+          "bio": "Helping local businesses get paid faster and easier. Unwind by exploring live music, BBQ, and hiking the greenbelt.",
+          "company": "fintech startup",
+          "gender": "female",
+          "hobbies": [
+            "hiking"
+          ]
+        }
+      }
+    },
+    {
+      "testId": "profile-3",
+      "testName": "Profile Data Validation",
+      "status": "pass",
+      "message": "✓ Age extracted: 28",
+      "timestamp": "2025-10-20T13:27:32.371Z",
+      "duration": 2004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "age": 28
+      }
+    },
+    {
+      "testId": "profile-4",
+      "testName": "Multi-turn Conversation Analysis",
+      "status": "pass",
+      "message": "✓ Gender/preference detected",
+      "timestamp": "2025-10-20T13:27:35.018Z",
+      "duration": 2003,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "gender": "female"
+      }
+    },
+    {
+      "testId": "profile-5",
+      "testName": "Profile Completeness Scoring",
+      "status": "pass",
+      "message": "✓ Profile data persists",
+      "timestamp": "2025-10-20T13:27:36.677Z",
+      "duration": 1004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "profile": {
+          "name": "Jamie",
+          "location": "Boston",
+          "interests": [
+            "startup life",
+            "adventure"
+          ],
+          "jobTitle": "startup founder",
+          "age": 28,
+          "lookingFor": [],
+          "relationshipGoals": "casual",
+          "bio": "Helping local businesses get paid faster and easier. Unwind by exploring live music, BBQ, and hiking the greenbelt.",
+          "company": "fintech startup",
+          "gender": "female",
+          "hobbies": [
+            "hiking"
+          ]
+        }
+      }
+    },
+    {
+      "testId": "profile-6",
+      "testName": "Profile Update and Merging",
+      "status": "pass",
+      "message": "✓ Profile updates without data loss",
+      "timestamp": "2025-10-20T13:27:39.335Z",
+      "duration": 2005,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "initialProfile": {
+          "name": "Jamie",
+          "location": "Boston",
+          "interests": [
+            "startup life",
+            "adventure"
+          ],
+          "jobTitle": "startup founder",
+          "age": 28,
+          "lookingFor": [],
+          "relationshipGoals": "casual",
+          "bio": "Helping local businesses get paid faster and easier. Unwind by exploring live music, BBQ, and hiking the greenbelt.",
+          "company": "fintech startup",
+          "gender": "female",
+          "hobbies": [
+            "hiking"
+          ]
+        },
+        "updatedProfile": {
+          "name": "Jamie",
+          "location": "Boston",
+          "interests": [
+            "startup life",
+            "adventure"
+          ],
+          "jobTitle": "startup founder",
+          "age": 28,
+          "lookingFor": [],
+          "relationshipGoals": "casual",
+          "bio": "Helping local businesses get paid faster and easier. Unwind by exploring live music, BBQ, and hiking the greenbelt.",
+          "company": "fintech startup",
+          "gender": "female",
+          "hobbies": [
+            "hiking"
+          ]
+        }
+      }
+    },
+    {
+      "testId": "database-1",
+      "testName": "Supabase Connection Health",
+      "status": "pass",
+      "message": "✓ User session exists",
+      "timestamp": "2025-10-20T13:27:39.984Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "userId": "6a720a86-e8ab-464d-841a-42047c377f09"
+      }
+    },
+    {
+      "testId": "database-2",
+      "testName": "Prompt Versions Table Operations",
+      "status": "pass",
+      "message": "✓ Conversation initialized: 442f0d21-d6f4-41d0-96d8-a4f4441ca9a7",
+      "timestamp": "2025-10-20T13:27:40.633Z",
+      "duration": 1,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "conversationId": "442f0d21-d6f4-41d0-96d8-a4f4441ca9a7"
+      }
+    },
+    {
+      "testId": "database-3",
+      "testName": "User Data Persistence",
+      "status": "pass",
+      "message": "✓ User message saved",
+      "timestamp": "2025-10-20T13:27:43.287Z",
+      "duration": 2004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "messageCount": 299
+      }
+    },
+    {
+      "testId": "database-4",
+      "testName": "Transaction Integrity",
+      "status": "pass",
+      "message": "✓ AI message saved",
+      "timestamp": "2025-10-20T13:27:48.938Z",
+      "duration": 5004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "messageCount": 302
+      }
+    },
+    {
+      "testId": "database-5",
+      "testName": "Migration and Schema Validation",
+      "status": "pass",
+      "message": "✓ History loaded (302 messages)",
+      "timestamp": "2025-10-20T13:27:49.589Z",
+      "duration": 2,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "messageCount": 302
+      }
+    },
+    {
+      "testId": "error-1",
+      "testName": "API Error Recovery",
+      "status": "pass",
+      "message": "✓ No network failures detected",
+      "timestamp": "2025-10-20T13:27:53.251Z",
+      "duration": 3002,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {}
+    },
+    {
+      "testId": "error-2",
+      "testName": "Network Disconnection Handling",
+      "status": "pass",
+      "message": "✓ No API errors",
+      "timestamp": "2025-10-20T13:27:57.910Z",
+      "duration": 4002,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {}
+    },
+    {
+      "testId": "error-3",
+      "testName": "Database Connection Recovery",
+      "status": "pass",
+      "message": "✓ App continues if DB fails",
+      "timestamp": "2025-10-20T13:28:00.567Z",
+      "duration": 2005,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "before": 305,
+        "after": 307
+      }
+    },
+    {
+      "testId": "error-4",
+      "testName": "UI Error Boundary Functionality",
+      "status": "pass",
+      "message": "✓ Invalid input handled gracefully",
+      "timestamp": "2025-10-20T13:28:02.220Z",
+      "duration": 1002,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {}
+    },
+    {
+      "testId": "error-5",
+      "testName": "Data Corruption Detection",
+      "status": "pass",
+      "message": "✓ App handles AI timeout",
+      "timestamp": "2025-10-20T13:28:17.881Z",
+      "duration": 15003,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "messageCount": 310
+      }
+    },
+    {
+      "testId": "error-6",
+      "testName": "Fallback System Activation",
+      "status": "pass",
+      "message": "✓ Retry mechanism available",
+      "timestamp": "2025-10-20T13:28:21.534Z",
+      "duration": 3004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "isSending": false
+      }
+    },
+    {
+      "testId": "state-1",
+      "testName": "Application State Consistency",
+      "status": "pass",
+      "message": "✓ Send button state correct",
+      "timestamp": "2025-10-20T13:28:22.188Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "isSending": false
+      }
+    },
+    {
+      "testId": "state-2",
+      "testName": "Local Storage Persistence",
+      "status": "pass",
+      "message": "✓ isSending resets correctly",
+      "timestamp": "2025-10-20T13:28:27.849Z",
+      "duration": 5004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "isSending": false
+      }
+    },
+    {
+      "testId": "state-3",
+      "testName": "State Synchronization",
+      "status": "pass",
+      "message": "✓ Typing indicator works correctly",
+      "timestamp": "2025-10-20T13:28:34.508Z",
+      "duration": 6006,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "duringTyping": true,
+        "afterTyping": false
+      }
+    },
+    {
+      "testId": "state-4",
+      "testName": "Component State Isolation",
+      "status": "pass",
+      "message": "✓ Message count updates (316 → 317)",
+      "timestamp": "2025-10-20T13:28:38.164Z",
+      "duration": 3004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "countBefore": 316,
+        "countAfter": 317
+      }
+    },
+    {
+      "testId": "state-5",
+      "testName": "State Update Performance",
+      "status": "pass",
+      "message": "✓ Conversation ID persists",
+      "timestamp": "2025-10-20T13:28:39.820Z",
+      "duration": 1004,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "conversationId": "442f0d21-d6f4-41d0-96d8-a4f4441ca9a7"
+      }
+    },
+    {
+      "testId": "state-6",
+      "testName": "State Debugging and Inspection",
+      "status": "fail",
+      "message": "✗ Loading state issues",
+      "timestamp": "2025-10-20T13:28:44.980Z",
+      "duration": 4505,
+      "apiCalls": [],
+      "errors": [
+        "✗ Loading state issues"
+      ],
+      "metadata": {
+        "beforeSending": true,
+        "duringSending": true,
+        "afterSending": false
+      }
+    },
+    {
+      "testId": "api-1",
+      "testName": "API Response Time Benchmarks",
+      "status": "pass",
+      "message": "✓ Server online and responding",
+      "timestamp": "2025-10-20T13:28:48.571Z",
+      "duration": 2932,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "status": 200
+      }
+    },
+    {
+      "testId": "api-2",
+      "testName": "Concurrent Request Handling",
+      "status": "pass",
+      "message": "✓ Claude API responding",
+      "timestamp": "2025-10-20T13:28:51.602Z",
+      "duration": 2374,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "response": "OK",
+        "model": "haiku"
+      }
+    },
+    {
+      "testId": "api-3",
+      "testName": "Rate Limiting and Throttling",
+      "status": "pass",
+      "message": "✓ Response time: 2880ms",
+      "timestamp": "2025-10-20T13:28:55.139Z",
+      "duration": 2880,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "duration": 2880,
+        "threshold": 10000
+      }
+    },
+    {
+      "testId": "api-4",
+      "testName": "API Data Validation",
+      "status": "pass",
+      "message": "✓ Both models working",
+      "timestamp": "2025-10-20T13:29:02.014Z",
+      "duration": 6210,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "haiku": "haiku",
+        "sonnet": "sonnet"
+      }
+    },
+    {
+      "testId": "simulator-1",
+      "testName": "Simulator Persona Loading",
+      "status": "pass",
+      "message": "✓ 2 simulator personas loaded correctly",
+      "timestamp": "2025-10-20T13:29:03.051Z",
+      "duration": 373,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "personas": [
+          "simulator_raj",
+          "simulator_sarah"
+        ]
+      }
+    },
+    {
+      "testId": "simulator-2",
+      "testName": "Persona Response Generation",
+      "status": "pass",
+      "message": "✓ Simulator API generated response: \"Hey there! Pretty productive actually - spent Satu...\"",
+      "timestamp": "2025-10-20T13:29:05.886Z",
+      "duration": 2177,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "personaName": "Raj - Startup Founder",
+        "responseLength": 277
+      }
+    },
+    {
+      "testId": "simulator-3",
+      "testName": "Conversation Simulation Flow",
+      "status": "pass",
+      "message": "✓ Raj generated authentic founder response with keywords: startup, austin, business, ai",
+      "timestamp": "2025-10-20T13:29:08.503Z",
+      "duration": 1961,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "keywords": [
+          "startup",
+          "austin",
+          "business",
+          "ai"
+        ],
+        "response": "I run an AI startup I founded a couple years ago here in Austin - we're building machine learning tools to help small businesses automate customer support. Still in the chaotic early stages but I love the challenge of building something from scratch! What about you?"
+      }
+    },
+    {
+      "testId": "simulator-4",
+      "testName": "Multi-Persona Interactions",
+      "status": "pass",
+      "message": "✓ Sarah generated authentic artist response with keywords: brooklyn, inspiration, illustrat",
+      "timestamp": "2025-10-20T13:29:11.733Z",
+      "duration": 2574,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "keywords": [
+          "brooklyn",
+          "inspiration",
+          "illustrat"
+        ],
+        "response": "I find inspiration in the quiet moments - like early morning walks through Brooklyn when the light hits the buildings just right. And honestly, people-watching at my favorite coffee shop has sparked some of my best illustrations - there's something magical about capturing those small human interactions and gestures."
+      }
+    },
+    {
+      "testId": "simulator-5",
+      "testName": "Persona Consistency Validation",
+      "status": "pass",
+      "message": "✓ Simulator properly used conversation history",
+      "timestamp": "2025-10-20T13:29:14.656Z",
+      "duration": 2264,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "historyLength": 3,
+        "response": "I just sent a casual greeting asking \"Hey! How are you doing?\" when you first said hi. Then you asked me to tell you about myself, but I haven't responded to that question yet.\n\nWould you like me to tell you about myself now?",
+        "hasContext": true
+      }
+    },
+    {
+      "testId": "simulator-6",
+      "testName": "Simulator Performance Metrics",
+      "status": "pass",
+      "message": "✓ Simulator postMessage framework properly initialized",
+      "timestamp": "2025-10-20T13:29:15.312Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "stateKeys": [
+          "isActive",
+          "isPaused",
+          "speed",
+          "selectedPersonaId",
+          "conversationHistory",
+          "typingDelayMin",
+          "typingDelayMax"
+        ]
+      }
+    },
+    {
+      "testId": "simulator-7",
+      "testName": "Conversation Context Preservation",
+      "status": "pass",
+      "message": "✓ Simulator control functions are properly defined",
+      "timestamp": "2025-10-20T13:29:15.972Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "functions": [
+          "startSimulator",
+          "pauseSimulator",
+          "stopSimulator"
+        ],
+        "initialState": {
+          "isActive": false,
+          "isPaused": false
+        }
+      }
+    },
+    {
+      "testId": "simulator-8",
+      "testName": "Emotional Intelligence Simulation",
+      "status": "pass",
+      "message": "✓ Stop control and state reset functionality available",
+      "timestamp": "2025-10-20T13:29:16.630Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "hasStopFunction": true,
+        "hasConversationHistory": true
+      }
+    },
+    {
+      "testId": "simulator-9",
+      "testName": "Persona Switching Capability",
+      "status": "pass",
+      "message": "✓ Speed controls properly configured (1x speed, 1000-3000ms delays)",
+      "timestamp": "2025-10-20T13:29:17.286Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "speed": 1,
+        "typingDelayMin": 1000,
+        "typingDelayMax": 3000
+      }
+    },
+    {
+      "testId": "simulator-10",
+      "testName": "Conversation Quality Assessment",
+      "status": "pass",
+      "message": "✓ Realistic typing delays configured: 1000-3000ms",
+      "timestamp": "2025-10-20T13:29:17.938Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "minDelay": 1000,
+        "maxDelay": 3000,
+        "range": 2000
+      }
+    },
+    {
+      "testId": "simulator-11",
+      "testName": "Simulator Error Handling",
+      "status": "pass",
+      "message": "✓ Simulator metadata save API completed successfully",
+      "timestamp": "2025-10-20T13:29:19.997Z",
+      "duration": 1403,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "conversationId": "test-conversation-1760966958562",
+        "personaName": "Raj - Startup Founder",
+        "responseGenerated": true
+      }
+    },
+    {
+      "testId": "simulator-12",
+      "testName": "Persona Profile Generation",
+      "status": "pass",
+      "message": "✓ Proper error handling for nonexistent persona: Persona prompt not found",
+      "timestamp": "2025-10-20T13:29:20.722Z",
+      "duration": 67,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "status": 404,
+        "error": "Persona prompt not found"
+      }
+    },
+    {
+      "testId": "simulator-13",
+      "testName": "Conversation Analytics",
+      "status": "pass",
+      "message": "✓ Proper error handling for malformed request: Missing required fields: personaPromptId and userMessage",
+      "timestamp": "2025-10-20T13:29:21.383Z",
+      "duration": 3,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "status": 400,
+        "error": "Missing required fields: personaPromptId and userMessage",
+        "hasFallback": false
+      }
+    },
+    {
+      "testId": "simulator-14",
+      "testName": "Bulk Simulation Processing",
+      "status": "pass",
+      "message": "✓ Simulator state persistence framework available",
+      "timestamp": "2025-10-20T13:29:22.042Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "hasConversationHistory": true,
+        "hasPauseControl": true,
+        "currentPauseState": false
+      }
+    },
+    {
+      "testId": "simulator-15",
+      "testName": "Simulation Result Export",
+      "status": "pass",
+      "message": "✓ Simulator handled 30 message history gracefully",
+      "timestamp": "2025-10-20T13:29:24.785Z",
+      "duration": 2087,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "inputHistoryLength": 30,
+        "responseGenerated": true,
+        "responseLength": 268
+      }
+    },
+    {
+      "testId": "simulator-16",
+      "testName": "Real-time Simulation Monitoring",
+      "status": "pass",
+      "message": "✓ Persona switching generates distinct, authentic responses",
+      "timestamp": "2025-10-20T13:29:30.258Z",
+      "duration": 4822,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "rajResponse": "Hey! Austin's live music scene is incredible - I l...",
+        "sarahResponse": "I love how Brooklyn feels like this perfect mix of...",
+        "responsesAreDifferent": true
+      }
+    },
+    {
+      "testId": "simulator-17",
+      "testName": "Simulation Scenario Management",
+      "status": "pass",
+      "message": "✓ PostMessage communication framework properly set up",
+      "timestamp": "2025-10-20T13:29:30.911Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "hasMessageHandler": true,
+        "hasConsoleMonitoring": true
+      }
+    },
+    {
+      "testId": "simulator-18",
+      "testName": "Automated Testing Integration",
+      "status": "pass",
+      "message": "✓ Iframe response injection framework ready",
+      "timestamp": "2025-10-20T13:29:31.561Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "iframeExists": true,
+        "hasSrc": true,
+        "hasContentWindow": true,
+        "src": "http://localhost:3001/app"
+      }
+    },
+    {
+      "testId": "phase2-1",
+      "testName": "Analytics Engine Core Functions",
+      "status": "fail",
+      "message": "Core analytics methods missing from PromptAnalyticsEngine",
+      "timestamp": "2025-10-20T13:29:32.221Z",
+      "duration": 9,
+      "apiCalls": [],
+      "errors": [
+        "Core analytics methods missing from PromptAnalyticsEngine"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase2-2",
+      "testName": "Performance Metrics Tracking",
+      "status": "fail",
+      "message": "Statistical significance calculation not implemented",
+      "timestamp": "2025-10-20T13:29:32.875Z",
+      "duration": 3,
+      "apiCalls": [],
+      "errors": [
+        "Statistical significance calculation not implemented"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase2-3",
+      "testName": "Template Engine Rendering",
+      "status": "pass",
+      "message": "Template Engine core functionality verified",
+      "timestamp": "2025-10-20T13:29:33.531Z",
+      "duration": 7,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "templateSyntax": "handlebars",
+        "methods": [
+          "compileTemplate",
+          "renderTemplate",
+          "validateVariables"
+        ]
+      }
+    },
+    {
+      "testId": "phase2-4",
+      "testName": "Variable Management System",
+      "status": "fail",
+      "message": "Dating app-specific templates missing",
+      "timestamp": "2025-10-20T13:29:34.185Z",
+      "duration": 4,
+      "apiCalls": [],
+      "errors": [
+        "Dating app-specific templates missing"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase2-5",
+      "testName": "Analytics Dashboard Integration",
+      "status": "fail",
+      "message": "Essential dashboard elements missing",
+      "timestamp": "2025-10-20T13:29:34.843Z",
+      "duration": 6,
+      "apiCalls": [],
+      "errors": [
+        "Essential dashboard elements missing"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase2-6",
+      "testName": "Dashboard Real-time Updates",
+      "status": "fail",
+      "message": "Mobile-responsive design not implemented",
+      "timestamp": "2025-10-20T13:29:35.496Z",
+      "duration": 4,
+      "apiCalls": [],
+      "errors": [
+        "Mobile-responsive design not implemented"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase2-7",
+      "testName": "Cross-System Integration",
+      "status": "pass",
+      "message": "Analytics-Template integration verified",
+      "timestamp": "2025-10-20T13:29:36.150Z",
+      "duration": 4,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "crossIntegration": true,
+        "persistence": true
+      }
+    },
+    {
+      "testId": "phase2-8",
+      "testName": "Advanced Features Validation",
+      "status": "fail",
+      "message": "Dashboard does not integrate both engines",
+      "timestamp": "2025-10-20T13:29:36.806Z",
+      "duration": 6,
+      "apiCalls": [],
+      "errors": [
+        "Dashboard does not integrate both engines"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-1",
+      "testName": "Automation Workflow Engine",
+      "status": "fail",
+      "message": "AutomationWorkflowEngine class not found",
+      "timestamp": "2025-10-20T13:29:37.480Z",
+      "duration": 21,
+      "apiCalls": [],
+      "errors": [
+        "AutomationWorkflowEngine class not found"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-2",
+      "testName": "Workflow Configuration Management",
+      "status": "fail",
+      "message": "Default workflows missing",
+      "timestamp": "2025-10-20T13:29:38.136Z",
+      "duration": 7,
+      "apiCalls": [],
+      "errors": [
+        "Default workflows missing"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-3",
+      "testName": "Deployment Pipeline Core",
+      "status": "fail",
+      "message": "ProductionDeploymentPipeline class not found",
+      "timestamp": "2025-10-20T13:29:38.791Z",
+      "duration": 7,
+      "apiCalls": [],
+      "errors": [
+        "ProductionDeploymentPipeline class not found"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-4",
+      "testName": "CI/CD Integration Systems",
+      "status": "fail",
+      "message": "Blue-green deployment not implemented",
+      "timestamp": "2025-10-20T13:29:39.450Z",
+      "duration": 7,
+      "apiCalls": [],
+      "errors": [
+        "Blue-green deployment not implemented"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-5",
+      "testName": "Advanced Workflow Automation",
+      "status": "fail",
+      "message": "Workflow-Analytics integration not implemented",
+      "timestamp": "2025-10-20T13:29:40.111Z",
+      "duration": 9,
+      "apiCalls": [],
+      "errors": [
+        "Workflow-Analytics integration not implemented"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-6",
+      "testName": "Production Readiness Validation",
+      "status": "fail",
+      "message": "Workflow-Deployment integration not implemented",
+      "timestamp": "2025-10-20T13:29:40.774Z",
+      "duration": 16,
+      "apiCalls": [],
+      "errors": [
+        "Workflow-Deployment integration not implemented"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "phase3-7",
+      "testName": "End-to-End Automation Integration",
+      "status": "fail",
+      "message": "Dashboard missing system integrations",
+      "timestamp": "2025-10-20T13:29:41.438Z",
+      "duration": 14,
+      "apiCalls": [],
+      "errors": [
+        "Dashboard missing system integrations"
+      ],
+      "metadata": {}
+    },
+    {
+      "testId": "infra-1",
+      "testName": "infra-1",
+      "status": "fail",
+      "message": "Health check failed - system issues detected",
+      "timestamp": "2025-10-20T13:29:42.597Z",
+      "duration": 508,
+      "apiCalls": [],
+      "errors": [
+        "Health check failed - system issues detected"
+      ],
+      "metadata": {
+        "scriptOutput": "🏥 CUPIDO SYSTEM HEALTH MONITOR\n===============================\nCo-founder level system validation\n\n1️⃣  CORE SYSTEM COMPONENTS\n==========================\n\u001b[0;34mℹ️  Checking Node.js...\u001b[0m\n\u001b[0;32m✅ Node.js v22.20.0 installed\u001b[0m\n\u001b[0;34mℹ️  Checking npm...\u001b[0m\n\u001b[0;32m✅ npm 10.9.3 installed\u001b[0m\n\u001b[0;34mℹ️  Checking critical files...\u001b[0m\n\u001b[0;32m✅ package.json exists\u001b[0m\n\u001b[0;32m✅ server.js exists\u001b[0m\n\u001b[0;32m✅ App.tsx exists\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js exists\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html exists\u001b[0m\n\u001b[0;32m✅ CLAUDE.md exists\u001b[0m\n\n2️⃣  NETWORK & CONNECTIVITY\n==========================\n\u001b[0;34mℹ️  Checking port availability...\u001b[0m\n\u001b[0;32m✅ Port 3001 is active (server running)\u001b[0m\n\u001b[0;32m✅ Port 8081 is active (Expo server running)\u001b[0m\n\u001b[0;34mℹ️  Testing server health...\u001b[0m\n\u001b[0;32m✅ Server responding at http://localhost:3001\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard accessibility...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible\u001b[0m\n\n3️⃣  SYSTEM RESOURCES\n===================\n\u001b[0;34mℹ️  Checking disk space...\u001b[0m\n\u001b[1;33m⚠️  Disk usage: 94% (getting full)\u001b[0m\n\u001b[0;34mℹ️  Checking memory usage...\u001b[0m\n\u001b[1;33m⚠️  Memory available: low\u001b[0m\n\n4️⃣  DATABASE & STORAGE\n======================\n\u001b[0;34mℹ️  Checking environment configuration...\u001b[0m\n\u001b[0;32m✅ .env file exists\u001b[0m\n\u001b[0;32m✅ SUPABASE_URL configured\u001b[0m\n\u001b[0;32m✅ SUPABASE_ANON_KEY configured\u001b[0m\n\u001b[0;34mℹ️  Local storage check requires browser context (handled by dashboard)\u001b[0m\n\n5️⃣  ERROR MANAGEMENT SYSTEM\n===========================\n\u001b[0;34mℹ️  Checking error logs...\u001b[0m\n\u001b[0;32m✅ No error log file (clean system)\u001b[0m\n\u001b[0;34mℹ️  Checking monitoring system...\u001b[0m\n\u001b[0;32m✅ Session logging system available\u001b[0m\n\n6️⃣  AUTOMATION SYSTEMS\n======================\n\u001b[0;34mℹ️  Checking automation systems...\u001b[0m\n\u001b[0;32m✅ auto-init.js available\u001b[0m\n\u001b[0;32m✅ session-logger.js available\u001b[0m\n\n📊 HEALTH SUMMARY\n=================\n\u001b[0;32m✅ System Health: HEALTHY (100%)\u001b[0m\n\n💾 Full logs available at: logs/system-health.log\n🕐 Check completed at: 2025-10-20 18:59:42\n"
+      }
+    },
+    {
+      "testId": "infra-2",
+      "testName": "infra-2",
+      "status": "pass",
+      "message": "JavaScript syntax validation passed",
+      "timestamp": "2025-10-20T13:30:02.355Z",
+      "duration": 19104,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "scriptOutput": "🔧 CUPIDO DEVELOPMENT HEALTH MONITOR\n====================================\nDevelopment environment validation\n\n1️⃣  DEVELOPMENT TOOLS\n====================\n\u001b[0;34mℹ️  Checking Expo CLI...\u001b[0m\n\u001b[0;32m✅ Expo CLI available (version 0.24.22)\u001b[0m\n\u001b[0;34mℹ️  Checking development dependencies...\u001b[0m\n\u001b[0;32m✅ node_modules directory exists\u001b[0m\n\u001b[0;32m✅ expo installed\u001b[0m\n\u001b[0;32m✅ react installed\u001b[0m\n\u001b[0;32m✅ react-native installed\u001b[0m\n\u001b[0;32m✅ typescript installed\u001b[0m\n\n2️⃣  JAVASCRIPT SYNTAX VALIDATION\n================================\n\u001b[0;34mℹ️  Validating JavaScript syntax...\u001b[0m\n\u001b[0;32m✅ App.tsx exists and has content\u001b[0m\n\u001b[0;32m✅ server.js syntax valid\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js syntax valid\u001b[0m\n\u001b[0;32m✅ auto-init.js syntax valid\u001b[0m\n\u001b[0;32m✅ session-logger.js syntax valid\u001b[0m\n\u001b[0;34mℹ️  Validating HTML files...\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html HTML structure valid\u001b[0m\n\u001b[0;32m✅ public/index.html HTML structure valid\u001b[0m\n\n3️⃣  DEVELOPMENT SERVERS\n=======================\n\u001b[0;34mℹ️  Checking development servers...\u001b[0m\n\u001b[0;32m✅ Server running on port 3001 (PID: 23704\n30062)\u001b[0m\n\u001b[0;32m✅ Server responding normally\u001b[0m\n\u001b[0;32m✅ Expo server running on port 8081 (PID: 31219)\u001b[0m\n\u001b[0;34mℹ️  Checking for development issues...\u001b[0m\n\u001b[0;32m✅ Expo cache directory exists ( 12K)\u001b[0m\nsrc/components/AIReflectionChat.tsx(146,52): error TS2339: Property 'generateFollowUp' does not exist on type 'ReflectionAiService'.\nsrc/components/ChatReflectionInterface.tsx(76,5): error TS2304: Cannot find name 'setupAudioMode'.\nsrc/components/ChatReflectionInterface.tsx(99,7): error TS2304: Cannot find name 'startConversation'.\nsrc/components/ChatReflectionInterface.tsx(103,7): error TS2304: Cannot find name 'startConversation'.\nsrc/components/ChatReflectionInterface.tsx(131,10): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(131,24): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(140,7): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(141,7): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(144,7): error TS2304: Cannot find name 'setIsRecording'.\nsrc/components/ChatReflectionInterface.tsx(147,13): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(148,19): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(152,7): error TS2304: Cannot find name 'setRecording'.\nsrc/components/ChatReflectionInterface.tsx(155,9): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(162,11): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(163,11): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(169,7): error TS2304: Cannot find name 'setIsRecording'.\nsrc/components/ChatReflectionInterface.tsx(170,7): error TS2304: Cannot find name 'setRecording'.\nsrc/components/ChatReflectionInterface.tsx(401,21): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(402,29): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(403,29): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(438,5): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(477,29): error TS2304: Cannot find name 'wasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(549,9): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(550,9): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(551,9): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(792,32): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(798,28): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(799,21): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(806,9): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1019,13): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1019,32): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1021,16): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1023,41): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1025,36): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1034,16): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1040,23): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1041,23): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(1062,16): error TS2304: Cannot find name 'TextInput'.\nsrc/components/ChatReflectionInterface.tsx(1063,43): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1064,24): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(1065,31): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(1066,30): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1070,28): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1090,16): error TS2304: Cannot find name 'Pressable'.\nsrc/components/ChatReflectionInterface.tsx(1091,45): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1094,19): error TS2304: Cannot find name 'startRecording'.\nsrc/components/ChatReflectionInterface.tsx(1101,18): error TS2304: Cannot find name 'Animated'.\nsrc/components/ChatReflectionInterface.tsx(1103,19): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1106,30): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(1114,55): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1115,55): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1117,19): error TS2304: Cannot find name 'Animated'.\nsrc/components/ChatReflectionInterface.tsx(1118,17): error TS2304: Cannot find name 'Pressable'.\nsrc/components/ChatReflectionInterface.tsx(1121,15): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(1121,49): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1121,68): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1125,27): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1138,1): error TS1258: A default export must be at the top level of a file or module declaration.\nsrc/components/DebugButton.tsx(70,33): error TS2304: Cannot find name 'testWithXHR'.\nsrc/components/MinimalChatInput.tsx(142,18): error TS2339: Property 'type' does not exist on type 'DocumentPickerResult'.\n  Property 'type' does not exist on type 'DocumentPickerSuccessResult'.\nsrc/components/MinimalChatInput.tsx(143,58): error TS2339: Property 'uri' does not exist on type 'DocumentPickerResult'.\n  Property 'uri' does not exist on type 'DocumentPickerSuccessResult'.\nsrc/components/SimpleReflectionChat.tsx(354,32): error TS2552: Cannot find name 'ChatMessageType'. Did you mean 'DBChatMessage'?\nsrc/components/SimpleReflectionChat.tsx(367,34): error TS2339: Property 'addMessage' does not exist on type 'ChatDatabaseService'.\nsrc/components/SimpleReflectionChat.tsx(408,29): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/components/SimpleReflectionChat.tsx(810,11): error TS2345: Argument of type '{ base64: {}; mimeType: string; } | undefined' is not assignable to parameter of type '{ base64: string; mimeType: string; } | undefined'.\n  Type '{ base64: {}; mimeType: string; }' is not assignable to type '{ base64: string; mimeType: string; }'.\n    Types of property 'base64' are incompatible.\n      Type '{}' is not assignable to type 'string'.\nsrc/components/SimpleReflectionChat.tsx(1167,13): error TS2322: Type '((messageOverride?: string | undefined) => Promise<void>) | undefined' is not assignable to type '((e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void) | undefined'.\n  Type '(messageOverride?: string) => Promise<void>' is not assignable to type '(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void'.\n    Types of parameters 'messageOverride' and 'e' are incompatible.\n      Type 'NativeSyntheticEvent<TextInputSubmitEditingEventData>' is not assignable to type 'string'.\nsrc/components/SimpleReflectionChat.tsx(1200,13): error TS2322: Type '(messageOverride?: string) => Promise<void>' is not assignable to type '(event: GestureResponderEvent) => void'.\n  Types of parameters 'messageOverride' and 'event' are incompatible.\n    Type 'GestureResponderEvent' is not assignable to type 'string'.\nsrc/screens/PixelPerfectHomeScreen.tsx(463,57): error TS7006: Parameter 'tag' implicitly has an 'any' type.\nsrc/screens/PixelPerfectHomeScreen.tsx(463,62): error TS7006: Parameter 'tagIndex' implicitly has an 'any' type.\nsrc/screens/PixelPerfectMatchesScreen.tsx(29,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(55,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(61,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(87,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(93,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(119,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/services/chatDatabase.ts(62,10): error TS2339: Property 'maybeSingle' does not exist on type 'PostgrestFilterBuilder<any, any, any[], \"profiles\", unknown> | { single: () => Promise<{ data: null; error: null; }>; }'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(80,17): error TS2339: Property 'data' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(80,35): error TS2339: Property 'error' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(107,14): error TS2339: Property 'maybeSingle' does not exist on type 'PostgrestFilterBuilder<any, any, any[], \"profiles\", unknown> | { single: () => Promise<{ data: null; error: null; }>; }'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(148,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(162,17): error TS2339: Property 'data' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(162,35): error TS2339: Property 'error' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(189,14): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(269,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_messages\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(291,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(308,8): error TS2339: Property 'channel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'channel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/chatDatabase.ts(317,10): error TS7006: Parameter 'payload' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(324,16): error TS2339: Property 'removeChannel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'removeChannel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/chatDatabase.ts(353,10): error TS2339: Property 'in' does not exist on type '{ eq: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestFilterBuilder<any, any, any[], \"chat_messages\", unknown>'.\n  Property 'in' does not exist on type '{ eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }'.\nsrc/services/chatDatabase.ts(364,10): error TS7006: Parameter 'acc' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(364,15): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(373,17): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(374,14): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(377,33): error TS7006: Parameter 'a' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(377,36): error TS7006: Parameter 'b' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(410,12): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(423,12): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(437,10): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(507,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"image_attachments\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(579,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"image_attachments\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(600,10): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/localDatabase/userRepository.ts(110,25): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/profileCompletenessService.ts(146,23): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(146,36): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(149,19): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(151,41): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(156,23): error TS2339: Property 'gender' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(160,23): error TS2339: Property 'bio' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(160,35): error TS2339: Property 'bio' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(164,23): error TS2339: Property 'photos' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(164,38): error TS2339: Property 'photos' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(168,23): error TS2339: Property 'location' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(168,42): error TS2339: Property 'location' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(172,23): error TS2339: Property 'lookingFor' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(172,42): error TS2339: Property 'lookingFor' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(175,23): error TS2339: Property 'relationshipGoals' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(179,23): error TS2339: Property 'interests' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(179,41): error TS2339: Property 'interests' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(182,23): error TS2339: Property 'emailVerified' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(208,15): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(209,44): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/promptRepository.ts(60,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(74,35): error TS7006: Parameter 'active' implicitly has an 'any' type.\nsrc/services/promptRepository.ts(75,19): error TS2339: Property 'count' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<{ id: any; }[]>'.\nsrc/services/promptRepository.ts(118,12): error TS2339: Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(123,23): error TS2339: Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(126,43): error TS2339: Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(156,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(194,46): error TS2339: Property 'rpc' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'rpc' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/promptRepository.ts(282,34): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(283,35): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(291,17): error TS2339: Property 'error' does not exist on type '{ select: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestSingleResponse<null>'.\nsrc/services/promptRepository.ts(295,26): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(300,26): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(382,15): error TS2339: Property 'error' does not exist on type '{ select: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestSingleResponse<null>'.\nsrc/services/promptService.ts(284,41): error TS2304: Cannot find name 'API_BASE_URL'.\nsrc/services/promptService.ts(350,39): error TS2304: Cannot find name 'API_BASE_URL'.\nsrc/services/reflectionsRepository.ts(221,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(264,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(312,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(362,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(458,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(484,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(509,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(548,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(585,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(590,22): error TS7006: Parameter 'row' implicitly has an 'any' type.\nsrc/services/reflectionsRepository.ts(712,28): error TS2347: Untyped function calls may not accept type arguments.\n\u001b[1;33m⚠️  TypeScript compilation has issues\u001b[0m\n\n4️⃣  BROWSER & DEBUGGING\n=======================\n\u001b[0;34mℹ️  Checking browser debugging setup...\u001b[0m\n\u001b[0;32m✅ Chrome browser available for debugging\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard debugging features...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible for debugging\u001b[0m\n\u001b[0;32m✅ Dashboard has console logging capabilities\u001b[0m\n\n5️⃣  PERFORMANCE & RESOURCES\n============================\n\u001b[0;34mℹ️  Checking file sizes...\u001b[0m\n\u001b[1;33m⚠️  Large files detected (may impact performance):\u001b[0m\n\u001b[1;33m⚠️    ./dist/_expo/static/js/web/index-5d4e06c1f0d73d70c9e7867d64643189.js (1590498 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./dist/docs/Archive/Codex_musing/index.html (2268118 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/crypto.d.ts (190175 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/fs.d.ts (189515 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/http2.d.ts (129139 bytes)\u001b[0m\n\u001b[0;34mℹ️  Checking for performance issues...\u001b[0m\n\u001b[1;33m⚠️  High console logging count (   10609) - may impact performance\u001b[0m\n\n6️⃣  BUILD & DEPLOYMENT READINESS\n=================================\n\u001b[0;34mℹ️  Checking build readiness...\u001b[0m\n\u001b[0;32m✅ Build script configured in package.json\u001b[0m\n\u001b[0;32m✅ Start script configured in package.json\u001b[0m\n\u001b[0;34mℹ️  No development-specific environment config\u001b[0m\n\u001b[0;34mℹ️  No production-specific environment config\u001b[0m\n\n📊 DEVELOPMENT HEALTH SUMMARY\n=============================\n\u001b[0;32m✅ Development Environment: HEALTHY (%)\u001b[0m\n\n\u001b[0;34mℹ️  Development Recommendations:\u001b[0m\n\n💾 Full logs available at: logs/development-health.log\n🕐 Check completed at: 2025-10-20 18:59:43\n"
+      }
+    },
+    {
+      "testId": "infra-3",
+      "testName": "infra-3",
+      "status": "fail",
+      "message": "Pre-deployment validation failed - deployment blocked",
+      "timestamp": "2025-10-20T13:30:03.409Z",
+      "duration": 399,
+      "apiCalls": [],
+      "errors": [
+        "Pre-deployment validation failed - deployment blocked"
+      ],
+      "metadata": {
+        "scriptOutput": "🏥 CUPIDO SYSTEM HEALTH MONITOR\n===============================\nCo-founder level system validation\n\n1️⃣  CORE SYSTEM COMPONENTS\n==========================\n\u001b[0;34mℹ️  Checking Node.js...\u001b[0m\n\u001b[0;32m✅ Node.js v22.20.0 installed\u001b[0m\n\u001b[0;34mℹ️  Checking npm...\u001b[0m\n\u001b[0;32m✅ npm 10.9.3 installed\u001b[0m\n\u001b[0;34mℹ️  Checking critical files...\u001b[0m\n\u001b[0;32m✅ package.json exists\u001b[0m\n\u001b[0;32m✅ server.js exists\u001b[0m\n\u001b[0;32m✅ App.tsx exists\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js exists\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html exists\u001b[0m\n\u001b[0;32m✅ CLAUDE.md exists\u001b[0m\n\n2️⃣  NETWORK & CONNECTIVITY\n==========================\n\u001b[0;34mℹ️  Checking port availability...\u001b[0m\n\u001b[0;32m✅ Port 3001 is active (server running)\u001b[0m\n\u001b[0;32m✅ Port 8081 is active (Expo server running)\u001b[0m\n\u001b[0;34mℹ️  Testing server health...\u001b[0m\n\u001b[0;32m✅ Server responding at http://localhost:3001\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard accessibility...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible\u001b[0m\n\n3️⃣  SYSTEM RESOURCES\n===================\n\u001b[0;34mℹ️  Checking disk space...\u001b[0m\n\u001b[1;33m⚠️  Disk usage: 94% (getting full)\u001b[0m\n\u001b[0;34mℹ️  Checking memory usage...\u001b[0m\n\u001b[1;33m⚠️  Memory available: low\u001b[0m\n\n4️⃣  DATABASE & STORAGE\n======================\n\u001b[0;34mℹ️  Checking environment configuration...\u001b[0m\n\u001b[0;32m✅ .env file exists\u001b[0m\n\u001b[0;32m✅ SUPABASE_URL configured\u001b[0m\n\u001b[0;32m✅ SUPABASE_ANON_KEY configured\u001b[0m\n\u001b[0;34mℹ️  Local storage check requires browser context (handled by dashboard)\u001b[0m\n\n5️⃣  ERROR MANAGEMENT SYSTEM\n===========================\n\u001b[0;34mℹ️  Checking error logs...\u001b[0m\n\u001b[0;32m✅ No error log file (clean system)\u001b[0m\n\u001b[0;34mℹ️  Checking monitoring system...\u001b[0m\n\u001b[0;32m✅ Session logging system available\u001b[0m\n\n6️⃣  AUTOMATION SYSTEMS\n======================\n\u001b[0;34mℹ️  Checking automation systems...\u001b[0m\n\u001b[0;32m✅ auto-init.js available\u001b[0m\n\u001b[0;32m✅ session-logger.js available\u001b[0m\n\n📊 HEALTH SUMMARY\n=================\n\u001b[0;32m✅ System Health: HEALTHY (100%)\u001b[0m\n\n💾 Full logs available at: logs/system-health.log\n🕐 Check completed at: 2025-10-20 19:00:02\n"
+      }
+    },
+    {
+      "testId": "infra-4",
+      "testName": "infra-4",
+      "status": "pass",
+      "message": "Error management system operational",
+      "timestamp": "2025-10-20T13:30:04.440Z",
+      "duration": 380,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "scriptOutput": "🏥 CUPIDO SYSTEM HEALTH MONITOR\n===============================\nCo-founder level system validation\n\n1️⃣  CORE SYSTEM COMPONENTS\n==========================\n\u001b[0;34mℹ️  Checking Node.js...\u001b[0m\n\u001b[0;32m✅ Node.js v22.20.0 installed\u001b[0m\n\u001b[0;34mℹ️  Checking npm...\u001b[0m\n\u001b[0;32m✅ npm 10.9.3 installed\u001b[0m\n\u001b[0;34mℹ️  Checking critical files...\u001b[0m\n\u001b[0;32m✅ package.json exists\u001b[0m\n\u001b[0;32m✅ server.js exists\u001b[0m\n\u001b[0;32m✅ App.tsx exists\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js exists\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html exists\u001b[0m\n\u001b[0;32m✅ CLAUDE.md exists\u001b[0m\n\n2️⃣  NETWORK & CONNECTIVITY\n==========================\n\u001b[0;34mℹ️  Checking port availability...\u001b[0m\n\u001b[0;32m✅ Port 3001 is active (server running)\u001b[0m\n\u001b[0;32m✅ Port 8081 is active (Expo server running)\u001b[0m\n\u001b[0;34mℹ️  Testing server health...\u001b[0m\n\u001b[0;32m✅ Server responding at http://localhost:3001\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard accessibility...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible\u001b[0m\n\n3️⃣  SYSTEM RESOURCES\n===================\n\u001b[0;34mℹ️  Checking disk space...\u001b[0m\n\u001b[1;33m⚠️  Disk usage: 94% (getting full)\u001b[0m\n\u001b[0;34mℹ️  Checking memory usage...\u001b[0m\n\u001b[1;33m⚠️  Memory available: low\u001b[0m\n\n4️⃣  DATABASE & STORAGE\n======================\n\u001b[0;34mℹ️  Checking environment configuration...\u001b[0m\n\u001b[0;32m✅ .env file exists\u001b[0m\n\u001b[0;32m✅ SUPABASE_URL configured\u001b[0m\n\u001b[0;32m✅ SUPABASE_ANON_KEY configured\u001b[0m\n\u001b[0;34mℹ️  Local storage check requires browser context (handled by dashboard)\u001b[0m\n\n5️⃣  ERROR MANAGEMENT SYSTEM\n===========================\n\u001b[0;34mℹ️  Checking error logs...\u001b[0m\n\u001b[0;32m✅ No error log file (clean system)\u001b[0m\n\u001b[0;34mℹ️  Checking monitoring system...\u001b[0m\n\u001b[0;32m✅ Session logging system available\u001b[0m\n\n6️⃣  AUTOMATION SYSTEMS\n======================\n\u001b[0;34mℹ️  Checking automation systems...\u001b[0m\n\u001b[0;32m✅ auto-init.js available\u001b[0m\n\u001b[0;32m✅ session-logger.js available\u001b[0m\n\n📊 HEALTH SUMMARY\n=================\n\u001b[0;32m✅ System Health: HEALTHY (100%)\u001b[0m\n\n💾 Full logs available at: logs/system-health.log\n🕐 Check completed at: 2025-10-20 19:00:04\n"
+      }
+    },
+    {
+      "testId": "infra-5",
+      "testName": "infra-5",
+      "status": "fail",
+      "message": "Dashboard functionality issues detected",
+      "timestamp": "2025-10-20T13:30:22.421Z",
+      "duration": 17321,
+      "apiCalls": [],
+      "errors": [
+        "Dashboard functionality issues detected"
+      ],
+      "metadata": {
+        "scriptOutput": "🔧 CUPIDO DEVELOPMENT HEALTH MONITOR\n====================================\nDevelopment environment validation\n\n1️⃣  DEVELOPMENT TOOLS\n====================\n\u001b[0;34mℹ️  Checking Expo CLI...\u001b[0m\n\u001b[0;32m✅ Expo CLI available (version 0.24.22)\u001b[0m\n\u001b[0;34mℹ️  Checking development dependencies...\u001b[0m\n\u001b[0;32m✅ node_modules directory exists\u001b[0m\n\u001b[0;32m✅ expo installed\u001b[0m\n\u001b[0;32m✅ react installed\u001b[0m\n\u001b[0;32m✅ react-native installed\u001b[0m\n\u001b[0;32m✅ typescript installed\u001b[0m\n\n2️⃣  JAVASCRIPT SYNTAX VALIDATION\n================================\n\u001b[0;34mℹ️  Validating JavaScript syntax...\u001b[0m\n\u001b[0;32m✅ App.tsx exists and has content\u001b[0m\n\u001b[0;32m✅ server.js syntax valid\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js syntax valid\u001b[0m\n\u001b[0;32m✅ auto-init.js syntax valid\u001b[0m\n\u001b[0;32m✅ session-logger.js syntax valid\u001b[0m\n\u001b[0;34mℹ️  Validating HTML files...\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html HTML structure valid\u001b[0m\n\u001b[0;32m✅ public/index.html HTML structure valid\u001b[0m\n\n3️⃣  DEVELOPMENT SERVERS\n=======================\n\u001b[0;34mℹ️  Checking development servers...\u001b[0m\n\u001b[0;32m✅ Server running on port 3001 (PID: 23704\n30062)\u001b[0m\n\u001b[0;32m✅ Server responding normally\u001b[0m\n\u001b[0;32m✅ Expo server running on port 8081 (PID: 31219)\u001b[0m\n\u001b[0;34mℹ️  Checking for development issues...\u001b[0m\n\u001b[0;32m✅ Expo cache directory exists ( 12K)\u001b[0m\nsrc/components/AIReflectionChat.tsx(146,52): error TS2339: Property 'generateFollowUp' does not exist on type 'ReflectionAiService'.\nsrc/components/ChatReflectionInterface.tsx(76,5): error TS2304: Cannot find name 'setupAudioMode'.\nsrc/components/ChatReflectionInterface.tsx(99,7): error TS2304: Cannot find name 'startConversation'.\nsrc/components/ChatReflectionInterface.tsx(103,7): error TS2304: Cannot find name 'startConversation'.\nsrc/components/ChatReflectionInterface.tsx(131,10): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(131,24): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(140,7): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(141,7): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(144,7): error TS2304: Cannot find name 'setIsRecording'.\nsrc/components/ChatReflectionInterface.tsx(147,13): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(148,19): error TS2304: Cannot find name 'recording'.\nsrc/components/ChatReflectionInterface.tsx(152,7): error TS2304: Cannot find name 'setRecording'.\nsrc/components/ChatReflectionInterface.tsx(155,9): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(162,11): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(163,11): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(169,7): error TS2304: Cannot find name 'setIsRecording'.\nsrc/components/ChatReflectionInterface.tsx(170,7): error TS2304: Cannot find name 'setRecording'.\nsrc/components/ChatReflectionInterface.tsx(401,21): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(402,29): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(403,29): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(438,5): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(477,29): error TS2304: Cannot find name 'wasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(549,9): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(550,9): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(551,9): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(792,32): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(798,28): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(799,21): error TS2304: Cannot find name 'ImagePicker'.\nsrc/components/ChatReflectionInterface.tsx(806,9): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1019,13): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1019,32): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1021,16): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1023,41): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1025,36): error TS2304: Cannot find name 'setPendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1034,16): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1040,23): error TS2304: Cannot find name 'setPendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1041,23): error TS2304: Cannot find name 'setWasVoiceUsed'.\nsrc/components/ChatReflectionInterface.tsx(1062,16): error TS2304: Cannot find name 'TextInput'.\nsrc/components/ChatReflectionInterface.tsx(1063,43): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1064,24): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(1065,31): error TS2304: Cannot find name 'setCurrentInput'.\nsrc/components/ChatReflectionInterface.tsx(1066,30): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1070,28): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1090,16): error TS2304: Cannot find name 'Pressable'.\nsrc/components/ChatReflectionInterface.tsx(1091,45): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1094,19): error TS2304: Cannot find name 'startRecording'.\nsrc/components/ChatReflectionInterface.tsx(1101,18): error TS2304: Cannot find name 'Animated'.\nsrc/components/ChatReflectionInterface.tsx(1103,19): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1106,30): error TS2304: Cannot find name 'recordingAnimation'.\nsrc/components/ChatReflectionInterface.tsx(1114,55): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1115,55): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1117,19): error TS2304: Cannot find name 'Animated'.\nsrc/components/ChatReflectionInterface.tsx(1118,17): error TS2304: Cannot find name 'Pressable'.\nsrc/components/ChatReflectionInterface.tsx(1121,15): error TS2304: Cannot find name 'currentInput'.\nsrc/components/ChatReflectionInterface.tsx(1121,49): error TS2304: Cannot find name 'pendingImageUri'.\nsrc/components/ChatReflectionInterface.tsx(1121,68): error TS2304: Cannot find name 'pendingAudioUri'.\nsrc/components/ChatReflectionInterface.tsx(1125,27): error TS2304: Cannot find name 'isRecording'.\nsrc/components/ChatReflectionInterface.tsx(1138,1): error TS1258: A default export must be at the top level of a file or module declaration.\nsrc/components/DebugButton.tsx(70,33): error TS2304: Cannot find name 'testWithXHR'.\nsrc/components/MinimalChatInput.tsx(142,18): error TS2339: Property 'type' does not exist on type 'DocumentPickerResult'.\n  Property 'type' does not exist on type 'DocumentPickerSuccessResult'.\nsrc/components/MinimalChatInput.tsx(143,58): error TS2339: Property 'uri' does not exist on type 'DocumentPickerResult'.\n  Property 'uri' does not exist on type 'DocumentPickerSuccessResult'.\nsrc/components/SimpleReflectionChat.tsx(354,32): error TS2552: Cannot find name 'ChatMessageType'. Did you mean 'DBChatMessage'?\nsrc/components/SimpleReflectionChat.tsx(367,34): error TS2339: Property 'addMessage' does not exist on type 'ChatDatabaseService'.\nsrc/components/SimpleReflectionChat.tsx(408,29): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/components/SimpleReflectionChat.tsx(810,11): error TS2345: Argument of type '{ base64: {}; mimeType: string; } | undefined' is not assignable to parameter of type '{ base64: string; mimeType: string; } | undefined'.\n  Type '{ base64: {}; mimeType: string; }' is not assignable to type '{ base64: string; mimeType: string; }'.\n    Types of property 'base64' are incompatible.\n      Type '{}' is not assignable to type 'string'.\nsrc/components/SimpleReflectionChat.tsx(1167,13): error TS2322: Type '((messageOverride?: string | undefined) => Promise<void>) | undefined' is not assignable to type '((e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void) | undefined'.\n  Type '(messageOverride?: string) => Promise<void>' is not assignable to type '(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void'.\n    Types of parameters 'messageOverride' and 'e' are incompatible.\n      Type 'NativeSyntheticEvent<TextInputSubmitEditingEventData>' is not assignable to type 'string'.\nsrc/components/SimpleReflectionChat.tsx(1200,13): error TS2322: Type '(messageOverride?: string) => Promise<void>' is not assignable to type '(event: GestureResponderEvent) => void'.\n  Types of parameters 'messageOverride' and 'event' are incompatible.\n    Type 'GestureResponderEvent' is not assignable to type 'string'.\nsrc/screens/PixelPerfectHomeScreen.tsx(463,57): error TS7006: Parameter 'tag' implicitly has an 'any' type.\nsrc/screens/PixelPerfectHomeScreen.tsx(463,62): error TS7006: Parameter 'tagIndex' implicitly has an 'any' type.\nsrc/screens/PixelPerfectMatchesScreen.tsx(29,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(55,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(61,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(87,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(93,9): error TS2353: Object literal may only specify known properties, and 'overall' does not exist in type 'CompatibilityScore'.\nsrc/screens/PixelPerfectMatchesScreen.tsx(119,7): error TS2322: Type '\"pending\"' is not assignable to type '\"suggested\" | \"liked\" | \"passed\" | \"mutual_like\" | \"conversation_started\"'.\nsrc/services/chatDatabase.ts(62,10): error TS2339: Property 'maybeSingle' does not exist on type 'PostgrestFilterBuilder<any, any, any[], \"profiles\", unknown> | { single: () => Promise<{ data: null; error: null; }>; }'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(80,17): error TS2339: Property 'data' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(80,35): error TS2339: Property 'error' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(107,14): error TS2339: Property 'maybeSingle' does not exist on type 'PostgrestFilterBuilder<any, any, any[], \"profiles\", unknown> | { single: () => Promise<{ data: null; error: null; }>; }'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(148,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(162,17): error TS2339: Property 'data' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(162,35): error TS2339: Property 'error' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<any[]>'.\nsrc/services/chatDatabase.ts(189,14): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(269,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_messages\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(291,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"chat_conversations\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(308,8): error TS2339: Property 'channel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'channel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/chatDatabase.ts(317,10): error TS7006: Parameter 'payload' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(324,16): error TS2339: Property 'removeChannel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'removeChannel' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/chatDatabase.ts(353,10): error TS2339: Property 'in' does not exist on type '{ eq: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestFilterBuilder<any, any, any[], \"chat_messages\", unknown>'.\n  Property 'in' does not exist on type '{ eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }'.\nsrc/services/chatDatabase.ts(364,10): error TS7006: Parameter 'acc' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(364,15): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(373,17): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(374,14): error TS7006: Parameter 'msg' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(377,33): error TS7006: Parameter 'a' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(377,36): error TS7006: Parameter 'b' implicitly has an 'any' type.\nsrc/services/chatDatabase.ts(410,12): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(423,12): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(437,10): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/chatDatabase.ts(507,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"image_attachments\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(579,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"image_attachments\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/chatDatabase.ts(600,10): error TS2339: Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; } | PostgrestQueryBuilder<...>'.\n  Property 'delete' does not exist on type '{ select: () => { eq: () => { single: () => Promise<{ data: null; error: null; }>; }; }; insert: () => { select: () => { single: () => Promise<{ data: null; error: null; }>; }; }; update: () => { eq: () => any; }; }'.\nsrc/services/localDatabase/userRepository.ts(110,25): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/profileCompletenessService.ts(146,23): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(146,36): error TS2339: Property 'name' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(149,19): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(151,41): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(156,23): error TS2339: Property 'gender' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(160,23): error TS2339: Property 'bio' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(160,35): error TS2339: Property 'bio' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(164,23): error TS2339: Property 'photos' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(164,38): error TS2339: Property 'photos' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(168,23): error TS2339: Property 'location' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(168,42): error TS2339: Property 'location' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(172,23): error TS2339: Property 'lookingFor' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(172,42): error TS2339: Property 'lookingFor' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(175,23): error TS2339: Property 'relationshipGoals' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(179,23): error TS2339: Property 'interests' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(179,41): error TS2339: Property 'interests' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(182,23): error TS2339: Property 'emailVerified' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(208,15): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/profileCompletenessService.ts(209,44): error TS2339: Property 'dateOfBirth' does not exist on type 'User'.\nsrc/services/promptRepository.ts(60,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(74,35): error TS7006: Parameter 'active' implicitly has an 'any' type.\nsrc/services/promptRepository.ts(75,19): error TS2339: Property 'count' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestSingleResponse<{ id: any; }[]>'.\nsrc/services/promptRepository.ts(118,12): error TS2339: Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(123,23): error TS2339: Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'eq' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(126,43): error TS2339: Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'maybeSingle' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(156,10): error TS2339: Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; } | PostgrestFilterBuilder<any, any, any[], \"prompt_versions\", unknown>'.\n  Property 'order' does not exist on type '{ single: () => Promise<{ data: null; error: null; }>; }'.\nsrc/services/promptRepository.ts(194,46): error TS2339: Property 'rpc' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; ...'.\n  Property 'rpc' does not exist on type '{ auth: { onAuthStateChange: () => { data: { subscription: { unsubscribe: () => void; }; }; }; signUp: () => Promise<{ data: null; error: null; }>; signInWithPassword: () => Promise<{ data: null; error: null; }>; signOut: () => Promise<...>; getUser: () => Promise<...>; }; from: () => { ...; }; functions: { ...; }; }'.\nsrc/services/promptRepository.ts(282,34): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(283,35): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(291,17): error TS2339: Property 'error' does not exist on type '{ select: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestSingleResponse<null>'.\nsrc/services/promptRepository.ts(295,26): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(300,26): error TS18046: 'promptData' is of type 'unknown'.\nsrc/services/promptRepository.ts(382,15): error TS2339: Property 'error' does not exist on type '{ select: () => { single: () => Promise<{ data: null; error: null; }>; }; } | PostgrestSingleResponse<null>'.\nsrc/services/promptService.ts(284,41): error TS2304: Cannot find name 'API_BASE_URL'.\nsrc/services/promptService.ts(350,39): error TS2304: Cannot find name 'API_BASE_URL'.\nsrc/services/reflectionsRepository.ts(221,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(264,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(312,28): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(362,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(458,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(484,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(509,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(548,26): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(585,24): error TS2347: Untyped function calls may not accept type arguments.\nsrc/services/reflectionsRepository.ts(590,22): error TS7006: Parameter 'row' implicitly has an 'any' type.\nsrc/services/reflectionsRepository.ts(712,28): error TS2347: Untyped function calls may not accept type arguments.\n\u001b[1;33m⚠️  TypeScript compilation has issues\u001b[0m\n\n4️⃣  BROWSER & DEBUGGING\n=======================\n\u001b[0;34mℹ️  Checking browser debugging setup...\u001b[0m\n\u001b[0;32m✅ Chrome browser available for debugging\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard debugging features...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible for debugging\u001b[0m\n\u001b[0;32m✅ Dashboard has console logging capabilities\u001b[0m\n\n5️⃣  PERFORMANCE & RESOURCES\n============================\n\u001b[0;34mℹ️  Checking file sizes...\u001b[0m\n\u001b[1;33m⚠️  Large files detected (may impact performance):\u001b[0m\n\u001b[1;33m⚠️    ./dist/_expo/static/js/web/index-5d4e06c1f0d73d70c9e7867d64643189.js (1590498 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./dist/docs/Archive/Codex_musing/index.html (2268118 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/crypto.d.ts (190175 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/fs.d.ts (189515 bytes)\u001b[0m\n\u001b[1;33m⚠️    ./node_modules/@types/node/http2.d.ts (129139 bytes)\u001b[0m\n\u001b[0;34mℹ️  Checking for performance issues...\u001b[0m\n\u001b[1;33m⚠️  High console logging count (   10609) - may impact performance\u001b[0m\n\n6️⃣  BUILD & DEPLOYMENT READINESS\n=================================\n\u001b[0;34mℹ️  Checking build readiness...\u001b[0m\n\u001b[0;32m✅ Build script configured in package.json\u001b[0m\n\u001b[0;32m✅ Start script configured in package.json\u001b[0m\n\u001b[0;34mℹ️  No development-specific environment config\u001b[0m\n\u001b[0;34mℹ️  No production-specific environment config\u001b[0m\n\n📊 DEVELOPMENT HEALTH SUMMARY\n=============================\n\u001b[0;32m✅ Development Environment: HEALTHY (%)\u001b[0m\n\n\u001b[0;34mℹ️  Development Recommendations:\u001b[0m\n\n💾 Full logs available at: logs/development-health.log\n🕐 Check completed at: 2025-10-20 19:00:05\n"
+      }
+    },
+    {
+      "testId": "infra-6",
+      "testName": "infra-6",
+      "status": "pass",
+      "message": "System performance optimal (Dashboard: 5ms, API: 3ms)",
+      "timestamp": "2025-10-20T13:30:23.077Z",
+      "duration": 9,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "dashboardLoadTime": 5,
+        "apiLoadTime": 3,
+        "performanceGrade": "A+"
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760966375158
+  },
+  "totalDuration": 648428,
+  "summary": {
+    "total": 68,
+    "passed": 49,
+    "failed": 19,
+    "passRate": "72.1"
+  },
+  "receivedAt": "2025-10-20T13:30:23.595Z"
+}

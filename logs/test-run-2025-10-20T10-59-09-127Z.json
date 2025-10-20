@@ -1,0 +1,34 @@
+{
+  "id": "test_run_1760957947726_p9ymobn",
+  "startTime": "2025-10-20T10:59:07.726Z",
+  "endTime": "2025-10-20T10:59:09.117Z",
+  "tests": [
+    {
+      "testId": "phase2-2",
+      "testName": "Performance Metrics Tracking",
+      "status": "fail",
+      "message": "A/B Testing framework incomplete",
+      "timestamp": "2025-10-20T10:59:09.117Z",
+      "duration": 5,
+      "apiCalls": [],
+      "errors": [
+        "A/B Testing framework incomplete"
+      ],
+      "metadata": {}
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957947726
+  },
+  "totalDuration": 1391,
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": "0.0"
+  },
+  "receivedAt": "2025-10-20T10:59:09.126Z"
+}

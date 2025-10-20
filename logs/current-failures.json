@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-10-20T13:30:23.595Z",
+  "runId": "test_run_1760966375158_1ozz2xh",
+  "totalFailed": 19,
+  "totalTests": 68,
+  "failedTests": [
+    {
+      "message": "✗ Issues with batch test execution transitions",
+      "errors": [
+        "✗ Issues with batch test execution transitions"
+      ]
+    },
+    {
+      "message": "✗ Console logging issues during test execution",
+      "errors": [
+        "✗ Console logging issues during test execution"
+      ]
+    },
+    {
+      "message": "✗ Loading state issues",
+      "errors": [
+        "✗ Loading state issues"
+      ]
+    },
+    {
+      "message": "Core analytics methods missing from PromptAnalyticsEngine",
+      "errors": [
+        "Core analytics methods missing from PromptAnalyticsEngine"
+      ]
+    },
+    {
+      "message": "Statistical significance calculation not implemented",
+      "errors": [
+        "Statistical significance calculation not implemented"
+      ]
+    },
+    {
+      "message": "Dating app-specific templates missing",
+      "errors": [
+        "Dating app-specific templates missing"
+      ]
+    },
+    {
+      "message": "Essential dashboard elements missing",
+      "errors": [
+        "Essential dashboard elements missing"
+      ]
+    },
+    {
+      "message": "Mobile-responsive design not implemented",
+      "errors": [
+        "Mobile-responsive design not implemented"
+      ]
+    },
+    {
+      "message": "Dashboard does not integrate both engines",
+      "errors": [
+        "Dashboard does not integrate both engines"
+      ]
+    },
+    {
+      "message": "AutomationWorkflowEngine class not found",
+      "errors": [
+        "AutomationWorkflowEngine class not found"
+      ]
+    },
+    {
+      "message": "Default workflows missing",
+      "errors": [
+        "Default workflows missing"
+      ]
+    },
+    {
+      "message": "ProductionDeploymentPipeline class not found",
+      "errors": [
+        "ProductionDeploymentPipeline class not found"
+      ]
+    },
+    {
+      "message": "Blue-green deployment not implemented",
+      "errors": [
+        "Blue-green deployment not implemented"
+      ]
+    },
+    {
+      "message": "Workflow-Analytics integration not implemented",
+      "errors": [
+        "Workflow-Analytics integration not implemented"
+      ]
+    },
+    {
+      "message": "Workflow-Deployment integration not implemented",
+      "errors": [
+        "Workflow-Deployment integration not implemented"
+      ]
+    },
+    {
+      "message": "Dashboard missing system integrations",
+      "errors": [
+        "Dashboard missing system integrations"
+      ]
+    },
+    {
+      "message": "Health check failed - system issues detected",
+      "errors": [
+        "Health check failed - system issues detected"
+      ]
+    },
+    {
+      "message": "Pre-deployment validation failed - deployment blocked",
+      "errors": [
+        "Pre-deployment validation failed - deployment blocked"
+      ]
+    },
+    {
+      "message": "Dashboard functionality issues detected",
+      "errors": [
+        "Dashboard functionality issues detected"
+      ]
+    }
+  ]
+}

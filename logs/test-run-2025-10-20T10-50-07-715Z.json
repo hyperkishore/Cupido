@@ -1,0 +1,42 @@
+{
+  "id": "test_run_1760957395560_p0b2t9z",
+  "startTime": "2025-10-20T10:49:55.560Z",
+  "endTime": "2025-10-20T10:50:07.671Z",
+  "tests": [
+    {
+      "testId": "simulator-6",
+      "testName": "Simulator Performance Metrics",
+      "status": "pass",
+      "message": "✓ Simulator postMessage framework properly initialized",
+      "timestamp": "2025-10-20T10:50:07.670Z",
+      "duration": 4,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "stateKeys": [
+          "isActive",
+          "isPaused",
+          "speed",
+          "selectedPersonaId",
+          "conversationHistory",
+          "typingDelayMin",
+          "typingDelayMax"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957395560
+  },
+  "totalDuration": 12111,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:50:07.714Z"
+}

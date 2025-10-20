@@ -1,0 +1,23 @@
+[2025-10-20T10:24:12.767Z] 🔧 Test Auto-Healer initialized
+[2025-10-20T10:24:12.771Z] 📁 Monitoring: /Users/kishore/Desktop/Claude-experiments/Cupido/logs/current-failures.json
+[2025-10-20T10:24:12.772Z] ❌ No Claude Code request found. Run monitor first.
+[2025-10-20T10:38:35.074Z] 🔧 Test Auto-Healer initialized
+[2025-10-20T10:38:35.082Z] 📁 Monitoring: /Users/kishore/Desktop/Claude-experiments/Cupido/logs/current-failures.json
+[2025-10-20T10:38:46.449Z] 🔧 Test Auto-Healer initialized
+[2025-10-20T10:38:46.453Z] 📁 Monitoring: /Users/kishore/Desktop/Claude-experiments/Cupido/logs/current-failures.json
+[2025-10-20T10:38:46.453Z] 🔄 Starting background polling for test failures...
+[2025-10-20T10:59:16.610Z] 🚨 1 test failures detected
+[2025-10-20T10:59:26.611Z] 🚨 1 test failures detected
+[2025-10-20T10:59:36.613Z] 🚨 1 test failures detected
+[2025-10-20T10:59:46.615Z] 🚨 1 test failures detected
+[2025-10-20T10:59:56.617Z] 🚨 1 test failures detected
+[2025-10-20T11:00:06.619Z] 🚨 1 test failures detected
+[2025-10-20T11:00:16.620Z] 🚨 1 test failures detected
+[2025-10-20T11:00:26.621Z] 🚨 1 test failures detected
+[2025-10-20T11:00:36.624Z] 🚨 1 test failures detected
+[2025-10-20T11:00:56.628Z] 🚨 1 test failures detected
+[2025-10-20T11:01:06.630Z] 🚨 1 test failures detected
+[2025-10-20T11:01:36.637Z] 🚨 1 test failures detected
+[2025-10-20T11:02:06.644Z] 🚨 1 test failures detected
+[2025-10-20T12:44:11.879Z] 🚨 18 test failures detected
+[2025-10-20T13:30:32.267Z] 🚨 19 test failures detected

@@ -1,0 +1,35 @@
+{
+  "id": "test_run_1760957941725_5etvgha",
+  "startTime": "2025-10-20T10:59:01.725Z",
+  "endTime": "2025-10-20T10:59:03.195Z",
+  "tests": [
+    {
+      "testId": "simulator-17",
+      "testName": "Simulation Scenario Management",
+      "status": "pass",
+      "message": "✓ PostMessage communication framework properly set up",
+      "timestamp": "2025-10-20T10:59:03.194Z",
+      "duration": 0,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "hasMessageHandler": true,
+        "hasConsoleMonitoring": true
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957941725
+  },
+  "totalDuration": 1470,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:59:03.205Z"
+}

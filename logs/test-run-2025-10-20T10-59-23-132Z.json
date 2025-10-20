@@ -1,0 +1,35 @@
+{
+  "id": "test_run_1760957959931_o3j5ako",
+  "startTime": "2025-10-20T10:59:19.931Z",
+  "endTime": "2025-10-20T10:59:23.125Z",
+  "tests": [
+    {
+      "testId": "phase2-7",
+      "testName": "Cross-System Integration",
+      "status": "pass",
+      "message": "Analytics-Template integration verified",
+      "timestamp": "2025-10-20T10:59:23.121Z",
+      "duration": 10,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "crossIntegration": true,
+        "persistence": true
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957959931
+  },
+  "totalDuration": 3194,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:59:23.132Z"
+}

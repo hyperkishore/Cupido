@@ -1,0 +1,36 @@
+{
+  "id": "test_run_1760958121725_yto6qa8",
+  "startTime": "2025-10-20T11:02:01.725Z",
+  "endTime": "2025-10-20T11:02:03.782Z",
+  "tests": [
+    {
+      "testId": "infra-6",
+      "testName": "infra-6",
+      "status": "pass",
+      "message": "System performance optimal (Dashboard: 5ms, API: 4ms)",
+      "timestamp": "2025-10-20T11:02:02.826Z",
+      "duration": 9,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "dashboardLoadTime": 5,
+        "apiLoadTime": 4,
+        "performanceGrade": "A+"
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760958121725
+  },
+  "totalDuration": 2057,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T11:02:03.787Z"
+}

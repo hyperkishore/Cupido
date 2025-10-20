@@ -1,0 +1,37 @@
+{
+  "id": "test_run_1760957943725_vtu9che",
+  "startTime": "2025-10-20T10:59:03.725Z",
+  "endTime": "2025-10-20T10:59:05.102Z",
+  "tests": [
+    {
+      "testId": "simulator-18",
+      "testName": "Automated Testing Integration",
+      "status": "pass",
+      "message": "✓ Iframe response injection framework ready",
+      "timestamp": "2025-10-20T10:59:05.096Z",
+      "duration": 1,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "iframeExists": true,
+        "hasSrc": true,
+        "hasContentWindow": true,
+        "src": "http://localhost:3001/app"
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957943725
+  },
+  "totalDuration": 1377,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:59:05.116Z"
+}

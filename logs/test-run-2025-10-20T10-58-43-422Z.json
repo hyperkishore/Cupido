@@ -1,0 +1,35 @@
+{
+  "id": "test_run_1760957921728_zzbqsbk",
+  "startTime": "2025-10-20T10:58:41.728Z",
+  "endTime": "2025-10-20T10:58:43.414Z",
+  "tests": [
+    {
+      "testId": "simulator-12",
+      "testName": "Persona Profile Generation",
+      "status": "pass",
+      "message": "✓ Proper error handling for nonexistent persona: Persona prompt not found",
+      "timestamp": "2025-10-20T10:58:43.413Z",
+      "duration": 67,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "status": 404,
+        "error": "Persona prompt not found"
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957921728
+  },
+  "totalDuration": 1686,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:58:43.422Z"
+}

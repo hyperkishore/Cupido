@@ -1,0 +1,36 @@
+{
+  "id": "test_run_1760957617730_184qqjo",
+  "startTime": "2025-10-20T10:53:37.730Z",
+  "endTime": "2025-10-20T10:54:37.901Z",
+  "tests": [
+    {
+      "testId": "simulator-9",
+      "testName": "Persona Switching Capability",
+      "status": "pass",
+      "message": "✓ Speed controls properly configured (1x speed, 1000-3000ms delays)",
+      "timestamp": "2025-10-20T10:54:37.900Z",
+      "duration": 5,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "speed": 1,
+        "typingDelayMin": 1000,
+        "typingDelayMax": 3000
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957617730
+  },
+  "totalDuration": 60171,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:54:37.908Z"
+}
