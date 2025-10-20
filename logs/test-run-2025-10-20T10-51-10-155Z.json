@@ -1,0 +1,42 @@
+{
+  "id": "test_run_1760957455275_lmq8936",
+  "startTime": "2025-10-20T10:50:55.275Z",
+  "endTime": "2025-10-20T10:51:10.145Z",
+  "tests": [
+    {
+      "testId": "simulator-7",
+      "testName": "Conversation Context Preservation",
+      "status": "pass",
+      "message": "✓ Simulator control functions are properly defined",
+      "timestamp": "2025-10-20T10:51:10.144Z",
+      "duration": 2,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "functions": [
+          "startSimulator",
+          "pauseSimulator",
+          "stopSimulator"
+        ],
+        "initialState": {
+          "isActive": false,
+          "isPaused": false
+        }
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957455275
+  },
+  "totalDuration": 14870,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:51:10.155Z"
+}

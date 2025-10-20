@@ -1,0 +1,39 @@
+{
+  "id": "test_run_1760957949726_tbvgsm8",
+  "startTime": "2025-10-20T10:59:09.726Z",
+  "endTime": "2025-10-20T10:59:11.146Z",
+  "tests": [
+    {
+      "testId": "phase2-3",
+      "testName": "Template Engine Rendering",
+      "status": "pass",
+      "message": "Template Engine core functionality verified",
+      "timestamp": "2025-10-20T10:59:11.140Z",
+      "duration": 7,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "templateSyntax": "handlebars",
+        "methods": [
+          "compileTemplate",
+          "renderTemplate",
+          "validateVariables"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957949726
+  },
+  "totalDuration": 1420,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:59:11.155Z"
+}

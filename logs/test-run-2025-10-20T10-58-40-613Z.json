@@ -1,0 +1,36 @@
+{
+  "id": "test_run_1760957857736_2eqraqn",
+  "startTime": "2025-10-20T10:57:37.736Z",
+  "endTime": "2025-10-20T10:58:40.603Z",
+  "tests": [
+    {
+      "testId": "simulator-11",
+      "testName": "Simulator Error Handling",
+      "status": "pass",
+      "message": "✓ Simulator metadata save API completed successfully",
+      "timestamp": "2025-10-20T10:58:40.597Z",
+      "duration": 2271,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "conversationId": "test-conversation-1760957917783",
+        "personaName": "Raj - Startup Founder",
+        "responseGenerated": true
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957857737
+  },
+  "totalDuration": 62867,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:58:40.613Z"
+}

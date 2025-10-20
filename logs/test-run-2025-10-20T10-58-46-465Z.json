@@ -1,0 +1,36 @@
+{
+  "id": "test_run_1760957924726_2kvpz1c",
+  "startTime": "2025-10-20T10:58:44.726Z",
+  "endTime": "2025-10-20T10:58:46.458Z",
+  "tests": [
+    {
+      "testId": "simulator-13",
+      "testName": "Conversation Analytics",
+      "status": "pass",
+      "message": "✓ Proper error handling for malformed request: Missing required fields: personaPromptId and userMessage",
+      "timestamp": "2025-10-20T10:58:46.457Z",
+      "duration": 10,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "status": 400,
+        "error": "Missing required fields: personaPromptId and userMessage",
+        "hasFallback": false
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957924727
+  },
+  "totalDuration": 1732,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:58:46.465Z"
+}

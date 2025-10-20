@@ -606,6 +606,20 @@ function manageScriptOutputMemory(content) {
 - **Production Safety**: Designed for real-world deployment constraints
 - **Performance Optimization**: Batched operations prevent UI blocking
 
+#### 6. ✅ Continuous Monitoring Script Integration (Final Fix)
+**Problem**: continuous-monitor.sh infinite loop conflicts with Scripts tab timeout expectations
+**Solution**: Context-aware execution with environment variable detection
+```bash
+SCRIPT_TAB_MODE=${CUPIDO_SCRIPT_TAB_MODE:-false}
+MAX_ITERATIONS=${CUPIDO_MAX_ITERATIONS:-2}
+if [ "$SCRIPT_TAB_MODE" = "true" ]; then
+    CHECK_INTERVAL=5  # 5 seconds for quick execution
+fi
+```
+**Server Integration**: Environment variables set in `/api/run-script/continuous-monitor`
+**Result**: Runs exactly 2 iterations (10 seconds total) when triggered from Scripts tab
+**Preserved Behavior**: Maintains infinite loop for direct 24/7 monitoring execution
+
 ### Production Deployment Readiness
 
 #### Performance Characteristics

@@ -1,0 +1,34 @@
+{
+  "id": "test_run_1760957955726_t5ocqbz",
+  "startTime": "2025-10-20T10:59:15.726Z",
+  "endTime": "2025-10-20T10:59:17.356Z",
+  "tests": [
+    {
+      "testId": "phase2-6",
+      "testName": "Dashboard Real-time Updates",
+      "status": "fail",
+      "message": "Mobile-responsive design not implemented",
+      "timestamp": "2025-10-20T10:59:17.355Z",
+      "duration": 10,
+      "apiCalls": [],
+      "errors": [
+        "Mobile-responsive design not implemented"
+      ],
+      "metadata": {}
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957955726
+  },
+  "totalDuration": 1630,
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": "0.0"
+  },
+  "receivedAt": "2025-10-20T10:59:17.365Z"
+}

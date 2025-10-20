@@ -1,0 +1,20 @@
+{
+  "id": "test_run_1760962875317_kf17cxw",
+  "startTime": "2025-10-20T12:21:15.317Z",
+  "endTime": "2025-10-20T12:22:20.006Z",
+  "tests": [],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760962875317
+  },
+  "totalDuration": 64689,
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "passRate": "NaN"
+  },
+  "receivedAt": "2025-10-20T12:22:20.012Z"
+}

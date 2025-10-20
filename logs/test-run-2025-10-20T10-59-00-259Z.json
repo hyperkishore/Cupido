@@ -1,0 +1,36 @@
+{
+  "id": "test_run_1760957934725_8fpdus4",
+  "startTime": "2025-10-20T10:58:54.726Z",
+  "endTime": "2025-10-20T10:59:00.252Z",
+  "tests": [
+    {
+      "testId": "simulator-16",
+      "testName": "Real-time Simulation Monitoring",
+      "status": "pass",
+      "message": "✓ Persona switching generates distinct, authentic responses",
+      "timestamp": "2025-10-20T10:59:00.251Z",
+      "duration": 4362,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "rajResponse": "Hey! I love how Austin has this perfect mix of tec...",
+        "sarahResponse": "I love how Brooklyn feels like this amazing collag...",
+        "responsesAreDifferent": true
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957934726
+  },
+  "totalDuration": 5526,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:59:00.259Z"
+}

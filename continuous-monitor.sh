@@ -15,6 +15,15 @@ CHECK_INTERVAL=300  # 5 minutes
 ALERT_THRESHOLD=3   # Number of failures before escalating
 LOG_FILE="logs/monitoring.log"
 
+# Script execution context detection
+SCRIPT_TAB_MODE=${CUPIDO_SCRIPT_TAB_MODE:-false}
+MAX_ITERATIONS=${CUPIDO_MAX_ITERATIONS:-2}
+
+# Adjust timing for Scripts tab mode
+if [ "$SCRIPT_TAB_MODE" = "true" ]; then
+    CHECK_INTERVAL=5  # 5 seconds for quick Scripts tab execution
+fi
+
 # Ensure logs directory exists
 mkdir -p logs
 
@@ -29,6 +38,7 @@ NC='\033[0m'
 CONSECUTIVE_FAILURES=0
 TOTAL_CHECKS=0
 TOTAL_FAILURES=0
+CURRENT_ITERATION=0
 
 log_with_timestamp() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
@@ -127,15 +137,24 @@ handle_success() {
 
 # Main monitoring loop
 main_monitoring_loop() {
-    info "Starting continuous monitoring (checking every ${CHECK_INTERVAL}s)"
+    if [ "$SCRIPT_TAB_MODE" = "true" ]; then
+        info "Starting Scripts tab monitoring (limited to $MAX_ITERATIONS iterations)"
+    else
+        info "Starting continuous monitoring (checking every ${CHECK_INTERVAL}s)"
+    fi
     info "Alert threshold: $ALERT_THRESHOLD consecutive failures"
     info "Log file: $LOG_FILE"
     
     while true; do
         ((TOTAL_CHECKS++))
+        ((CURRENT_ITERATION++))
         
         echo ""
-        info "Check #$TOTAL_CHECKS - $(date '+%H:%M:%S')"
+        if [ "$SCRIPT_TAB_MODE" = "true" ]; then
+            info "Check #$TOTAL_CHECKS (iteration $CURRENT_ITERATION/$MAX_ITERATIONS) - $(date '+%H:%M:%S')"
+        else
+            info "Check #$TOTAL_CHECKS - $(date '+%H:%M:%S')"
+        fi
         
         if perform_health_check; then
             success "All systems operational"
@@ -149,8 +168,18 @@ main_monitoring_loop() {
         UPTIME_PERCENTAGE=$(echo "scale=2; ($TOTAL_CHECKS - $TOTAL_FAILURES) * 100 / $TOTAL_CHECKS" | bc -l 2>/dev/null || echo "100")
         info "Stats: Uptime ${UPTIME_PERCENTAGE}% | Total checks: $TOTAL_CHECKS | Failures: $TOTAL_FAILURES"
         
-        # Wait for next check
-        sleep $CHECK_INTERVAL
+        # Exit condition for Scripts tab mode
+        if [ "$SCRIPT_TAB_MODE" = "true" ] && [ "$CURRENT_ITERATION" -ge "$MAX_ITERATIONS" ]; then
+            info "Scripts tab monitoring completed ($MAX_ITERATIONS iterations)"
+            break
+        fi
+        
+        # Wait for next check (skip sleep on last iteration in Scripts tab mode)
+        if [ "$SCRIPT_TAB_MODE" = "true" ] && [ "$CURRENT_ITERATION" -ge "$MAX_ITERATIONS" ]; then
+            break
+        else
+            sleep $CHECK_INTERVAL
+        fi
     done
 }
 

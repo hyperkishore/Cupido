@@ -750,7 +750,15 @@ app.get('/api/run-script/setup-context-automation', (req, res) => {
 
 app.get('/api/run-script/continuous-monitor', (req, res) => {
   const { exec } = require('child_process');
-  exec('./continuous-monitor.sh', (error, stdout, stderr) => {
+  
+  // Set environment variables for Scripts tab execution
+  const env = {
+    ...process.env,
+    CUPIDO_SCRIPT_TAB_MODE: 'true',
+    CUPIDO_MAX_ITERATIONS: '2'
+  };
+  
+  exec('./continuous-monitor.sh', { env }, (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;

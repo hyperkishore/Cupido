@@ -1,0 +1,34 @@
+{
+  "id": "test_run_1760957945725_lttcy2t",
+  "startTime": "2025-10-20T10:59:05.725Z",
+  "endTime": "2025-10-20T10:59:07.147Z",
+  "tests": [
+    {
+      "testId": "phase2-1",
+      "testName": "Analytics Engine Core Functions",
+      "status": "fail",
+      "message": "Core analytics methods missing from PromptAnalyticsEngine",
+      "timestamp": "2025-10-20T10:59:07.147Z",
+      "duration": 10,
+      "apiCalls": [],
+      "errors": [
+        "Core analytics methods missing from PromptAnalyticsEngine"
+      ],
+      "metadata": {}
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957945725
+  },
+  "totalDuration": 1422,
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "passRate": "0.0"
+  },
+  "receivedAt": "2025-10-20T10:59:07.151Z"
+}

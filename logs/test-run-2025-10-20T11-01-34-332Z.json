@@ -1,0 +1,34 @@
+{
+  "id": "test_run_1760958092726_dagr0lz",
+  "startTime": "2025-10-20T11:01:32.726Z",
+  "endTime": "2025-10-20T11:01:34.327Z",
+  "tests": [
+    {
+      "testId": "infra-4",
+      "testName": "infra-4",
+      "status": "pass",
+      "message": "Error management system operational",
+      "timestamp": "2025-10-20T11:01:34.325Z",
+      "duration": 390,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "scriptOutput": "🏥 CUPIDO SYSTEM HEALTH MONITOR\n===============================\nCo-founder level system validation\n\n1️⃣  CORE SYSTEM COMPONENTS\n==========================\n\u001b[0;34mℹ️  Checking Node.js...\u001b[0m\n\u001b[0;32m✅ Node.js v22.20.0 installed\u001b[0m\n\u001b[0;34mℹ️  Checking npm...\u001b[0m\n\u001b[0;32m✅ npm 10.9.3 installed\u001b[0m\n\u001b[0;34mℹ️  Checking critical files...\u001b[0m\n\u001b[0;32m✅ package.json exists\u001b[0m\n\u001b[0;32m✅ server.js exists\u001b[0m\n\u001b[0;32m✅ App.tsx exists\u001b[0m\n\u001b[0;32m✅ comprehensive-test-functions.js exists\u001b[0m\n\u001b[0;32m✅ cupido-test-dashboard.html exists\u001b[0m\n\u001b[0;32m✅ CLAUDE.md exists\u001b[0m\n\n2️⃣  NETWORK & CONNECTIVITY\n==========================\n\u001b[0;34mℹ️  Checking port availability...\u001b[0m\n\u001b[0;32m✅ Port 3001 is active (server running)\u001b[0m\n\u001b[0;32m✅ Port 8081 is active (Expo server running)\u001b[0m\n\u001b[0;34mℹ️  Testing server health...\u001b[0m\n\u001b[0;32m✅ Server responding at http://localhost:3001\u001b[0m\n\u001b[0;34mℹ️  Testing dashboard accessibility...\u001b[0m\n\u001b[0;32m✅ Test dashboard accessible\u001b[0m\n\n3️⃣  SYSTEM RESOURCES\n===================\n\u001b[0;34mℹ️  Checking disk space...\u001b[0m\n\u001b[1;33m⚠️  Disk usage: 94% (getting full)\u001b[0m\n\u001b[0;34mℹ️  Checking memory usage...\u001b[0m\n\u001b[1;33m⚠️  Memory available: low\u001b[0m\n\n4️⃣  DATABASE & STORAGE\n======================\n\u001b[0;34mℹ️  Checking environment configuration...\u001b[0m\n\u001b[0;32m✅ .env file exists\u001b[0m\n\u001b[0;32m✅ SUPABASE_URL configured\u001b[0m\n\u001b[0;32m✅ SUPABASE_ANON_KEY configured\u001b[0m\n\u001b[0;34mℹ️  Local storage check requires browser context (handled by dashboard)\u001b[0m\n\n5️⃣  ERROR MANAGEMENT SYSTEM\n===========================\n\u001b[0;34mℹ️  Checking error logs...\u001b[0m\n\u001b[0;32m✅ No error log file (clean system)\u001b[0m\n\u001b[0;34mℹ️  Checking monitoring system...\u001b[0m\n\u001b[0;32m✅ Session logging system available\u001b[0m\n\n6️⃣  AUTOMATION SYSTEMS\n======================\n\u001b[0;34mℹ️  Checking automation systems...\u001b[0m\n\u001b[0;32m✅ auto-init.js available\u001b[0m\n\u001b[0;32m✅ session-logger.js available\u001b[0m\n\n📊 HEALTH SUMMARY\n=================\n\u001b[0;32m✅ System Health: HEALTHY (100%)\u001b[0m\n\n💾 Full logs available at: logs/system-health.log\n🕐 Check completed at: 2025-10-20 16:31:33\n"
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760958092726
+  },
+  "totalDuration": 1601,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T11:01:34.332Z"
+}

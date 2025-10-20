@@ -1,0 +1,35 @@
+{
+  "id": "test_run_1760957536402_z58nkvg",
+  "startTime": "2025-10-20T10:52:16.402Z",
+  "endTime": "2025-10-20T10:52:18.071Z",
+  "tests": [
+    {
+      "testId": "simulator-8",
+      "testName": "Emotional Intelligence Simulation",
+      "status": "pass",
+      "message": "✓ Stop control and state reset functionality available",
+      "timestamp": "2025-10-20T10:52:18.071Z",
+      "duration": 1,
+      "apiCalls": [],
+      "errors": [],
+      "metadata": {
+        "hasStopFunction": true,
+        "hasConversationHistory": true
+      }
+    }
+  ],
+  "environment": {
+    "apiUrl": "http://localhost:3001/api/chat",
+    "appUrl": "/app",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+    "timestamp": 1760957536402
+  },
+  "totalDuration": 1669,
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0"
+  },
+  "receivedAt": "2025-10-20T10:52:18.077Z"
+}
