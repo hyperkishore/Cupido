@@ -7488,6 +7488,12 @@ Include the exact code snippets that need to be changed.`;
                     }
                 }
                 
+            } catch (error) {
+                logToConsole(`💥 CRITICAL ERROR during script execution loop: ${error.message}`, 'error', 'health');
+                logToHealthCheck(`❌ Script execution loop failed: ${error.message}`, 'error');
+                healthChecksFailed = scriptIds.length; // Mark all as failed if loop fails
+            }
+                
                 // Final summary
                 const successRate = Math.round((healthChecksPassed / totalScripts) * 100);
                 logToConsole('═'.repeat(60), 'info', 'health');
