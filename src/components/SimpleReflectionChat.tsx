@@ -812,8 +812,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const imageDescription = descriptionResponse.message;
           console.log('🖼️ Generated image description:', imageDescription);
 
-          // Step 2: Update the user message with the image description for context
-          await chatDatabase.saveMessage(
+          // Step 2: Save a descriptive message for the chat thread context
+          const descriptiveMessage = await chatDatabase.saveMessage(
             currentConversation.id,
             `[Image: ${imageDescription}]`,
             false, // user message
@@ -825,6 +825,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               isDescriptiveText: true
             }
           );
+          
+          console.log('✅ Saved descriptive message:', descriptiveMessage?.id);
 
           // Step 3: Generate the main AI response with full context
           const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
@@ -858,6 +860,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           );
 
           if (aiMessage) {
+            console.log('✅ Saved AI response:', aiMessage.id);
             const botMessage: Message = {
               id: aiMessage.id,
               text: aiResponse.message,
@@ -865,6 +868,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               timestamp: new Date(aiMessage.created_at)
             };
             setMessages(prev => [...prev, botMessage]);
+          } else {
+            console.error('❌ Failed to save AI message to database');
+            // Still show the message even if database save fails
+            const tempBotMessage: Message = {
+              id: `temp_ai_${Date.now()}`,
+              text: aiResponse.message,
+              isBot: true,
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, tempBotMessage]);
           }
 
           // Update conversation history WITH image description for future context

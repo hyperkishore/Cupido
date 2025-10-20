@@ -246,7 +246,13 @@ class ChatDatabaseService {
         .single();
 
       if (error) {
-        console.error('Error saving message:', error);
+        console.error('Error saving message:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          fullError: error
+        });
         return null;
       }
 
@@ -552,12 +558,26 @@ class ChatDatabaseService {
     imageData: string,
     mimeType: string,
     messageId?: string,
-    metadata?: any
+    metadata?: {
+      width?: number;
+      height?: number;
+      fileName?: string;
+      originalSize?: number;
+      compressedSize?: number;
+      [key: string]: any;
+    }
   ): Promise<ImageAttachment | null> {
     try {
-      // Calculate file size from base64 string
-      const base64Length = imageData.replace(/^data:image\/\w+;base64,/, '').length;
-      const fileSize = Math.ceil((base64Length * 3) / 4);
+      console.log('💾 Saving image attachment:', {
+        conversationId,
+        userId,
+        mimeType,
+        messageId,
+        metadataKeys: metadata ? Object.keys(metadata) : []
+      });
+
+      // Use provided file size or calculate from base64
+      const fileSize = metadata?.compressedSize || Math.ceil((imageData.length * 3) / 4);
 
       const { data, error } = await supabase
         .from('image_attachments')
@@ -568,7 +588,15 @@ class ChatDatabaseService {
           image_data: imageData,
           mime_type: mimeType,
           file_size: fileSize,
-          metadata,
+          width: metadata?.width,
+          height: metadata?.height,
+          metadata: {
+            fileName: metadata?.fileName,
+            originalSize: metadata?.originalSize,
+            compressedSize: metadata?.compressedSize,
+            uploadedAt: new Date().toISOString(),
+            ...metadata
+          },
           created_at: new Date().toISOString(),
         })
         .select()
