@@ -6999,8 +6999,21 @@ Include the exact code snippets that need to be changed.`;
 
         // Run a script
         async function runScript(scriptId) {
-            // Use shared available scripts definition
-            const availableScripts = HEALTH_AVAILABLE_SCRIPTS;
+            // Available scripts with actual server endpoints
+            const availableScripts = {
+                'system-health': { name: 'System Health' },
+                'development-health': { name: 'Development Environment' },
+                'testing-health': { name: 'Testing Infrastructure' },
+                'continuous-monitor': { name: 'Continuous Monitor' },
+                'dev-server': { name: 'Development Server' },
+                'init': { name: 'Context Initialization' },
+                'setup-context-automation': { name: 'Setup Context Automation' },
+                'install-claude-hooks': { name: 'Install Claude Hooks' },
+                'debug-browser-reality': { name: 'Debug Browser Reality' },
+                'auto-test-reflect': { name: 'Auto Test Reflect' },
+                'auto-init': { name: 'Auto Init' },
+                'session-logger': { name: 'Session Logger' }
+            };
 
             if (!availableScripts[scriptId]) {
                 console.warn(`Script not found: ${scriptId}`);
@@ -7069,8 +7082,21 @@ Include the exact code snippets that need to be changed.`;
 
         // Update health summary stats
         function updateHealthSummary() {
-            // Use shared available scripts definition
-            const availableScripts = HEALTH_AVAILABLE_SCRIPTS;
+            // Available scripts for health summary
+            const availableScripts = {
+                'system-health': { name: 'System Health' },
+                'development-health': { name: 'Development Environment' },
+                'testing-health': { name: 'Testing Infrastructure' },
+                'continuous-monitor': { name: 'Continuous Monitor' },
+                'dev-server': { name: 'Development Server' },
+                'init': { name: 'Context Initialization' },
+                'setup-context-automation': { name: 'Setup Context Automation' },
+                'install-claude-hooks': { name: 'Install Claude Hooks' },
+                'debug-browser-reality': { name: 'Debug Browser Reality' },
+                'auto-test-reflect': { name: 'Auto Test Reflect' },
+                'auto-init': { name: 'Auto Init' },
+                'session-logger': { name: 'Session Logger' }
+            };
             
             const totalScripts = Object.keys(availableScripts).length;
             const passedScripts = Object.values(window.healthTableData || {}).filter(script => script.status === 'passed').length;
