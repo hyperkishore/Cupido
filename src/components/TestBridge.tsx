@@ -80,6 +80,19 @@ export const TestBridge: React.FC = () => {
           }, '*');
           break;
 
+        case 'export-chat':
+          // Handle chat export functionality
+          console.log('[TestBridge] Export chat requested');
+          const chatData = getChatExportData();
+          
+          window.parent.postMessage({
+            type: 'chat-exported',
+            requestId,
+            success: true,
+            payload: chatData,
+          }, '*');
+          break;
+
         default:
           console.log('[TestBridge] Unhandled message type:', type);
       }
@@ -151,4 +164,42 @@ function getMessagesState() {
   return {
     count: messageElements.length,
   };
+}
+
+function getChatExportData() {
+  // Extract chat messages from the DOM
+  const messageElements = document.querySelectorAll('[data-testid*="message"]');
+  const messages = Array.from(messageElements).map((element, index) => {
+    const isUser = element.getAttribute('data-testid')?.includes('user') || 
+                   element.closest('[data-testid*="user"]') !== null;
+    
+    return {
+      id: index + 1,
+      type: isUser ? 'user' : 'assistant', 
+      content: element.textContent?.trim() || '',
+      timestamp: new Date().toISOString(),
+    };
+  });
+
+  const exportData = {
+    exportTime: new Date().toISOString(),
+    conversationId: localStorage.getItem('cupido_conversation_id') || 'unknown',
+    userId: getUserState()?.id || 'anonymous',
+    messageCount: messages.length,
+    messages: messages,
+    format: 'cupido-chat-export-v1',
+  };
+
+  // Also trigger download in the current window
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cupido-chat-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  return exportData;
 }

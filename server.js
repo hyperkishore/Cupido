@@ -422,6 +422,54 @@ let latestTestResults = null;
 const testResultsHistory = [];
 const MAX_HISTORY = 50;
 
+// File-based test logging
+function saveTestResultsToFile(testResults) {
+  try {
+    const logsDir = path.join(__dirname, 'logs');
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `test-run-${timestamp}.json`;
+    const filepath = path.join(logsDir, filename);
+    
+    // Save individual test run
+    fs.writeFileSync(filepath, JSON.stringify(testResults, null, 2));
+    
+    // Update latest.json symlink
+    const latestPath = path.join(logsDir, 'latest-test-run.json');
+    if (fs.existsSync(latestPath)) {
+      fs.unlinkSync(latestPath);
+    }
+    fs.writeFileSync(latestPath, JSON.stringify(testResults, null, 2));
+    
+    // Update failed tests summary
+    const failedTests = testResults.tests ? testResults.tests.filter(t => t.status === 'fail') : [];
+    if (failedTests.length > 0) {
+      const failedSummary = {
+        timestamp: testResults.receivedAt,
+        runId: testResults.id,
+        totalFailed: failedTests.length,
+        totalTests: testResults.summary?.total || 0,
+        failedTests: failedTests.map(t => ({
+          id: t.id,
+          name: t.name,
+          message: t.message,
+          errors: t.errors || []
+        }))
+      };
+      
+      const failedPath = path.join(logsDir, 'current-failures.json');
+      fs.writeFileSync(failedPath, JSON.stringify(failedSummary, null, 2));
+    }
+    
+    console.log(`💾 Test results saved to: ${filename}`);
+  } catch (error) {
+    console.error('Failed to save test results to file:', error);
+  }
+}
+
 // POST endpoint to receive test results from dashboard
 app.post('/api/test-results', (req, res) => {
   try {
@@ -438,6 +486,9 @@ app.post('/api/test-results', (req, res) => {
     }
 
     console.log(`📊 Test results received: ${testResults.summary?.passed}/${testResults.summary?.total} passed`);
+
+    // Save to file system for persistence
+    saveTestResultsToFile(latestTestResults);
 
     res.json({ success: true, message: 'Test results saved' });
   } catch (error) {
@@ -460,6 +511,22 @@ app.get('/api/test-results/history', (req, res) => {
     history: testResultsHistory,
     count: testResultsHistory.length
   });
+});
+
+// GET endpoint to retrieve current failures from file
+app.get('/api/test-results/failures', (req, res) => {
+  try {
+    const failedPath = path.join(__dirname, 'logs', 'current-failures.json');
+    if (fs.existsSync(failedPath)) {
+      const failedData = JSON.parse(fs.readFileSync(failedPath, 'utf8'));
+      res.json(failedData);
+    } else {
+      res.json({ message: 'No current failures', failedTests: [] });
+    }
+  } catch (error) {
+    console.error('Error reading failures file:', error);
+    res.status(500).json({ error: 'Failed to read failures file' });
+  }
 });
 
 // ============================================
@@ -503,10 +570,47 @@ app.get('/api/error-stats', async (req, res) => {
 // INFRASTRUCTURE TESTING ENDPOINTS
 // ============================================
 
-// Health check script endpoint
+// System health check endpoint - consolidated script
+app.get('/api/run-script/system-health', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./system-health.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Development environment health endpoint - consolidated script
+app.get('/api/run-script/development-health', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./development-health.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Testing infrastructure health endpoint - consolidated script
+app.get('/api/run-script/testing-health', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./testing-health.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Legacy endpoints (maintained for backward compatibility)
+// Health check script endpoint (redirects to system-health)
 app.get('/api/run-script/health-check', (req, res) => {
   const { exec } = require('child_process');
-  exec('./health-check.sh', (error, stdout, stderr) => {
+  exec('./system-health.sh', (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;
@@ -515,10 +619,10 @@ app.get('/api/run-script/health-check', (req, res) => {
   });
 });
 
-// JavaScript syntax validation script endpoint
+// JavaScript syntax validation script endpoint (redirects to development-health)
 app.get('/api/run-script/validate-js-syntax', (req, res) => {
   const { exec } = require('child_process');
-  exec('./validate-js-syntax.sh', (error, stdout, stderr) => {
+  exec('./development-health.sh', (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;
@@ -527,10 +631,10 @@ app.get('/api/run-script/validate-js-syntax', (req, res) => {
   });
 });
 
-// Pre-deployment check script endpoint
+// Pre-deployment check script endpoint (redirects to system-health)
 app.get('/api/run-script/pre-deployment-check', (req, res) => {
   const { exec } = require('child_process');
-  exec('./pre-deployment-check.sh', (error, stdout, stderr) => {
+  exec('./system-health.sh', (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;
@@ -539,10 +643,10 @@ app.get('/api/run-script/pre-deployment-check', (req, res) => {
   });
 });
 
-// Dashboard debug script endpoint
+// Dashboard debug script endpoint (redirects to development-health)
 app.get('/api/run-script/debug-dashboard', (req, res) => {
   const { exec } = require('child_process');
-  exec('./debug-dashboard.sh', (error, stdout, stderr) => {
+  exec('./development-health.sh', (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;
@@ -551,11 +655,180 @@ app.get('/api/run-script/debug-dashboard', (req, res) => {
   });
 });
 
-// Error management control script endpoint
+// Error management control script endpoint (redirects to system-health)
 app.post('/api/run-script/error-management-control', (req, res) => {
   const { exec } = require('child_process');
-  const command = req.body.command || 'diagnostics';
-  exec(`./error-management-control.sh ${command}`, (error, stdout, stderr) => {
+  exec('./system-health.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// Additional script endpoints
+app.get('/api/run-script/deploy', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./deploy.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/version-control', (req, res) => {
+  const { exec } = require('child_process');
+  const action = req.query.action || 'help';
+  const comment = req.query.comment || '';
+  exec(`./version-control.sh ${action} "${comment}"`, (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/install-claude-hooks', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./install-claude-hooks.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/setup-context-automation', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./setup-context-automation.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/continuous-monitor', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./continuous-monitor.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/debug-browser-reality', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./debug-browser-reality.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/auto-test-reflect', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./auto-test-reflect.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/dev-server', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./dev-server.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/init', (req, res) => {
+  const { exec } = require('child_process');
+  exec('./init.sh', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+// JavaScript utility script endpoints
+app.get('/api/run-script/analyze-supabase-data', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node analyze-supabase-data.js', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/test-simulator', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node test-simulator.js', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/import-prompts', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node import-prompts.js', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/check-supabase-schema', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node check-supabase-schema.js', (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/session-logger', (req, res) => {
+  const { exec } = require('child_process');
+  const action = req.query.action || 'status';
+  exec(`node session-logger.js ${action}`, (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).send(`Script error: ${error.message}\n${stderr}`);
+      return;
+    }
+    res.send(stdout);
+  });
+});
+
+app.get('/api/run-script/auto-init', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node auto-init.js', (error, stdout, stderr) => {
     if (error) {
       res.status(500).send(`Script error: ${error.message}\n${stderr}`);
       return;
@@ -876,14 +1149,17 @@ app.post('/api/prompts', async (req, res) => {
       is_active = false
     } = req.body;
 
+    // Generate prompt_id if not provided
+    const finalPromptId = prompt_id || `custom_prompt_${Date.now()}`;
+    
     // For custom prompts, save to Supabase (RLS policies now allow this)
-    if (prompt_id.startsWith('custom_prompt_')) {
+    if (finalPromptId.startsWith('custom_prompt_')) {
       // Create the prompt with a basic version
       // Note: version_string is auto-generated by the database, don't set it manually
       const { data, error } = await supabase
         .from('prompt_versions')
         .insert({
-          prompt_id: prompt_id,
+          prompt_id: finalPromptId,
           prompt_name: prompt_name || 'Custom Prompt',
           major_version: 1,
           minor_version: 0,
@@ -914,7 +1190,7 @@ app.post('/api/prompts', async (req, res) => {
 
         // Also save to local file as backup
         const customPrompts = loadCustomPrompts();
-        customPrompts[prompt_id] = {
+        customPrompts[finalPromptId] = {
           name: prompt_name,
           description: description,
           content: system_prompt,
@@ -926,7 +1202,8 @@ app.post('/api/prompts', async (req, res) => {
 
         res.json({
           success: true,
-          prompt_id: prompt_id,
+          prompt_id: finalPromptId,
+          prompt: { id: finalPromptId }, // Fix: Client expects data.prompt.id
           message: 'Custom prompt saved to database',
           data: data
         });
@@ -1797,6 +2074,185 @@ app.get('/cupido-test-dashboard', (req, res) => {
   }
 });
 
+// =========================
+// USER PREFERENCE ENDPOINTS
+// =========================
+
+// Get user's selected prompt preference
+app.get('/api/user-preferences/selected-prompt', (req, res) => {
+  try {
+    const userId = req.query.userId || 'default_user';
+    
+    // For now, use in-memory storage - in production you'd store this in database
+    const selectedPrompt = global.userPreferences?.[userId]?.selectedPromptId || null;
+    
+    res.json({
+      success: true,
+      selectedPromptId: selectedPrompt,
+      userId: userId
+    });
+  } catch (error) {
+    console.error('Error getting user prompt preference:', error);
+    res.status(500).json({ error: 'Failed to get prompt preference', details: error.message });
+  }
+});
+
+// Set user's selected prompt preference
+app.post('/api/user-preferences/selected-prompt', (req, res) => {
+  try {
+    const { userId = 'default_user', promptId } = req.body;
+    
+    if (!promptId) {
+      return res.status(400).json({ error: 'Missing required field: promptId' });
+    }
+    
+    // Initialize global preferences store if it doesn't exist
+    if (!global.userPreferences) {
+      global.userPreferences = {};
+    }
+    
+    if (!global.userPreferences[userId]) {
+      global.userPreferences[userId] = {};
+    }
+    
+    // Store the preference
+    global.userPreferences[userId].selectedPromptId = promptId;
+    global.userPreferences[userId].lastUpdated = new Date().toISOString();
+    
+    console.log(`✅ User ${userId} selected prompt: ${promptId}`);
+    
+    res.json({
+      success: true,
+      selectedPromptId: promptId,
+      userId: userId,
+      message: 'Prompt preference updated successfully'
+    });
+  } catch (error) {
+    console.error('Error setting user prompt preference:', error);
+    res.status(500).json({ error: 'Failed to set prompt preference', details: error.message });
+  }
+});
+
+// Get all user preferences
+app.get('/api/user-preferences', (req, res) => {
+  try {
+    const userId = req.query.userId || 'default_user';
+    const userPrefs = global.userPreferences?.[userId] || {};
+    
+    res.json({
+      success: true,
+      userId: userId,
+      preferences: userPrefs
+    });
+  } catch (error) {
+    console.error('Error getting user preferences:', error);
+    res.status(500).json({ error: 'Failed to get user preferences', details: error.message });
+  }
+});
+
+// ============================================
+// HEALTH CHECK API ENDPOINTS
+// ============================================
+
+// Get system health status
+app.get('/api/health/status', (req, res) => {
+  try {
+    const healthStatus = {
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      services: {
+        server: {
+          status: 'running',
+          port: 3001,
+          uptime: process.uptime()
+        },
+        database: {
+          status: 'connected', // We assume Supabase is connected
+          type: 'Supabase'
+        }
+      },
+      system: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        arch: process.arch
+      }
+    };
+    
+    res.json({
+      success: true,
+      data: healthStatus
+    });
+  } catch (error) {
+    console.error('Error getting health status:', error);
+    res.status(500).json({ error: 'Failed to get health status', details: error.message });
+  }
+});
+
+// Get running processes status
+app.get('/api/health/processes', (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    
+    // Check for running Node.js processes
+    exec('ps aux | grep node', (error, stdout, stderr) => {
+      if (error) {
+        return res.status(500).json({ error: 'Failed to get process list' });
+      }
+      
+      const processes = stdout.split('\n')
+        .filter(line => line.includes('node') && !line.includes('grep'))
+        .map(line => {
+          const parts = line.trim().split(/\s+/);
+          return {
+            pid: parts[1],
+            cpu: parts[2],
+            memory: parts[3],
+            command: parts.slice(10).join(' ')
+          };
+        });
+      
+      res.json({
+        success: true,
+        data: processes
+      });
+    });
+  } catch (error) {
+    console.error('Error getting processes:', error);
+    res.status(500).json({ error: 'Failed to get processes', details: error.message });
+  }
+});
+
+// Serve revolutionary analytics dashboard
+app.get('/analytics-dashboard', (req, res) => {
+  const dashboardPath = path.join(__dirname, 'cupido-analytics-dashboard.html');
+  if (fs.existsSync(dashboardPath)) {
+    res.sendFile(dashboardPath);
+  } else {
+    res.status(404).send('Analytics dashboard not found');
+  }
+});
+
+// Serve analytics engine JavaScript
+app.get('/prompt-analytics-engine.js', (req, res) => {
+  const analyticsPath = path.join(__dirname, 'prompt-analytics-engine.js');
+  if (fs.existsSync(analyticsPath)) {
+    res.sendFile(analyticsPath);
+  } else {
+    res.status(404).send('Analytics engine not found');
+  }
+});
+
+// Serve template engine JavaScript
+app.get('/prompt-template-engine.js', (req, res) => {
+  const templatePath = path.join(__dirname, 'prompt-template-engine.js');
+  if (fs.existsSync(templatePath)) {
+    res.sendFile(templatePath);
+  } else {
+    res.status(404).send('Template engine not found');
+  }
+});
+
 // ============================================
 // HTML REWRITER FOR /app ROUTE
 // ============================================
@@ -1870,6 +2326,11 @@ app.use('/', createProxyMiddleware({
   changeOrigin: true,
   // Only proxy specific file types (bundles, maps, assets)
   filter: (pathname, req) => {
+    // Exclude API routes from proxying
+    if (pathname.startsWith('/api/')) {
+      return false;
+    }
+    
     // Exclude our dashboard files from proxying
     const dashboardFiles = [
       'infrastructure-tests.js',

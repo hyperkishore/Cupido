@@ -275,8 +275,24 @@ class PromptService {
         await this.initializationPromise;
       }
 
+      // Try local storage first for speed
       const stored = await AsyncStorage.getItem(SELECTED_PROMPT_KEY);
       if (stored) return stored;
+
+      // Try server storage as backup
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/user-preferences/selected-prompt`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.selectedPromptId) {
+            // Sync server preference to local storage
+            await AsyncStorage.setItem(SELECTED_PROMPT_KEY, data.selectedPromptId);
+            return data.selectedPromptId;
+          }
+        }
+      } catch (serverError) {
+        console.warn('[PromptService] Server preference fetch failed:', serverError);
+      }
 
       // If no stored selection, find the first default prompt
       if (this.cache) {
@@ -308,8 +324,14 @@ class PromptService {
         return null;
       }
 
+      // Store locally first (immediate)
       await AsyncStorage.setItem(SELECTED_PROMPT_KEY, promptId);
       console.log('[PromptService] ✓ Prompt switched to:', prompt.name);
+
+      // Store on server as backup (non-blocking)
+      this.syncPromptPreferenceToServer(promptId).catch(error => {
+        console.warn('[PromptService] Server preference sync failed:', error);
+      });
 
       this.notifyPromptListeners();
 
@@ -317,6 +339,35 @@ class PromptService {
     } catch (error) {
       console.error('[PromptService] Error setting prompt:', error);
       return null;
+    }
+  }
+
+  /**
+   * Sync prompt preference to server (non-blocking helper)
+   */
+  private async syncPromptPreferenceToServer(promptId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user-preferences/selected-prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ promptId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server sync failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(`Server rejected preference: ${data.error || 'Unknown error'}`);
+      }
+
+      console.log('[PromptService] ✓ Server preference synced:', promptId);
+    } catch (error) {
+      // Re-throw for caller to handle
+      throw error;
     }
   }
 

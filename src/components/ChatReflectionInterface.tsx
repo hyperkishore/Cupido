@@ -1134,6 +1134,9 @@ export const ChatReflectionInterface = () => {
   );
 };
 
+// Export for default import 
+export default ChatReflectionInterface;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1462,3 +1465,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+}
