@@ -18,17 +18,21 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { chatAiService } from '../services/chatAiService';
-import { chatDatabase, type ChatMessage as DBChatMessage, type ChatConversation } from '../services/chatDatabase';
+import { chatDatabase, type ChatMessage as DBChatMessage, type ChatConversation, type ImageAttachment } from '../services/chatDatabase';
 import { generateId } from '../contexts/AppStateContext';
 import { useAuth } from '../contexts/AuthContext';
 import { userProfileService } from '../services/userProfileService';
+import { ImageUpload } from './ImageUpload';
+import { ImageMessage } from './ImageMessage';
+import { processImage, ImageProcessingResult } from '../utils/imageUtils';
 
 interface Message {
   id: string;
   text: string;
   isBot: boolean;
   timestamp: Date;
-  imageUri?: string; // Add support for images
+  imageUri?: string; // Legacy support for existing images
+  imageAttachments?: ImageAttachment[]; // New support for processed images
 }
 
 // Natural conversation starters and responses
@@ -738,115 +742,127 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
-  const handlePhotoUpload = async () => {
-    // Request permission
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your photos to upload images.');
+  const handleImageSelected = async (imageData: ImageProcessingResult) => {
+    if (!currentConversation) {
+      console.error('❌ No current conversation for image upload');
       return;
     }
 
-    // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+    try {
+      console.log('📸 Processing image upload:', {
+        fileName: imageData.fileName,
+        dimensions: `${imageData.width}x${imageData.height}`,
+        originalSize: imageData.originalSize,
+        compressedSize: imageData.compressedSize
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      const imageUri = result.assets[0].uri;
-
-      // Create a message with the actual image
-      const photoMessage: Message = {
-        id: generateId(),
-        text: 'Photo shared',
-        isBot: false,
-        timestamp: new Date(),
-        imageUri: imageUri, // Store the image URI
-      };
-
-      // Save to database if conversation exists
-      if (currentConversation) {
-        const savedMessage = await chatDatabase.saveMessage(
-          currentConversation.id,
-          'Photo shared',
-          false, // is_bot
-          undefined,
-          { imageUri: imageUri }
-        );
-        if (savedMessage) {
-          photoMessage.id = savedMessage.id;
+      // Save image attachment to database
+      const imageAttachment = await chatDatabase.saveImageAttachment(
+        currentConversation.id,
+        userId,
+        imageData.base64,
+        imageData.mimeType,
+        undefined, // No message ID yet
+        {
+          width: imageData.width,
+          height: imageData.height,
+          fileName: imageData.fileName,
+          originalSize: imageData.originalSize,
+          compressedSize: imageData.compressedSize
         }
+      );
+
+      if (!imageAttachment) {
+        throw new Error('Failed to save image attachment');
       }
 
-      setMessages(prev => [...prev, photoMessage]);
+      // Create user message with image
+      const userMessage = await chatDatabase.saveMessage(
+        currentConversation.id,
+        'Shared an image',
+        false, // is_bot
+        undefined,
+        { hasImage: true, imageAttachmentId: imageAttachment.id }
+      );
 
-      // Send image to AI for analysis
-      setIsTyping(true);
-      try {
-        // Convert image to base64 for Claude Vision
-        let base64Data = null;
-        if (Platform.OS === 'web') {
-          // For web, fetch the blob and convert to base64
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
-          base64Data = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64 = reader.result?.toString().split(',')[1];
-              resolve(base64);
-            };
-            reader.readAsDataURL(blob);
-          });
-        }
+      if (userMessage) {
+        const messageWithImage: Message = {
+          id: userMessage.id,
+          text: 'Shared an image',
+          isBot: false,
+          timestamp: new Date(userMessage.created_at),
+          imageAttachments: [imageAttachment]
+        };
 
-        // Send image with message to AI
-        const aiResponse = await chatAiService.generateResponseWithImage(
-          "I just shared a photo with you. What can you see in this image?",
-          [...conversationHistory, { role: 'user' as const, content: "I just shared a photo with you. What can you see in this image?" }],
-          conversationCount,
-          base64Data ? { base64: base64Data, mimeType: 'image/jpeg' } : undefined
-        );
+        setMessages(prev => [...prev, messageWithImage]);
 
-        if (currentConversation) {
-          const savedBotMessage = await chatDatabase.saveMessage(
+        // Generate AI response with image
+        setIsTyping(true);
+        try {
+          const promptText = "I just shared an image with you. Please analyze what you see and tell me about it. What details do you notice? What story might this image tell?";
+          
+          const aiResponse = await chatAiService.generateResponseWithImage(
+            promptText,
+            [...conversationHistory, { role: 'user' as const, content: promptText }],
+            conversationCount,
+            { base64: imageData.base64, mimeType: imageData.mimeType }
+          );
+
+          // Update image attachment with AI analysis
+          await chatDatabase.updateImageAnalysis(
+            imageAttachment.id,
+            aiResponse.message,
+            {
+              model: aiResponse.usedModel,
+              analyzedAt: new Date().toISOString(),
+              promptUsed: promptText
+            }
+          );
+
+          // Save AI response message
+          const aiMessage = await chatDatabase.saveMessage(
             currentConversation.id,
             aiResponse.message,
             true,
             aiResponse.usedModel,
-            { response_to_image: imageUri }
+            { imageAnalysis: true, imageAttachmentId: imageAttachment.id }
           );
 
-          if (savedBotMessage) {
+          if (aiMessage) {
             const botMessage: Message = {
-              id: savedBotMessage.id,
+              id: aiMessage.id,
               text: aiResponse.message,
               isBot: true,
-              timestamp: new Date(savedBotMessage.created_at),
+              timestamp: new Date(aiMessage.created_at)
             };
             setMessages(prev => [...prev, botMessage]);
           }
-        }
 
-        setConversationHistory([
-          ...conversationHistory,
-          { role: 'user', content: "I just shared a photo with you" },
-          { role: 'assistant', content: aiResponse.message }
-        ]);
-      } catch (error) {
-        console.error('Error processing photo:', error);
-        const fallbackMessage: Message = {
-          id: generateId(),
-          text: 'I see your photo! Tell me more about it - what\'s the story behind this image?',
-          isBot: true,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, fallbackMessage]);
-      } finally {
-        setIsTyping(false);
+          // Update conversation history
+          setConversationHistory([
+            ...conversationHistory,
+            { role: 'user', content: promptText },
+            { role: 'assistant', content: aiResponse.message }
+          ]);
+
+        } catch (error) {
+          console.error('❌ Error generating AI response for image:', error);
+          
+          // Add fallback message
+          const fallbackMessage: Message = {
+            id: `fallback_${Date.now()}`,
+            text: 'I can see your image! Tell me more about it - what\'s the story behind this photo?',
+            isBot: true,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, fallbackMessage]);
+        } finally {
+          setIsTyping(false);
+        }
       }
+    } catch (error) {
+      console.error('❌ Error processing image upload:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
     }
   };
 
@@ -1072,41 +1088,84 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         showsVerticalScrollIndicator={false}
         testID="messages-scroll-view"
       >
-        {messages.map((message, index) => (
-          <View
-            key={message.id}
-            testID={`message-${index}`}
-            style={[
-              styles.messageContainer,
-              message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
-            ]}
-          >
+        {messages.map((message, index) => {
+          // Check if message has new image attachments
+          if (message.imageAttachments && message.imageAttachments.length > 0) {
+            return message.imageAttachments.map((attachment, imgIndex) => (
+              <ImageMessage
+                key={`${message.id}-img-${imgIndex}`}
+                imageAttachment={attachment}
+                isFromUser={!message.isBot}
+                message={imgIndex === 0 ? message.text : undefined} // Only show text on first image
+                timestamp={message.timestamp.toISOString()}
+                showMetadata={true}
+              />
+            ));
+          }
+          
+          // Legacy support for imageUri (existing images)
+          if (message.imageUri) {
+            return (
+              <View
+                key={message.id}
+                testID={`message-${index}`}
+                style={[
+                  styles.messageContainer,
+                  message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
+                ]}
+              >
+                <View
+                  testID={`message-bubble-${index}`}
+                  style={[
+                    styles.messageBubble,
+                    message.isBot ? styles.botBubble : styles.userBubble,
+                  ]}
+                >
+                  <View>
+                    <Image
+                      source={{ uri: message.imageUri }}
+                      style={styles.messageImage}
+                      resizeMode="cover"
+                    />
+                    {message.text && (
+                      <Text
+                        style={[
+                          styles.messageText,
+                          message.isBot ? styles.botText : styles.userText,
+                        ]}
+                      >
+                        {message.text}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.timestamp}>
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              </View>
+            );
+          }
+          
+          // Regular text message
+          return (
             <View
-              testID={`message-bubble-${index}`}
+              key={message.id}
+              testID={`message-${index}`}
               style={[
-                styles.messageBubble,
-                message.isBot ? styles.botBubble : styles.userBubble,
+                styles.messageContainer,
+                message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
               ]}
             >
-              {message.imageUri ? (
-                <View>
-                  <Image
-                    source={{ uri: message.imageUri }}
-                    style={styles.messageImage}
-                    resizeMode="cover"
-                  />
-                  {message.text && (
-                    <Text
-                      style={[
-                        styles.messageText,
-                        message.isBot ? styles.botText : styles.userText,
-                      ]}
-                    >
-                      {message.text}
-                    </Text>
-                  )}
-                </View>
-              ) : (
+              <View
+                testID={`message-bubble-${index}`}
+                style={[
+                  styles.messageBubble,
+                  message.isBot ? styles.botBubble : styles.userBubble,
+                ]}
+              >
                 <Text
                   testID={`message-text-${index}`}
                   style={[
@@ -1116,16 +1175,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 >
                   {message.text}
                 </Text>
-              )}
+              </View>
+              <Text style={styles.timestamp}>
+                {message.timestamp.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Text>
             </View>
-            <Text style={styles.timestamp}>
-              {message.timestamp.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </Text>
-          </View>
-        ))}
+          );
+        })}
         
         {isTyping && (
           <View style={styles.typingContainer} testID="typing-indicator">
@@ -1146,13 +1205,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         ]}
       >
         <View style={styles.inputContainer} testID="input-container">
-          <TouchableOpacity
-            testID="attach-button"
-            style={styles.attachButton}
-            onPress={handlePhotoUpload}
-          >
-            <Feather name="plus" size={20} color="#007AFF" />
-          </TouchableOpacity>
+          <ImageUpload
+            onImageSelected={handleImageSelected}
+            onError={(error) => Alert.alert('Image Error', error)}
+            disabled={isSending}
+            style={styles.imageUploadButton}
+          />
           <TextInput
             testID="chat-input"
             style={styles.textInput}
@@ -1328,5 +1386,8 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 12,
     marginBottom: 8,
+  },
+  imageUploadButton: {
+    // ImageUpload component will handle its own styling
   },
 });
