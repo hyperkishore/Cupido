@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { userProfileService } from './userProfileService';
 import { promptService } from './promptService';
 
-const DEBUG = false; // Set to true for verbose logging during development
+const DEBUG = true; // Set to true for verbose logging during development
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -272,11 +272,18 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
 
       let response;
 
+      // Always log AI model usage
+      console.log(`🤖 AI Call: Using Claude ${modelToUse.toUpperCase()} model`);
+      
       if (this.provider === 'anthropic') {
         response = await this.callAnthropicAPI(messages, modelToUse, imageData);
       } else {
         response = await this.callOpenAIAPI(messages);
       }
+      
+      // Always log response received
+      console.log(`✅ AI Response: Received ${response.length} characters from Claude ${modelToUse.toUpperCase()}`);
+      console.log(`📖 Response preview: "${response.substring(0, 100)}${response.length > 100 ? '...' : ''}"`);;
 
       if (DEBUG) console.log('✅ SUCCESS - Returning Claude response:', {
         responseLength: response.length,
