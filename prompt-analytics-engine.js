@@ -295,6 +295,78 @@ class PromptAnalyticsEngine {
     return test.variants[0]; // Fallback
   }
 
+  // Alias methods for test compatibility
+  startABTest(name, variantA, variantB, config = {}) {
+    return this.createABTest(name, 'default', [
+      { name: 'A', content: variantA },
+      { name: 'B', content: variantB }
+    ], config);
+  }
+
+  logABTestResult(testId, variant, converted, metadata = {}) {
+    const test = this.analytics.ab_tests[testId];
+    if (!test) return;
+
+    const variantObj = test.variants.find(v => v.id === variant || v.name === variant);
+    if (!variantObj) return;
+
+    variantObj.executions++;
+    if (converted) variantObj.conversions++;
+
+    // Update metrics
+    variantObj.metrics.success_rate = (variantObj.conversions / variantObj.executions) * 100;
+    
+    this.saveAnalytics();
+    return true;
+  }
+
+  calculateStatisticalSignificance(testId) {
+    const test = this.analytics.ab_tests[testId];
+    if (!test || test.variants.length !== 2) return null;
+
+    const [variantA, variantB] = test.variants;
+    
+    const rateA = variantA.conversions / variantA.executions || 0;
+    const rateB = variantB.conversions / variantB.executions || 0;
+    
+    const pooledRate = (variantA.conversions + variantB.conversions) / 
+                      (variantA.executions + variantB.executions);
+    
+    const standardError = Math.sqrt(pooledRate * (1 - pooledRate) * 
+                          (1/variantA.executions + 1/variantB.executions));
+    
+    if (standardError === 0) return null;
+    
+    const zScore = Math.abs(rateA - rateB) / standardError;
+    const pValue = 2 * (1 - this.normalCDF(Math.abs(zScore)));
+    
+    return {
+      pValue,
+      zScore,
+      significant: pValue < (test.config.significance_threshold || 0.05),
+      winner: rateB > rateA ? 'B' : 'A',
+      improvement: rateA > 0 ? ((rateB - rateA) / rateA * 100) : 0
+    };
+  }
+
+  normalCDF(z) {
+    // Approximation of normal cumulative distribution function
+    const a1 =  0.254829592;
+    const a2 = -0.284496736;
+    const a3 =  1.421413741;
+    const a4 = -1.453152027;
+    const a5 =  1.061405429;
+    const p  =  0.3275911;
+
+    const sign = z < 0 ? -1 : 1;
+    z = Math.abs(z);
+
+    const t = 1.0 / (1.0 + p * z);
+    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-z * z);
+
+    return 0.5 * (1.0 + sign * y);
+  }
+
   // ============================================
   // ADVANCED ANALYTICS QUERIES
   // ============================================
@@ -447,6 +519,83 @@ class PromptAnalyticsEngine {
       most_used_prompt: prompts.reduce((max, p) => 
         p.performance_metrics.total_uses > (max?.performance_metrics?.total_uses || 0) ? p : max, null)?.id,
       active_ab_tests: Object.values(this.analytics.ab_tests).filter(t => t.status === 'active').length
+    };
+  }
+
+  // ============================================
+  // DATING APP SPECIFIC TEMPLATES
+  // ============================================
+
+  profileDiscovery(interests, preferences) {
+    const templates = [
+      `Based on your interests in ${interests.join(', ')}, what's one hobby that completely transforms your mood?`,
+      `I see you're into ${interests[0]}. What drew you to that initially, and how has it shaped who you are?`,
+      `Your interests tell a story about someone who values ${preferences.lifestyle}. What's one thing about yourself that would surprise someone meeting you for the first time?`
+    ];
+
+    return {
+      template: templates[Math.floor(Math.random() * templates.length)],
+      category: 'profile_discovery',
+      metadata: { interests, preferences },
+      prompt_id: 'profile_discovery_' + Date.now()
+    };
+  }
+
+  conversationStarter(matchProfile, commonInterests = []) {
+    const starters = [
+      `I noticed we both love ${commonInterests[0] || 'exploring new things'}! What's your favorite discovery in that area recently?`,
+      `Your profile caught my attention, especially the part about ${matchProfile.highlight || 'your passion for life'}. I'm curious - what's the story behind that?`,
+      `We seem to have ${commonInterests.length || 'some interesting things'} in common! What's something you're passionate about that doesn't show up in your profile?`,
+      `I love that you're into ${matchProfile.interest || 'living authentically'}. What's one thing that always makes you smile, no matter what kind of day you're having?`
+    ];
+
+    return {
+      template: starters[Math.floor(Math.random() * starters.length)],
+      category: 'conversation_starter',
+      metadata: { matchProfile, commonInterests },
+      prompt_id: 'conversation_starter_' + Date.now()
+    };
+  }
+
+  reflectionGenerator(conversationHistory, context = {}) {
+    const mood = context.mood || 'curious';
+    const lastMessage = conversationHistory[conversationHistory.length - 1] || '';
+    
+    const templates = {
+      positive: [
+        "That sounds amazing! It seems like you really value that experience. What aspect of it resonates with you most?",
+        "I love the energy in what you're sharing! How did that realization change your perspective?",
+        "That's beautiful. I can sense how much that means to you. What drew you to that initially?"
+      ],
+      curious: [
+        "I'm intrigued by what you said about that. Can you tell me more about how that shaped your perspective?",
+        "That's fascinating. I'm curious - what's the story behind that belief or experience?",
+        "I'd love to understand that better. What made that moment so significant for you?"
+      ],
+      supportive: [
+        "I can hear that this is important to you. How has that experience influenced who you are today?",
+        "Thank you for sharing that with me. What have you learned about yourself through that journey?",
+        "I appreciate your openness about that. How do you carry that wisdom forward in your life?"
+      ],
+      deeper: [
+        "That touches on something profound. How has your understanding of that evolved over time?",
+        "There's something beautiful in what you're describing. What does that reveal about what you value most?",
+        "I sense there's more beneath the surface here. What feels most important for me to understand about this?"
+      ]
+    };
+
+    const moodTemplates = templates[mood] || templates.curious;
+    const selectedTemplate = moodTemplates[Math.floor(Math.random() * moodTemplates.length)];
+
+    return {
+      template: selectedTemplate,
+      category: 'reflection',
+      metadata: { 
+        mood, 
+        conversationLength: conversationHistory.length,
+        context: context 
+      },
+      prompt_id: 'reflection_' + Date.now()
     };
   }
 }
