@@ -49,10 +49,10 @@ export const VersionDisplay: React.FC = () => {
           <Text style={styles.versionText}>
             V{packageJson.version}
             {promptVersion && (
-              <Text>
+              <>
                 <Text style={styles.separator}> • </Text>
                 <Text style={styles.promptVersion}>P{promptVersion}</Text>
-              </Text>
+              </>
             )}
           </Text>
           {promptName && (
