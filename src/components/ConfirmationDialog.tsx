@@ -42,29 +42,48 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
             
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton]} 
-                onPress={onCancel}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelButtonText}>{cancelText}</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.button, 
-                  confirmStyle === 'destructive' ? styles.destructiveButton : styles.confirmButton
-                ]} 
-                onPress={onConfirm}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  confirmStyle === 'destructive' ? styles.destructiveButtonText : styles.confirmButtonText
-                ]}>
-                  {confirmText}
-                </Text>
-              </TouchableOpacity>
+            <View style={[
+              styles.buttonContainer, 
+              confirmStyle === 'destructive' ? styles.verticalButtons : styles.horizontalButtons
+            ]}>
+              {/* For destructive actions, show confirm button first (Apple pattern) */}
+              {confirmStyle === 'destructive' ? (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.button, styles.destructiveButton]} 
+                    onPress={onConfirm}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.destructiveButtonText}>{confirmText}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.button, styles.cancelButton]} 
+                    onPress={onCancel}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.button, styles.cancelButton]} 
+                    onPress={onCancel}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.button, styles.confirmButton]} 
+                    onPress={onConfirm}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.confirmButtonText}>{confirmText}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -88,65 +107,79 @@ const styles = StyleSheet.create({
   },
   dialog: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    minWidth: 300,
-    maxWidth: 400,
+    borderRadius: 14, // iOS standard corner radius
+    paddingTop: 24,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    minWidth: 270, // iOS alert minimum width
+    maxWidth: 320, // iOS alert maximum width
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 17, // iOS system font size for alert titles
+    fontWeight: '600', // iOS semibold
     color: '#000000',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 4,
+    paddingHorizontal: 24,
+    lineHeight: 22,
   },
   message: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 13, // iOS system font size for alert messages
+    color: '#000000',
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
+    lineHeight: 18,
+    marginBottom: 20,
+    paddingHorizontal: 24,
   },
   buttonContainer: {
+    borderTopWidth: 0.5,
+    borderTopColor: '#C6C6C8',
+  },
+  horizontalButtons: {
     flexDirection: 'row',
-    gap: 12,
+  },
+  verticalButtons: {
+    flexDirection: 'column',
   },
   button: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 44, // iOS minimum touch target
   },
   cancelButton: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
   },
   confirmButton: {
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
+    borderLeftWidth: 0.5,
+    borderLeftColor: '#C6C6C8',
   },
   destructiveButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: 'transparent',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#C6C6C8',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: 17, // iOS system font size for alert buttons
+    fontWeight: '400', // iOS regular weight for cancel
+    color: '#007AFF', // iOS system blue
   },
   confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600', // iOS semibold for primary action
+    color: '#007AFF',
   },
   destructiveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '400', // iOS regular weight for destructive
+    color: '#FF3B30', // iOS system red
   },
 });
