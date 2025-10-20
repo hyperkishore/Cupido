@@ -322,11 +322,23 @@
         .status-pending {
             background: #f5f5f7;
             color: #6e6e73;
+            animation: pulse-pending 2s ease-in-out infinite;
         }
 
         .status-running {
             background: #e3f2fd;
             color: #0071e3;
+            animation: pulse-running 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-pending {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes pulse-running {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
         }
 
         .status-pass {
@@ -337,6 +349,12 @@
         .status-fail {
             background: #ffebee;
             color: #ff3b30;
+        }
+
+        .status-running {
+            background: #e3f2fd;
+            color: #0071e3;
+            animation: pulse-running 1.5s ease-in-out infinite;
         }
 
         /* Category Badge */
@@ -641,22 +659,22 @@
         }
 
         .sim-btn-primary {
-            background: #0071e3;
+            background: #007AFF;
             color: white;
         }
 
         .sim-btn-primary:hover {
-            background: #0077ed;
+            background: #0051D5;
         }
 
         .sim-btn-secondary {
-            background: white;
-            color: #1d1d1f;
-            border: 1px solid #d2d2d7;
+            background: #f2f2f7;
+            color: #007AFF;
+            border: 1px solid #e5e5e7;
         }
 
         .sim-btn-secondary:hover {
-            background: #f5f5f7;
+            background: #e5e5ea;
         }
 
         /* Toggle Button Styles */
@@ -911,6 +929,71 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .console-controls {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .console-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .console-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .console-filter-item input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .console-filter-label {
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .console-filter-label.info {
+            color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .console-filter-label.warning {
+            color: #FF9500;
+            background: rgba(255, 149, 0, 0.1);
+        }
+
+        .console-filter-label.error {
+            color: #FF3B30;
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .console-filter-label.success {
+            color: #34C759;
+            background: rgba(52, 199, 89, 0.1);
+        }
+
+        .console-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .console-actions .btn {
+            font-size: 12px;
+            padding: 6px 10px;
         }
 
         .unified-console {
@@ -1689,6 +1772,464 @@
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
+        /* Health Check Tab Styles - Apple Design System */
+        .health-check-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+
+        .health-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .health-header h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .health-header p {
+            font-size: 17px;
+            color: #86868b;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        .health-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+
+        .health-stat-card {
+            background: #ffffff;
+            border: 1px solid #e5e5e7;
+            border-radius: 18px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .health-stat-card:hover {
+            border-color: #007AFF;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.1);
+        }
+
+        .health-stat-label {
+            font-size: 15px;
+            color: #86868b;
+            font-weight: 500;
+            margin-bottom: 12px;
+            letter-spacing: -0.24px;
+        }
+
+        .health-stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: -1px;
+        }
+
+        .health-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .health-category {
+            background: #ffffff;
+            border: 1px solid #e5e5e7;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .health-category:hover {
+            border-color: #d1d1d6;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .health-category-header {
+            background: #f5f5f7;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e5e7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .health-category-header h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin: 0;
+            letter-spacing: -0.43px;
+        }
+
+        .health-category-count {
+            font-size: 15px;
+            color: #86868b;
+            font-weight: 500;
+            background: #e5e5e7;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .health-items {
+            padding: 16px 20px;
+        }
+
+        .health-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f7;
+        }
+
+        .health-item:last-child {
+            border-bottom: none;
+        }
+
+        .health-item-info {
+            flex: 1;
+        }
+
+        .health-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .health-item-description {
+            font-size: 12px;
+            color: #6e6e73;
+            line-height: 1.4;
+        }
+
+        .health-item-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .health-status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .health-status-indicator.running {
+            background: #34c759;
+        }
+
+        .health-status-indicator.stopped {
+            background: #8e8e93;
+        }
+
+        .health-status-indicator.error {
+            background: #ff3b30;
+        }
+
+        .health-status-indicator.warning {
+            background: #ff9500;
+        }
+
+        .health-status-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: #6e6e73;
+        }
+
+        .health-action-btn {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #d2d2d7;
+            background: white;
+            color: #0071e3;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .health-action-btn:hover {
+            background: #f5f5f7;
+        }
+
+        .health-logs {
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .health-logs-header {
+            background: #f5f5f7;
+            padding: 16px 20px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .health-logs-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin: 0;
+        }
+
+        .health-logs-content {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 16px 20px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            background: #fafafa;
+        }
+
+        .health-log-entry {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .health-log-timestamp {
+            color: #6e6e73;
+            flex-shrink: 0;
+        }
+
+        .health-log-message {
+            color: #1d1d1f;
+            flex: 1;
+        }
+
+        .health-log-level-info {
+            color: #0071e3;
+        }
+
+        .health-log-level-success {
+            color: #34c759;
+        }
+
+        .health-log-level-warning {
+            color: #ff9500;
+        }
+
+        .health-log-level-error {
+            color: #ff3b30;
+        }
+
+        /* Apple-style refresh button */
+        .health-refresh-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .health-refresh-btn:hover {
+            background: #0051D5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+        }
+
+        .health-refresh-btn:active {
+            transform: translateY(0);
+            background: #004494;
+        }
+
+        /* Apple-style action buttons */
+        .health-action-btn {
+            background: #f2f2f7;
+            color: #007AFF;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .health-action-btn:hover {
+            background: #e5e5ea;
+            color: #0051D5;
+        }
+
+        /* Health Table Styles */
+        .health-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .health-run-btn, .health-refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+        }
+
+        .health-run-btn {
+            background: #007AFF;
+            color: white;
+        }
+
+        .health-run-btn:hover {
+            background: #0051D5;
+        }
+
+        .health-refresh-btn {
+            background: #F2F2F7;
+            color: #007AFF;
+        }
+
+        .health-refresh-btn:hover {
+            background: #E5E5EA;
+        }
+
+        .health-table-container {
+            margin: 24px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #E5E5EA;
+            background: white;
+        }
+
+        .health-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+        }
+
+        .health-table thead th {
+            background: #F2F2F7;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #1D1D1F;
+            border-bottom: 1px solid #E5E5EA;
+        }
+
+        .health-table tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #F2F2F7;
+            vertical-align: middle;
+        }
+
+        .health-table tbody tr:hover {
+            background: #F9F9FB;
+        }
+
+        .health-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .health-status.passed {
+            background: #E8F5E8;
+            color: #34C759;
+        }
+
+        .health-status.failed {
+            background: #FFEBE8;
+            color: #FF3B30;
+        }
+
+        .health-status.pending {
+            background: #F0F0F7;
+            color: #8E8E93;
+            animation: pulse-pending 2s ease-in-out infinite;
+        }
+
+        .health-status.running {
+            background: #e3f2fd;
+            color: #0071e3;
+            animation: pulse-running 1.5s ease-in-out infinite;
+        }
+
+        .health-summary {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            padding: 20px;
+            background: #F9F9FB;
+            border-radius: 12px;
+            margin-top: 24px;
+        }
+
+        .health-stat {
+            text-align: center;
+        }
+
+        .health-stat .stat-value {
+            display: block;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1D1D1F;
+            margin-bottom: 4px;
+        }
+
+        .health-stat .stat-label {
+            font-size: 12px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .test-action-btn {
+            background: none;
+            border: 1px solid #E5E5EA;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #007AFF;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .test-action-btn:hover {
+            background: #F2F2F7;
+            border-color: #007AFF;
+        }
+
     </style>
 </head>
 <body>
@@ -1702,7 +2243,8 @@
 
     <!-- Tabs -->
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('tests', event)">Tests</div>
+        <div class="tab active" onclick="switchTab('health', event)">Scripts</div>
+        <div class="tab" onclick="switchTab('tests', event)">Tests</div>
         <div class="tab" onclick="switchTab('live', event)">Live Preview</div>
         <div class="tab" onclick="switchTab('console', event)">Console</div>
         <div class="tab" onclick="switchTab('history', event)">History</div>
@@ -1713,15 +2255,17 @@
     <!-- Main Container -->
     <div class="container">
         <!-- Tests Tab -->
-        <div class="tab-content active" id="tests-tab">
+        <div class="tab-content" id="tests-tab">
             <!-- Controls Bar -->
             <div class="controls-bar">
                 <div class="controls-left">
                     <select id="test-scope" onchange="filterTestsByCategory()">
-                        <option value="all" id="all-tests-option">All Tests (72)</option>
+                        <option value="all" id="all-tests-option">All Tests (81)</option>
                         <option value="foundation">Foundation Tests (5)</option>
                         <option value="prompts">Prompt Management (3)</option>
                         <option value="console">Console Error Detection (5)</option>
+                        <option value="phase2">Phase 2: Revolutionary Analytics (8)</option>
+                        <option value="phase3">Phase 3: Advanced Automation (7)</option>
                         <option value="message">Message Flow & UI (8)</option>
                         <option value="profile">Profile Extraction (6)</option>
                         <option value="database">Database Operations (5)</option>
@@ -1731,11 +2275,7 @@
                         <option value="simulator">Simulator Testing (18)</option>
                         <option value="infra">Infrastructure Validation (6)</option>
                     </select>
-                    <button class="btn btn-primary" onclick="runSelectedTests()">▶ Run Tests</button>
-                    <button class="btn btn-secondary" onclick="exportResults()">📤 Export Results</button>
-                    <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
-                    <button class="btn btn-secondary" onclick="clearSelection()">Clear</button>
-                    <button class="btn btn-primary" onclick="runBrowserDebug()" style="background: #ff3b30; border-color: #ff3b30;">🔍 DEBUG</button>
+                    <button class="btn btn-primary" onclick="runSelectedTests()">Run Tests</button>
                 </div>
                 <div class="controls-right">
                     <div class="toggle-container">
@@ -1823,7 +2363,7 @@
                         <!-- Persona Selection -->
                         <div class="simulator-group">
                             <label class="simulator-label">Simulator Persona</label>
-                            <select id="simulator-persona" class="simulator-input">
+                            <select id="simulator-persona" class="simulator-input" onchange="updatePersonaInfo()">
                                 <option value="">Loading personas...</option>
                             </select>
                             <div id="persona-info" class="persona-info" style="display: none;"></div>
@@ -1981,39 +2521,43 @@
         <!-- Console Tab -->
         <div class="tab-content" id="console-tab">
             <div class="console-header">
-                <div style="display: flex; gap: 16px; align-items: center;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Unified Console</h3>
-                    <div class="claude-status">
-                        <div class="status-dot idle" id="claude-status-dot"></div>
-                        <div class="status-text" id="claude-status-text">Idle</div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">Console Output</h3>
+                <div class="console-controls">
+                    <!-- Log Level Filters -->
+                    <div class="console-filters">
+                        <label class="console-filter-item">
+                            <input type="checkbox" id="filter-info" checked onchange="filterLogLevels()">
+                            <span class="console-filter-label info">Info</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="checkbox" id="filter-warning" checked onchange="filterLogLevels()">
+                            <span class="console-filter-label warning">Warning</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="checkbox" id="filter-error" checked onchange="filterLogLevels()">
+                            <span class="console-filter-label error">Error</span>
+                        </label>
+                        <label class="console-filter-item">
+                            <input type="checkbox" id="filter-success" checked onchange="filterLogLevels()">
+                            <span class="console-filter-label success">Success</span>
+                        </label>
                     </div>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button class="btn btn-secondary" onclick="filterConsole('all')">All</button>
-                    <button class="btn btn-secondary" onclick="filterConsole('test')">Tests</button>
-                    <button class="btn btn-secondary" onclick="filterConsole('app')">App</button>
-                    <button class="btn btn-secondary" onclick="filterConsole('simulator')">Simulator</button>
-                    <div style="border-left: 1px solid #d2d2d7; height: 24px; margin: 0 8px;"></div>
-                    <span style="color: #6e6e73; font-size: 13px;">Show:</span>
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
-                        <input type="checkbox" id="filter-info" checked onchange="filterLogLevels()">
-                        <span style="color: #0071e3;">Info</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
-                        <input type="checkbox" id="filter-warning" checked onchange="filterLogLevels()">
-                        <span style="color: #ff9500;">Warn</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
-                        <input type="checkbox" id="filter-error" checked onchange="filterLogLevels()">
-                        <span style="color: #ff3b30;">Error</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
-                        <input type="checkbox" id="filter-success" checked onchange="filterLogLevels()">
-                        <span style="color: #34c759;">Pass</span>
-                    </label>
-                    <div style="border-left: 1px solid #d2d2d7; height: 24px; margin: 0 8px;"></div>
-                    <button class="btn btn-secondary" onclick="copyFilteredLogs()">Copy</button>
-                    <button class="btn btn-secondary" onclick="clearUnifiedConsole()">Clear</button>
+                    
+                    <!-- Action Buttons -->
+                    <div class="console-actions">
+                        <button class="btn btn-secondary" onclick="copyErrorsOnly()" title="Copy only errors and warnings with stack traces">
+                            🚨 Copy Errors
+                        </button>
+                        <button class="btn btn-secondary" onclick="copyFilteredLogs()" title="Copy filtered logs">
+                            📋 Copy Filtered
+                        </button>
+                        <button class="btn btn-secondary" onclick="copyAllLogs()" title="Copy all logs">
+                            📄 Copy All
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearUnifiedConsole()" title="Clear console">
+                            🗑️ Clear
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="unified-console" id="unified-console">
@@ -2184,6 +2728,86 @@
                 </div>
             </div>
         </div>
+
+        <!-- Scripts Tab -->
+        <div class="tab-content active" id="health-tab">
+            <div class="health-check-container">
+                <div class="health-header">
+                    <h2>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: text-top; margin-right: 8px;">
+                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1 15-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z" fill="#34C759"/>
+                        </svg>
+                        Development Scripts
+                    </h2>
+                    <div class="health-actions">
+                        <button class="health-run-btn" onclick="runAllHealthChecks()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 1l7 4-7 4L1 5l7-4z" fill="currentColor"/>
+                            </svg>
+                            Run Health Check Scripts
+                        </button>
+                        <button class="health-refresh-btn" onclick="refreshHealthTable()">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 1.5a6.5 6.5 0 0 1 6.5 6.5h-2A4.5 4.5 0 1 0 8 12.5V11a.5.5 0 0 1 .854-.354l2 2a.5.5 0 0 1 0 .708l-2 2A.5.5 0 0 1 8 15v-1.5A6.5 6.5 0 0 1 8 1.5z" fill="currentColor"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Health Table -->
+                <div class="health-table-container">
+                    <table class="health-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Test Name</th>
+                                <th>Category</th>
+                                <th>Module</th>
+                                <th>Last Run</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="health-table-body">
+                            <!-- Tests will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Summary Stats -->
+                <div class="health-summary">
+                    <div class="health-stat">
+                        <span class="stat-value" id="passed-count">0</span>
+                        <span class="stat-label">Scripts Passed</span>
+                    </div>
+                    <div class="health-stat">
+                        <span class="stat-value" id="failed-count">0</span>
+                        <span class="stat-label">Scripts Failed</span>
+                    </div>
+                    <div class="health-stat">
+                        <span class="stat-value" id="pending-count">0</span>
+                        <span class="stat-label">Scripts Available</span>
+                    </div>
+                    <div class="health-stat">
+                        <span class="stat-value" id="health-percentage">0%</span>
+                        <span class="stat-label">System Health</span>
+                    </div>
+                </div>
+
+
+                    <!-- Core Services section removed -->
+
+                    <!-- Automation Scripts section removed -->
+
+                    <!-- Revolutionary Systems section removed -->
+
+                    <!-- Test & Debug Scripts section removed -->
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <!-- Load comprehensive test functions -->
@@ -2212,7 +2836,10 @@
             foundation: { name: 'Foundation Tests', count: 5 },
             prompts: { name: 'Prompt Management', count: 3 },
             console: { name: 'Console Error Detection', count: 5 },
+            phase2: { name: 'Phase 2: Revolutionary Analytics', count: 8 },
+            phase3: { name: 'Phase 3: Advanced Automation', count: 7 },
             message: { name: 'Message Flow & UI', count: 8 },
+            dashboard: { name: 'Dashboard UI State Management', count: 5 },
             profile: { name: 'Profile Extraction', count: 6 },
             database: { name: 'Database Operations', count: 5 },
             error: { name: 'Error Handling', count: 6 },
@@ -2235,7 +2862,7 @@
 
         // API Call Tracker
         const apiCalls = [];
-        function trackApiCall(url, method, body, response, duration) {
+        function trackApiCall(url, method, body, response, duration, targetArray = null) {
             const call = {
                 url,
                 method,
@@ -2244,7 +2871,13 @@
                 duration,
                 timestamp: new Date().toISOString()
             };
+            
+            // Push to both global and per-test arrays
             apiCalls.push(call);
+            if (targetArray) {
+                targetArray.push(call);
+            }
+            
             logToConsole(`API Call: ${method} ${url} (${duration}ms)`, 'info', 'app');
             return call;
         }
@@ -2292,7 +2925,7 @@
                         });
                         
                         // Send response to Cupido app
-                        const iframe = document.getElementById('app-iframe');
+                        const iframe = document.getElementById('live-app-iframe');
                         if (iframe && iframe.contentWindow) {
                             iframe.contentWindow.postMessage({
                                 type: 'simulator-response',
@@ -2359,41 +2992,13 @@
             if (personaSelect) personaSelect.disabled = simulatorState.isActive;
         }
         
-        async function loadSimulatorPersonas() {
-            try {
-                const response = await fetch('/api/prompts');
-                const prompts = await response.json();
-                
-                // Filter for simulator tagged prompts
-                const simulatorPrompts = prompts.filter(p => 
-                    p.tags && p.tags.includes('simulator') && p.is_active
-                );
-                
-                const personaSelect = document.getElementById('simulator-persona');
-                if (personaSelect) {
-                    personaSelect.innerHTML = '<option value="">Select persona...</option>';
-                    simulatorPrompts.forEach(prompt => {
-                        const option = document.createElement('option');
-                        option.value = prompt.id;
-                        option.textContent = `${prompt.name} (v${prompt.version || '1.0.0'})`;
-                        personaSelect.appendChild(option);
-                    });
-                    
-                    if (simulatorPrompts.length === 0) {
-                        personaSelect.innerHTML = '<option value="">No simulator personas available</option>';
-                        logToConsole('No simulator personas found. Create prompts with "simulator" tag.', 'warn', 'simulator');
-                    }
-                }
-            } catch (error) {
-                logToConsole(`Failed to load simulator personas: ${error.message}`, 'error', 'simulator');
-            }
-        }
 
         // Database Logger - stores all test runs in localStorage
         class TestLogger {
             constructor() {
                 this.dbKey = 'cupido_test_logs';
                 this.currentRunKey = 'cupido_current_test_run';
+                this.apiUrl = '/api/test-logs';
             }
 
             // Initialize a new test run
@@ -2405,7 +3010,7 @@
                     endTime: null,
                     tests: [],
                     environment: {
-                        apiUrl: 'http://localhost:3001/api/chat',
+                        apiUrl: `${window.location.origin}/api/chat`,
                         appUrl: '/app',
                         userAgent: navigator.userAgent,
                         timestamp: Date.now()
@@ -2471,7 +3076,7 @@
             // POST results to API for automated fix loop
             async postResultsToAPI(testRun) {
                 try {
-                    const response = await fetch('http://localhost:3001/api/test-results', {
+                    const response = await fetch(`${window.location.origin}/api/test-results`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2536,13 +3141,14 @@
                 
                 Object.keys(window.TEST_FUNCTIONS).forEach(testId => {
                     const [category, num] = testId.split('-');
-                    const metadata = getTestMetadata(testId);
+                    // Use TEST_METADATA from comprehensive-test-functions.js if available
+                    const metadata = window.TEST_METADATA?.[testId] || getTestMetadata(testId);
                     tests.push({
                         id: testId,
-                        name: getTestName(testId),
-                        description: metadata.description,
-                        module: metadata.module,
-                        category: testConfig[category]?.name || category,
+                        name: metadata.name || getTestName(testId),
+                        description: metadata.description || 'Test description',
+                        module: metadata.module || 'Unknown',
+                        category: metadata.category || testConfig[category]?.name || category,
                         status: 'pending',
                         lastRun: null,
                         duration: null
@@ -2550,6 +3156,10 @@
                 });
                 
                 console.log(`🔍 Initialized ${tests.length} tests`);
+                
+                // CRITICAL: Export tests to global window for comprehensive-test-functions.js
+                window.tests = tests;
+                
                 logToConsole(`✅ Loaded ${functionCount} test functions successfully`, 'success');
             } else {
                 console.error('❌ TEST_FUNCTIONS not available - comprehensive-test-functions.js may not have loaded');
@@ -2909,7 +3519,7 @@
             logToConsole(`✅ Showing ${filteredTests.length} tests in category: ${testConfig[selectedCategory]?.name || selectedCategory}`, 'success');
         }
 
-        // Tab switching
+        // Tab switching with URL routing
         function switchTab(tabName, event) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -2918,6 +3528,80 @@
                 event.target.classList.add('active');
             }
             document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Update URL hash without triggering page reload (use user-friendly names)
+            if (event && !event.skipUrlUpdate) {
+                const friendlyNames = {
+                    'health': 'scripts',
+                    'tests': 'tests', 
+                    'live': 'live',
+                    'console': 'console',
+                    'history': 'history',
+                    'error-monitoring': 'errors',
+                    'prompts': 'prompts'
+                };
+                const friendlyName = friendlyNames[tabName] || tabName;
+                window.history.pushState({}, '', `#${friendlyName}`);
+            }
+            
+            // Initialize tab-specific content
+            if (tabName === 'health') {
+                initializeHealthCheck();
+            }
+            
+            console.log(`📍 Switched to ${tabName} tab - URL: ${window.location.href}`);
+        }
+        
+        // Handle URL hash changes (back/forward browser navigation)
+        function handleHashChange() {
+            const hash = window.location.hash.slice(1); // Remove the # symbol
+            
+            // Map user-friendly URLs to internal tab names
+            const urlMapping = {
+                'scripts': 'health',
+                'health': 'health',
+                'tests': 'tests',
+                'live': 'live',
+                'preview': 'live',
+                'console': 'console',
+                'logs': 'console',
+                'history': 'history',
+                'errors': 'error-monitoring',
+                'error-monitoring': 'error-monitoring',
+                'prompts': 'prompts',
+                'prompt-library': 'prompts'
+            };
+            
+            const tabName = urlMapping[hash];
+            
+            if (hash && tabName) {
+                // Find the tab element and trigger switch (without updating URL again)
+                const tabElement = document.querySelector(`[onclick*="'${tabName}'"]`);
+                if (tabElement) {
+                    switchTab(tabName, { target: tabElement, skipUrlUpdate: true });
+                }
+            } else if (!hash) {
+                // Default to scripts tab if no hash
+                switchTab('health', { target: document.querySelector(`[onclick*="'health'"]`), skipUrlUpdate: true });
+            } else {
+                // Invalid hash - redirect to scripts
+                window.history.replaceState({}, '', '#scripts');
+                handleHashChange();
+            }
+        }
+        
+        // Initialize URL routing
+        function initializeUrlRouting() {
+            // Handle browser back/forward
+            window.addEventListener('hashchange', handleHashChange);
+            
+            // Handle initial page load with hash
+            if (window.location.hash) {
+                handleHashChange();
+            } else {
+                // Set default hash to scripts tab
+                window.history.replaceState({}, '', '#scripts');
+            }
         }
 
         // Test selection
@@ -3161,6 +3845,80 @@
             });
         }
 
+        // Copy only errors and warnings with enhanced formatting for debugging
+        function copyErrorsOnly() {
+            const consoleElement = document.getElementById('unified-console');
+            if (!consoleElement) {
+                alert('Console not found');
+                return;
+            }
+
+            const lines = consoleElement.querySelectorAll('.console-line');
+            let errorReport = 'ERROR AND WARNING REPORT\n';
+            errorReport += '═══════════════════════════════════════════════════════════\n';
+            errorReport += `Generated: ${new Date().toISOString()}\n`;
+            errorReport += '═══════════════════════════════════════════════════════════\n\n';
+
+            let errorCount = 0;
+            let warningCount = 0;
+            let currentTestContext = '';
+
+            lines.forEach((line, index) => {
+                const text = line.textContent || line.innerText;
+                const hasError = line.querySelector('.console-error');
+                const hasWarning = line.querySelector('.console-warning');
+                
+                // Track current test context
+                if (text.includes('🧪 TEST:')) {
+                    currentTestContext = text.match(/🧪 TEST: (.+)/)?.[1] || '';
+                }
+                
+                if (hasError || hasWarning) {
+                    if (currentTestContext) {
+                        errorReport += `[${currentTestContext}] `;
+                    }
+                    
+                    if (hasError) {
+                        errorReport += '❌ ERROR: ';
+                        errorCount++;
+                    } else {
+                        errorReport += '⚠️  WARNING: ';
+                        warningCount++;
+                    }
+                    
+                    errorReport += text.trim() + '\n';
+                    
+                    // Add context from previous and next lines if helpful
+                    if (index > 0) {
+                        const prevLine = lines[index - 1];
+                        const prevText = prevLine.textContent || prevLine.innerText;
+                        if (prevText.includes('Executing') || prevText.includes('Duration') || prevText.includes('Function')) {
+                            errorReport += `   Context: ${prevText.trim()}\n`;
+                        }
+                    }
+                    
+                    errorReport += '\n';
+                }
+            });
+
+            errorReport += '\n═══════════════════════════════════════════════════════════\n';
+            errorReport += `SUMMARY: ${errorCount} Errors, ${warningCount} Warnings\n`;
+            errorReport += '═══════════════════════════════════════════════════════════\n';
+
+            if (errorCount === 0 && warningCount === 0) {
+                alert('No errors or warnings found in console');
+                return;
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(errorReport).then(() => {
+                logToConsole(`✓ ${errorCount} errors and ${warningCount} warnings copied to clipboard!`, 'success');
+            }).catch(err => {
+                console.error('Failed to copy errors:', err);
+                alert('Failed to copy errors to clipboard. Error: ' + err.message);
+            });
+        }
+
         // Run tests
         async function runSelectedTests() {
             const scope = document.getElementById('test-scope').value;
@@ -3192,8 +3950,24 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            logToConsole('═══════════════════════════════════', 'info');
-            logToConsole(`All tests completed`, 'success');
+            logToConsole('═'.repeat(60), 'info');
+            
+            // Show detailed test run summary
+            const passed = testsToRun.filter(id => testResults[id] === true);
+            const failed = testsToRun.filter(id => testResults[id] === false);
+            
+            logToConsole(`🏁 TEST RUN COMPLETE`, 'info');
+            logToConsole(`✅ Passed: ${passed.length}/${testsToRun.length}`, 'success');
+            logToConsole(`❌ Failed: ${failed.length}/${testsToRun.length}`, failed.length > 0 ? 'error' : 'info');
+            logToConsole(`📊 Success Rate: ${Math.round((passed.length / testsToRun.length) * 100)}%`, passed.length === testsToRun.length ? 'success' : 'warning');
+            
+            if (failed.length > 0) {
+                logToConsole(`🚫 Failed Tests:`, 'error');
+                failed.forEach(testId => {
+                    const test = tests.find(t => t.id === testId);
+                    logToConsole(`   • ${testId}: ${test?.name || 'Unknown'}`, 'error');
+                });
+            }
 
             // End test run logging
             testLogger.endTestRun();
@@ -3207,6 +3981,9 @@
                 return;
             }
 
+            // Start test run logging for single test
+            testLogger.startTestRun();
+
             const test = tests.find(t => t.id === testId);
             if (!test) return;
 
@@ -3214,17 +3991,24 @@
             test.status = 'running';
             test.lastRun = new Date().toLocaleTimeString();
             renderTestTable();
+            
+            // Brief delay to ensure UI updates before execution
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Log detailed test start
-            logToConsole('═══════════════════════════════════════════════════════════', 'info');
-            logToConsole(`Test: ${testId} (${test.name})`, 'info');
-            logToConsole(`Category: ${test.category}`, 'info');
-            logToConsole(`Status: RUNNING`, 'info');
-            logToConsole(`Started at: ${test.lastRun}`, 'info');
+            // Log detailed test start with clear separation
+            logToConsole('═'.repeat(60), 'info');
+            logToConsole(`🧪 TEST: ${testId}`, 'info');
+            logToConsole(`📝 Name: ${test.name}`, 'info');
+            logToConsole(`📂 Category: ${test.category}`, 'info');
+            logToConsole(`⏱️ Started: ${test.lastRun}`, 'info');
+            logToConsole(`🔄 Status: RUNNING...`, 'info');
 
             const startTime = Date.now();
             const testApiCalls = [];
             const testErrors = [];
+            
+            // Set up global reference for API call tracking
+            window.currentTestApiCalls = testApiCalls;
 
             try {
                 const testFn = window.TEST_FUNCTIONS[testId];
@@ -3236,31 +4020,34 @@
 
                     test.status = result.pass ? 'pass' : 'fail';
                     test.duration = duration;
+                    
+                    // Update UI immediately to show final status
+                    renderTestTable();
 
-                    // Log detailed results
-                    logToConsole(`Status: ${result.pass ? 'PASSED ✓' : 'FAILED ✗'}`, result.pass ? 'success' : 'error');
-                    logToConsole(`Duration: ${duration}ms`, 'info');
-                    logToConsole(`Result: ${result.message}`, result.pass ? 'success' : 'error');
+                    // Log detailed results with clear visual indicators
+                    logToConsole(`${result.pass ? '✅ PASSED' : '❌ FAILED'}: ${testId}`, result.pass ? 'success' : 'error');
+                    logToConsole(`⏱️ Duration: ${duration}ms`, 'info');
+                    logToConsole(`💬 Result: ${result.message}`, result.pass ? 'success' : 'error');
 
                     if (!result.pass) {
                         // Log detailed failure information
                         if (result.errors && result.errors.length > 0) {
-                            logToConsole(`Errors Found:`, 'error');
+                            logToConsole(`🚨 Errors Found (${result.errors.length}):`, 'error');
                             result.errors.forEach((err, idx) => {
-                                logToConsole(`  ${idx + 1}. ${err}`, 'error');
+                                logToConsole(`   ${idx + 1}. ${err}`, 'error');
                             });
                         }
 
                         // Log metadata for debugging
                         if (result.metadata) {
-                            logToConsole(`Debug Information:`, 'info');
+                            logToConsole(`🔍 Debug Information:`, 'info');
                             Object.keys(result.metadata).forEach(key => {
-                                logToConsole(`  - ${key}: ${JSON.stringify(result.metadata[key])}`, 'info');
+                                logToConsole(`   • ${key}: ${JSON.stringify(result.metadata[key])}`, 'info');
                             });
                         }
 
                         // Log suggestions based on test category
-                        logToConsole(`Suggestions:`, 'warning');
+                        logToConsole(`💡 Suggestions:`, 'warning');
                         if (testId.startsWith('console-')) {
                             logToConsole(`  - Check browser console for detailed error messages`, 'warning');
                             logToConsole(`  - Verify all required JavaScript files are loaded`, 'warning');
@@ -3296,10 +4083,16 @@
                     });
 
                     testResults[testId] = result.pass;
+                    
+                    // Add separation line after test completion
+                    logToConsole('─'.repeat(60), 'info');
                 } else {
                     const duration = Date.now() - startTime;
                     test.status = 'fail';
                     test.duration = duration;
+                    
+                    // Update UI immediately to show final status
+                    renderTestTable();
 
                     logToConsole(`Status: FAILED ✗`, 'error');
                     logToConsole(`Duration: ${duration}ms`, 'info');
@@ -3328,6 +4121,9 @@
                 const duration = Date.now() - startTime;
                 test.status = 'fail';
                 test.duration = duration;
+                
+                // Update UI immediately to show final status
+                renderTestTable();
 
                 logToConsole(`Status: FAILED ✗`, 'error');
                 logToConsole(`Duration: ${duration}ms`, 'info');
@@ -3376,6 +4172,13 @@
             logToConsole('', 'info'); // Blank line for spacing
 
             currentTest = null;
+            
+            // Clear API call tracking reference
+            window.currentTestApiCalls = null;
+            
+            // End test run logging for single test
+            testLogger.endTestRun();
+            
             renderTestTable();
             updateStats();
         }
@@ -3447,7 +4250,7 @@
 
             try {
                 // Fetch latest test results
-                const response = await fetch('http://localhost:3001/api/test-results/latest');
+                const response = await fetch(`${window.location.origin}/api/test-results/latest`);
                 if (!response.ok) {
                     if (response.status === 404) {
                         logToConsole('AUTO-FIX: No test results available. Run tests first.', 'warning');
@@ -3503,7 +4306,7 @@ Format as JSON:
 }`;
 
                 // Call Claude AI for analysis
-                const aiResponse = await fetch('http://localhost:3001/api/chat', {
+                const aiResponse = await fetch(`${window.location.origin}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3561,7 +4364,7 @@ Changes needed: ${fix.changes}
 Provide specific, actionable instructions for the developer to apply this fix manually.
 Include the exact code snippets that need to be changed.`;
 
-                        const fixResponse = await fetch('http://localhost:3001/api/chat', {
+                        const fixResponse = await fetch(`${window.location.origin}/api/chat`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -3654,7 +4457,8 @@ Include the exact code snippets that need to be changed.`;
 
         // Update persona info display
         function updatePersonaInfo() {
-            const personaSelect = document.getElementById('persona-select');
+            const personaSelect = document.getElementById('simulator-persona');
+            if (!personaSelect) return;
             const personaId = personaSelect.value;
             const personaInfo = document.getElementById('persona-info');
 
@@ -3733,8 +4537,8 @@ Include the exact code snippets that need to be changed.`;
         async function sendSimulatorMessage() {
             const messageInput = document.getElementById('sim-message');
             const message = messageInput.value.trim();
-            const includeImage = document.getElementById('include-image').value === 'true';
-            const personaId = document.getElementById('persona-select').value;
+            const includeImage = document.getElementById('include-image').checked;
+            const personaId = document.getElementById('simulator-persona').value;
             const rudenessLevel = document.getElementById('rudeness-slider').value;
             const maxMessages = document.getElementById('max-messages').value;
             const responseStyle = document.getElementById('response-style').value;
@@ -3745,9 +4549,10 @@ Include the exact code snippets that need to be changed.`;
             }
 
             const messageData = {
-                type: 'simulator-message',
-                content: message,
-                persona: personaId ? SIMULATOR_PERSONAS[personaId] : null,
+                type: 'test-send-message',
+                message: message,  // Fix: App expects 'message', not 'content'
+                content: message,  // Keep for backward compatibility
+                persona: personaId ? (SIMULATOR_PERSONAS && SIMULATOR_PERSONAS[personaId] ? SIMULATOR_PERSONAS[personaId] : { name: personaId, id: personaId }) : null,
                 testingParams: {
                     rudenessLevel: parseInt(rudenessLevel),
                     maxMessages: parseInt(maxMessages),
@@ -3767,7 +4572,7 @@ Include the exact code snippets that need to be changed.`;
             const iframe = document.getElementById('live-app-iframe');
             iframe.contentWindow.postMessage(messageData, '*');
 
-            const personaName = personaId ? SIMULATOR_PERSONAS[personaId].name : 'User';
+            const personaName = personaId ? (SIMULATOR_PERSONAS && SIMULATOR_PERSONAS[personaId] ? SIMULATOR_PERSONAS[personaId].name : personaId) : 'User';
             const params = `Style: ${responseStyle}, Rudeness: ${rudenessLevel}`;
             logToConsole(`Sent message from ${personaName}: "${message}"${includeImage ? ' (with contextual image)' : ''} [${params}]`, 'info', 'app');
             messageInput.value = '';
@@ -3849,7 +4654,20 @@ Include the exact code snippets that need to be changed.`;
             testMetrics.responseTimes = [];
 
             const delaySeconds = parseInt(document.getElementById('message-delay').value);
-            const naturalMessages = getNextNaturalMessage.messages || [];
+            // Fix: getNextNaturalMessage() is a function that returns a string, not an object with .messages
+            // Get the natural messages array directly from the test functions
+            const naturalMessages = window.NATURAL_TEST_MESSAGES || [
+                "Hey! How's your day going?",
+                "What do you think about trying something new this weekend?", 
+                "I've been thinking about taking up a new hobby",
+                "Have you seen any good movies lately?",
+                "What's your favorite way to spend a Saturday?",
+                "I'm curious about your thoughts on creativity",
+                "Do you enjoy exploring new places?",
+                "What kind of music do you like?",
+                "I find it interesting how people connect",
+                "What makes you feel most alive?"
+            ];
 
             logToConsole(`🤖 Starting automated conversation: ${count} messages with ${delaySeconds}s delay`, 'info', 'app');
             updateMetrics();
@@ -4000,21 +4818,33 @@ Include the exact code snippets that need to be changed.`;
                     maxMessages: parseInt(document.getElementById('max-messages').value),
                     responseStyle: document.getElementById('response-style').value,
                     messageDelay: parseInt(document.getElementById('message-delay').value),
-                    persona: document.getElementById('persona-select').value,
-                    includeImage: document.getElementById('include-image').value === 'true'
+                    persona: document.getElementById('simulator-persona').value,
+                    includeImage: document.getElementById('include-image').checked
                 },
                 metrics: { ...testMetrics }
             };
 
-            // Save to localStorage
+            // Save to localStorage, replacing existing scenario with same name
             let savedScenarios = JSON.parse(localStorage.getItem('cupido-test-scenarios') || '[]');
-            savedScenarios.push(scenario);
+            
+            // Check if scenario with same name exists
+            const existingIndex = savedScenarios.findIndex(s => s.name === scenarioName);
+            if (existingIndex !== -1) {
+                if (confirm(`Scenario "${scenarioName}" already exists. Overwrite it?`)) {
+                    savedScenarios[existingIndex] = scenario;
+                    logToConsole(`♻️ Updated scenario: "${scenarioName}"`, 'success', 'app');
+                } else {
+                    return; // User cancelled overwrite
+                }
+            } else {
+                savedScenarios.push(scenario);
+                logToConsole(`💾 Saved scenario: "${scenarioName}"`, 'success', 'app');
+            }
+            
             localStorage.setItem('cupido-test-scenarios', JSON.stringify(savedScenarios));
 
             // Update dropdown
             updateScenarioDropdown();
-
-            logToConsole(`💾 Saved scenario: "${scenarioName}"`, 'success', 'app');
 
             // Clear scenario name input
             document.getElementById('scenario-name').value = '';
@@ -4040,7 +4870,7 @@ Include the exact code snippets that need to be changed.`;
             document.getElementById('response-style').value = config.responseStyle;
             document.getElementById('message-delay').value = config.messageDelay;
             updateDelayValue(config.messageDelay);
-            document.getElementById('persona-select').value = config.persona;
+            document.getElementById('simulator-persona').value = config.persona;
             document.getElementById('include-image').checked = config.includeImage;
 
             logToConsole(`📂 Loaded scenario: "${scenarioName}"`, 'success', 'app');
@@ -4073,8 +4903,8 @@ Include the exact code snippets that need to be changed.`;
                     maxMessages: parseInt(document.getElementById('max-messages').value),
                     responseStyle: document.getElementById('response-style').value,
                     messageDelay: parseInt(document.getElementById('message-delay').value),
-                    persona: document.getElementById('persona-select').value,
-                    includeImage: document.getElementById('include-image').value === 'true'
+                    persona: document.getElementById('simulator-persona').value,
+                    includeImage: document.getElementById('include-image').checked
                 },
                 metrics: {
                     ...testMetrics,
@@ -4083,8 +4913,8 @@ Include the exact code snippets that need to be changed.`;
                         : 0,
                     totalDuration: testMetrics.startTime ? Date.now() - testMetrics.startTime : 0
                 },
-                testHistory: window.testHistory || [],
-                consoleLog: window.consoleLog || []
+                testHistory: testLogger.getHistory() || [],
+                consoleLog: consoleMessages.slice(-100) || [] // Last 100 console messages
             };
 
             // Create downloadable JSON file
@@ -4098,7 +4928,7 @@ Include the exact code snippets that need to be changed.`;
             URL.revokeObjectURL(url);
 
             logToConsole('📥 Test results exported successfully', 'success', 'app');
-            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${(window.testHistory || []).length} tests, ${(window.consoleLog || []).length} log entries`, 'info', 'app');
+            logToConsole(`Exported: ${testMetrics.messagesSent} messages, ${(testLogger.getHistory() || []).length} tests, ${(consoleMessages || []).length} log entries`, 'info', 'app');
         }
 
         // Initialize scenarios dropdown on load
@@ -4117,13 +4947,94 @@ Include the exact code snippets that need to be changed.`;
         // END ADVANCED TESTING FEATURES
         // ============================================
 
+        // ============================================
+        // SELF-HEALING TEST MONITOR
+        // ============================================
+
+        let autoHealerInterval = null;
+        let lastFailureCheck = null;
+
+        function initializeAutoHealer() {
+            // Check for existing failures on initialization
+            checkFailuresApi();
+            
+            // Start polling every 15 seconds
+            autoHealerInterval = setInterval(checkFailuresApi, 15000);
+            
+            logToConsole('🔧 Auto-healer monitoring started (15s interval)', 'info', 'dashboard');
+        }
+
+        async function checkFailuresApi() {
+            try {
+                const response = await fetch('/api/test-results/failures');
+                if (!response.ok) return;
+                
+                const failures = await response.json();
+                
+                if (failures.failedTests && failures.failedTests.length > 0) {
+                    // Skip if we've already processed this timestamp
+                    if (lastFailureCheck === failures.timestamp) return;
+                    
+                    lastFailureCheck = failures.timestamp;
+                    showAutoHealerNotification(failures);
+                }
+            } catch (error) {
+                // Silently fail - don't spam console with connection errors
+            }
+        }
+
+        function showAutoHealerNotification(failures) {
+            const count = failures.failedTests.length;
+            const total = failures.totalTests;
+            
+            logToConsole('═'.repeat(60), 'warning');
+            logToConsole('🚨 SELF-HEALING SYSTEM ALERT', 'error', 'dashboard');
+            logToConsole('═'.repeat(60), 'warning');
+            logToConsole(`Found ${count} failed tests out of ${total} total`, 'error', 'dashboard');
+            
+            // Show brief summary of failed tests
+            failures.failedTests.slice(0, 3).forEach(test => {
+                logToConsole(`❌ ${test.id}: ${test.name}`, 'error', 'dashboard');
+            });
+            
+            if (failures.failedTests.length > 3) {
+                logToConsole(`... and ${failures.failedTests.length - 3} more`, 'warning', 'dashboard');
+            }
+            
+            logToConsole('', 'info');
+            logToConsole('🔧 CLAUDE CODE INTEGRATION AVAILABLE:', 'info', 'dashboard');
+            logToConsole('1. Go to Scripts tab → Run "generate-claude-prompt.js"', 'info', 'dashboard');
+            logToConsole('2. Copy the generated prompt to Claude Code', 'info', 'dashboard');
+            logToConsole('3. Claude will analyze and suggest intelligent fixes', 'info', 'dashboard');
+            logToConsole('', 'info');
+            logToConsole('This provides AI-powered root cause analysis and fixes.', 'success', 'dashboard');
+            logToConsole('═'.repeat(60), 'warning');
+        }
+
+        function stopAutoHealer() {
+            if (autoHealerInterval) {
+                clearInterval(autoHealerInterval);
+                autoHealerInterval = null;
+                logToConsole('🔧 Auto-healer monitoring stopped', 'warning', 'dashboard');
+            }
+        }
+
+        // ============================================
+        // END SELF-HEALING TEST MONITOR  
+        // ============================================
+
         function updateClaudeStatus(status, message) {
             claudeStatus = status;
             const statusDot = document.getElementById('claude-status-dot');
             const statusText = document.getElementById('claude-status-text');
 
-            statusDot.className = 'status-dot ' + status;
-            statusText.textContent = message || status.charAt(0).toUpperCase() + status.slice(1);
+            // Only update if elements exist (they were removed in console simplification)
+            if (statusDot) {
+                statusDot.className = 'status-dot ' + status;
+            }
+            if (statusText) {
+                statusText.textContent = message || status.charAt(0).toUpperCase() + status.slice(1);
+            }
 
             logToConsole(`Claude Code: ${message || status}`, status === 'idle' ? 'info' : 'success', 'app');
         }
@@ -4151,7 +5062,9 @@ Include the exact code snippets that need to be changed.`;
                         // Log API calls from the app
                         const { url, method, duration, status } = event.data;
                         logToConsole(`API Call: ${method} ${url} - ${status} (${duration}ms)`, 'info', 'app');
-                        trackApiCall(url, method, event.data.body, event.data.response, duration);
+                        // Track to current test's API calls if a test is running
+                        const targetArray = currentTest ? window.currentTestApiCalls : null;
+                        trackApiCall(url, method, event.data.body, event.data.response, duration, targetArray);
                         break;
 
                     case 'message-sent':
@@ -4181,8 +5094,8 @@ Include the exact code snippets that need to be changed.`;
                         break;
                     
                     case 'simulator-response':
-                        // Handle simulator responses
-                        const response = event.data.response;
+                        // Handle simulator responses - Fix: App sends 'message', not 'response'
+                        const response = event.data.message || event.data.response;
                         logToConsole(`[SIMULATOR] ${response}`, 'info', 'app');
                         break;
 
@@ -4192,6 +5105,16 @@ Include the exact code snippets that need to be changed.`;
 
                     case 'app-info':
                         logToConsole(`[INFO] ${event.data.message}`, 'info', 'app');
+                        break;
+
+                    case 'chat-exported':
+                        // Handle chat export response from TestBridge
+                        const chatData = event.data.payload;
+                        if (chatData && event.data.success) {
+                            logToConsole(`✅ Chat exported: ${chatData.messageCount} messages`, 'success', 'app');
+                        } else {
+                            logToConsole('❌ Chat export failed', 'error', 'app');
+                        }
                         break;
                 }
             });
@@ -4251,8 +5174,15 @@ Include the exact code snippets that need to be changed.`;
             logToConsole('Simulator controls ready for testing', 'info', 'app');
         }
 
+        // Flag to prevent duplicate simulator personas loading
+        let simulatorPersonasInitialized = false;
+
         // Load simulator-tagged prompts for persona selector
         async function loadSimulatorPersonas() {
+            if (simulatorPersonasInitialized) {
+                return; // Prevent duplicate initialization
+            }
+            simulatorPersonasInitialized = true;
             try {
                 const response = await fetch('/api/prompts');
                 if (!response.ok) throw new Error('Failed to load prompts');
@@ -4265,7 +5195,7 @@ Include the exact code snippets that need to be changed.`;
                 );
 
                 // Populate the persona selector
-                const personaSelect = document.getElementById('persona-select');
+                const personaSelect = document.getElementById('simulator-persona');
                 if (personaSelect) {
                     // Clear existing options except the first "Select persona..."
                     personaSelect.innerHTML = '<option value="">Select persona...</option>';
@@ -4285,11 +5215,32 @@ Include the exact code snippets that need to be changed.`;
                         personaSelect.appendChild(option);
                     });
 
-                    logToConsole(`Loaded ${simulatorPrompts.length} simulator persona(s) from Supabase`, 'success', 'app');
+                    if (simulatorPrompts.length === 0) {
+                        personaSelect.innerHTML = '<option value="">No simulator personas available</option>';
+                        logToConsole('No simulator personas found. Create prompts with "simulator" tag.', 'warn', 'app');
+                    } else {
+                        logToConsole(`Loaded ${simulatorPrompts.length} simulator persona(s) from Supabase`, 'success', 'app');
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load simulator personas:', error);
-                logToConsole('Failed to load simulator personas from Supabase', 'error', 'app');
+                logToConsole('Failed to load simulator personas from Supabase, using fallback', 'warn', 'app');
+                
+                // Fallback to hardcoded personas
+                const personaSelect = document.getElementById('simulator-persona');
+                if (personaSelect && typeof SIMULATOR_PERSONAS !== 'undefined') {
+                    personaSelect.innerHTML = '<option value="">Select persona...</option>';
+                    Object.keys(SIMULATOR_PERSONAS).forEach(personaId => {
+                        const persona = SIMULATOR_PERSONAS[personaId];
+                        const option = document.createElement('option');
+                        option.value = personaId;
+                        option.textContent = `${persona.name} (fallback)`;
+                        personaSelect.appendChild(option);
+                    });
+                    logToConsole(`Loaded ${Object.keys(SIMULATOR_PERSONAS).length} fallback persona(s)`, 'success', 'app');
+                } else {
+                    simulatorPersonasInitialized = false; // Reset on error to allow retry
+                }
             }
         }
 
@@ -4335,7 +5286,7 @@ Include the exact code snippets that need to be changed.`;
                 } else {
                     patternsContainer.innerHTML = stats.patterns.slice(0, 10).map(pattern => `
                         <div class="error-item">
-                            <div class="error-message">${pattern.pattern}</div>
+                            <div class="error-message">${escapeHtml(pattern.pattern)}</div>
                             <div>
                                 <span class="error-count-badge">${pattern.count}</span>
                                 <span class="error-timestamp">${new Date(pattern.lastSeen).toLocaleString()}</span>
@@ -4351,7 +5302,7 @@ Include the exact code snippets that need to be changed.`;
                 } else {
                     errorsContainer.innerHTML = stats.topErrors.map(error => `
                         <div class="error-item">
-                            <div class="error-message">${error.message}</div>
+                            <div class="error-message">${escapeHtml(error.message)}</div>
                             <div>
                                 ${error.autoFixed ? '<span class="auto-fix-badge">Auto-Fixed</span>' : ''}
                                 <span class="error-timestamp">${new Date(error.timestamp).toLocaleString()}</span>
@@ -4367,6 +5318,17 @@ Include the exact code snippets that need to be changed.`;
                 document.getElementById('errors-fixed').textContent = 'Error';
                 document.getElementById('errors-critical').textContent = 'Error';
             }
+        }
+
+        // HTML escaping function to prevent XSS
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return unsafe;
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         // Enhanced tab switching to load error monitoring data
@@ -4484,6 +5446,10 @@ Include the exact code snippets that need to be changed.`;
             updateTestScopeDropdown();
             renderTestTable();
             loadSimulatorPersonas();
+            
+            // Initialize URL routing
+            initializeUrlRouting();
+            
             logToConsole('Cupido Test Dashboard initialized', 'info');
             logToConsole(`${tests.length} tests loaded across ${Object.keys(testConfig).length} categories`, 'info');
             logToConsole('Test logging enabled - all runs saved to localStorage', 'info');
@@ -4509,6 +5475,10 @@ Include the exact code snippets that need to be changed.`;
             // Initialize advanced testing features
             initializeAdvancedFeatures();
             logToConsole('Advanced testing features ready: Automation, Templates, Metrics, Scenarios', 'success', 'app');
+
+            // Initialize self-healing monitor
+            initializeAutoHealer();
+            logToConsole('🔧 Self-healing test monitor initialized', 'success', 'dashboard');
             
             // Auto-run debug after initial load to help diagnose issues
             setTimeout(() => {
@@ -4516,19 +5486,9 @@ Include the exact code snippets that need to be changed.`;
                 runBrowserDebug();
             }, 3000);
             
-            // Auto-run infrastructure validation tests
-            setTimeout(() => {
-                logToConsole('🏗️  Auto-running infrastructure validation tests...', 'info');
-                logToConsole('These tests validate our diagnostic scripts and system health', 'info');
-                
-                // Run infrastructure tests automatically
-                const infrastructureTests = ['infra-1', 'infra-2', 'infra-3', 'infra-4', 'infra-5', 'infra-6'];
-                infrastructureTests.forEach((testId, index) => {
-                    setTimeout(() => {
-                        runSingleTest(testId);
-                    }, (index + 1) * 2000); // Stagger tests 2 seconds apart
-                });
-            }, 5000); // Start after debug analysis completes
+            // Infrastructure tests available for manual execution
+            logToConsole('🏗️  Infrastructure validation tests ready for manual execution', 'info');
+            logToConsole('Use the Tests tab to run infrastructure tests when needed', 'info');
         });
 
         // ============================================================
@@ -4622,7 +5582,7 @@ Include the exact code snippets that need to be changed.`;
             }
 
             listContainer.innerHTML = promptLibraryState.filteredPrompts.map(prompt => {
-                const isSelected = promptLibraryState.selectedPrompt?.id === prompt.id;
+                const isSelected = promptLibraryState.selectedPrompt?.prompt_id === prompt.id;
                 const tags = prompt.tags || [];
 
                 return `
@@ -4804,13 +5764,13 @@ Include the exact code snippets that need to be changed.`;
                     <div class="form-group">
                         <label class="form-label">Prompt Name</label>
                         <input type="text" class="form-input" id="prompt-name-input"
-                               value="${prompt.prompt_name}" onchange="markDirty()">
+                               value="${promptLibraryState.draftEdits?.name || prompt.prompt_name}" onchange="markDirty()">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <input type="text" class="form-input" id="prompt-description-input"
-                               value="${prompt.description || ''}" onchange="markDirty()">
+                               value="${promptLibraryState.draftEdits?.description || prompt.description || ''}" onchange="markDirty()">
                     </div>
 
                     <div class="form-group">
@@ -4872,6 +5832,16 @@ Include the exact code snippets that need to be changed.`;
 
         // Select version type for update
         function selectVersionType(type) {
+            // Cache current form values before changing type
+            if (promptLibraryState.selectedPrompt) {
+                promptLibraryState.draftEdits = {
+                    name: document.getElementById('prompt-name-input')?.value || '',
+                    description: document.getElementById('prompt-description-input')?.value || '',
+                    systemPrompt: document.getElementById('prompt-system-input')?.value || '',
+                    tag: document.getElementById('prompt-tag-select')?.value || ''
+                };
+            }
+            
             promptLibraryState.selectedVersionType = type;
             renderPromptEditor();
         }
@@ -4896,7 +5866,7 @@ Include the exact code snippets that need to be changed.`;
                         promptName: name,         // Server expects camelCase
                         description: description,
                         systemPrompt: systemPrompt,  // Server expects camelCase
-                        tags: [tag],              // Send as array with single tag
+                        tags: [...(prompt.tags || []).filter(t => t !== tag), tag], // Preserve existing tags, update current
                         isDefault: isDefault,
                         commitMessage: 'Draft saved via dashboard'
                     })
@@ -4940,7 +5910,7 @@ Include the exact code snippets that need to be changed.`;
                         promptName: name,              // Server expects camelCase
                         systemPrompt: systemPrompt,    // Server expects camelCase
                         versionType: versionType,      // Server expects camelCase
-                        tags: [tag],                   // Send as array with single tag
+                        tags: [...(prompt.tags || []).filter(t => t !== tag), tag], // Preserve existing tags, update current
                         isDefault: isDefault,
                         commitMessage: `${versionType} version update via dashboard`,
                         notes: description || '',
@@ -5041,7 +6011,12 @@ Include the exact code snippets that need to be changed.`;
         }
 
         // Setup event listeners for Prompt Library
+        let promptLibraryListenersInitialized = false;
+
         function setupPromptLibraryEventListeners() {
+            // Prevent duplicate listeners
+            if (promptLibraryListenersInitialized) return;
+            
             // Search input
             const searchInput = document.getElementById('prompt-search');
             if (searchInput) {
@@ -5069,6 +6044,8 @@ Include the exact code snippets that need to be changed.`;
             if (newPromptBtn) {
                 newPromptBtn.addEventListener('click', createNewPrompt);
             }
+            
+            promptLibraryListenersInitialized = true;
         }
 
         // ============================================================
@@ -5204,6 +6181,936 @@ Include the exact code snippets that need to be changed.`;
 
         // Add prompt library initialization to the existing switchTab override
         // This should be combined with the error monitoring switchTab override above
+
+        // ============================================================================
+        // HEALTH CHECK FUNCTIONALITY
+        // ============================================================================
+
+        // System scripts and services configuration
+        const SYSTEM_SCRIPTS = {
+            coreServices: [
+                {
+                    name: 'server.js',
+                    description: 'Main Express.js server with API endpoints and proxy configuration',
+                    command: 'node server.js',
+                    port: 3001,
+                    category: 'Core Services',
+                    essential: true
+                },
+                {
+                    name: 'Expo Development Server',
+                    description: 'React Native/Expo development server for main application',
+                    command: 'npx expo start --web --port 8081',
+                    port: 8081,
+                    category: 'Core Services',
+                    essential: true
+                }
+            ],
+            automationScripts: [
+                {
+                    name: 'session-logger.js',
+                    description: 'Automated session logging and CLAUDE.md context updates',
+                    command: 'node session-logger.js',
+                    status: 'ready',
+                    category: 'Automation Scripts'
+                },
+                {
+                    name: 'auto-remediation-service.js',
+                    description: 'Background service for automatic test failure detection and fixing',
+                    command: 'node auto-remediation-service.js start',
+                    status: 'ready',
+                    category: 'Automation Scripts'
+                },
+                {
+                    name: 'auto-init.js',
+                    description: 'Auto-initialization for Claude Code context loading',
+                    command: 'node auto-init.js',
+                    status: 'ready',
+                    category: 'Automation Scripts'
+                }
+            ],
+            revolutionarySystems: [
+                {
+                    name: 'prompt-analytics-engine.js',
+                    description: 'Phase 2: Advanced prompt analytics with A/B testing and performance metrics',
+                    command: 'node prompt-analytics-engine.js',
+                    status: 'ready',
+                    category: 'Revolutionary Systems'
+                },
+                {
+                    name: 'prompt-template-engine.js',
+                    description: 'Phase 2: Advanced template engine with Handlebars-style templating',
+                    command: 'node prompt-template-engine.js',
+                    status: 'ready',
+                    category: 'Revolutionary Systems'
+                },
+                {
+                    name: 'automation-workflow-engine.js',
+                    description: 'Phase 3: Advanced automation workflow engine',
+                    command: 'node automation-workflow-engine.js',
+                    status: 'ready',
+                    category: 'Revolutionary Systems'
+                },
+                {
+                    name: 'production-deployment-pipeline.js',
+                    description: 'Phase 3: Production deployment pipeline with CI/CD automation',
+                    command: 'node production-deployment-pipeline.js',
+                    status: 'ready',
+                    category: 'Revolutionary Systems'
+                }
+            ],
+            testDebugScripts: [
+                {
+                    name: 'test-auto-healer.js',
+                    description: '🔧 Self-healing test monitor - automatically detects and fixes test failures',
+                    command: 'node test-auto-healer.js --monitor',
+                    status: 'ready',
+                    category: 'Self-Healing System',
+                    background: true
+                },
+                {
+                    name: 'comprehensive-test-functions.js',
+                    description: '99 comprehensive tests across 11 categories for complete system validation',
+                    command: 'Browser-based execution',
+                    status: 'active',
+                    category: 'Test & Debug Scripts'
+                },
+                {
+                    name: 'infrastructure-tests.js',
+                    description: 'Infrastructure validation tests for system health monitoring',
+                    command: 'Browser-based execution',
+                    status: 'active',
+                    category: 'Test & Debug Scripts'
+                },
+                {
+                    name: 'generate-claude-prompt.js',
+                    description: '🤖 Generate Claude Code analysis request for test failures',
+                    command: 'node test-auto-healer.js --generate-prompt',
+                    status: 'ready',
+                    category: 'Self-Healing System'
+                },
+                {
+                    name: 'test-simulator.js',
+                    description: 'Direct simulator testing for chat functionality validation',
+                    command: 'node test-simulator.js',
+                    status: 'ready',
+                    category: 'Test & Debug Scripts'
+                },
+                {
+                    name: 'browser-debug.js',
+                    description: 'Browser debugging utilities for real-time issue detection',
+                    command: 'node browser-debug.js',
+                    status: 'ready',
+                    category: 'Test & Debug Scripts'
+                }
+            ],
+            dataAnalytics: [
+                {
+                    name: 'analyze-supabase-data.js',
+                    description: 'Supabase database analysis and data validation',
+                    command: 'node analyze-supabase-data.js',
+                    status: 'ready',
+                    category: 'Data & Analytics'
+                },
+                {
+                    name: 'detailed-supabase-analysis.js',
+                    description: 'Detailed database analysis with comprehensive reporting',
+                    command: 'node detailed-supabase-analysis.js',
+                    status: 'ready',
+                    category: 'Data & Analytics'
+                },
+                {
+                    name: 'monitor-chat-db.js',
+                    description: 'Real-time chat database monitoring and analysis',
+                    command: 'node monitor-chat-db.js',
+                    status: 'ready',
+                    category: 'Data & Analytics'
+                }
+            ],
+            infrastructure: [
+                {
+                    name: 'promptManager.js',
+                    description: 'Core prompt management system with versioning and validation',
+                    command: 'Integrated service',
+                    status: 'active',
+                    category: 'Infrastructure'
+                },
+                {
+                    name: 'claude-hooks.json',
+                    description: 'Claude Code hooks configuration for automated context loading',
+                    command: 'Configuration file',
+                    status: 'active',
+                    category: 'Infrastructure'
+                },
+                {
+                    name: 'CLAUDE.md',
+                    description: 'Comprehensive project documentation with auto-updates',
+                    command: 'Documentation system',
+                    status: 'active',
+                    category: 'Infrastructure'
+                }
+            ]
+        };
+
+        // Health check state
+        let healthLogs = [];
+
+        // Initialize Health Check tab
+        function initializeHealthCheck() {
+            logToHealthCheck('🏥 Health Check initialized', 'info');
+            refreshHealthStatus();
+            initializeHealthTable();
+        }
+
+        // Refresh all health status
+        async function refreshHealthStatus() {
+            logToHealthCheck('🔄 Refreshing system health status...', 'info');
+            
+            let totalScripts = 0;
+            let runningServices = 0;
+            let failedServices = 0;
+
+            // Process each category
+            for (const [categoryKey, scripts] of Object.entries(SYSTEM_SCRIPTS)) {
+                const categoryElement = document.getElementById(categoryKey.replace(/([A-Z])/g, '-$1').toLowerCase() + '-items');
+                const countElement = document.getElementById(categoryKey.replace(/([A-Z])/g, '-$1').toLowerCase() + '-count');
+                
+                if (!categoryElement || !countElement) continue;
+
+                categoryElement.innerHTML = '';
+                let categoryRunning = 0;
+
+                for (const script of scripts) {
+                    totalScripts++;
+                    const status = await checkScriptStatus(script);
+                    
+                    if (status.running) {
+                        runningServices++;
+                        categoryRunning++;
+                    } else if (status.error) {
+                        failedServices++;
+                    }
+
+                    const scriptElement = createHealthItem(script, status);
+                    categoryElement.appendChild(scriptElement);
+                }
+
+                countElement.textContent = `${categoryRunning}/${scripts.length}`;
+            }
+
+            // Update overview stats
+            document.getElementById('total-scripts').textContent = totalScripts;
+            document.getElementById('running-services').textContent = runningServices;
+            document.getElementById('failed-services').textContent = failedServices;
+            
+            const healthPercentage = totalScripts > 0 ? Math.round((runningServices / totalScripts) * 100) : 100;
+            document.getElementById('system-health').textContent = healthPercentage + '%';
+            
+            const healthElement = document.getElementById('system-health');
+            if (healthPercentage >= 80) {
+                healthElement.style.color = '#34c759';
+            } else if (healthPercentage >= 60) {
+                healthElement.style.color = '#ff9500';
+            } else {
+                healthElement.style.color = '#ff3b30';
+            }
+
+            logToHealthCheck(`✅ Health check complete: ${runningServices}/${totalScripts} services running (${healthPercentage}%)`, 'success');
+        }
+
+        // Check individual script status
+        async function checkScriptStatus(script) {
+            try {
+                if (script.port) {
+                    // Check if service is running on port
+                    try {
+                        const response = await fetch(`${window.location.origin.replace(/:\d+/, '')}:${script.port}/`, { 
+                            method: 'HEAD',
+                            mode: 'no-cors'
+                        });
+                        
+                        return {
+                            running: true,
+                            status: 'running',
+                            message: `Service active on port ${script.port}`
+                        };
+                    } catch (error) {
+                        return {
+                            running: false,
+                            status: 'stopped',
+                            message: `Service not responding on port ${script.port}`
+                        };
+                    }
+                } else if (script.status === 'active') {
+                    return {
+                        running: true,
+                        status: 'running',
+                        message: 'Active and integrated'
+                    };
+                } else if (script.status === 'ready') {
+                    return {
+                        running: false,
+                        status: 'stopped',
+                        message: 'Ready to run'
+                    };
+                }
+            } catch (error) {
+                return {
+                    running: false,
+                    status: 'error',
+                    error: true,
+                    message: error.message
+                };
+            }
+            
+            return {
+                running: false,
+                status: 'stopped',
+                message: 'Not running'
+            };
+        }
+
+        // Create health item element
+        function createHealthItem(script, status) {
+            const item = document.createElement('div');
+            item.className = 'health-item';
+            
+            const statusClass = status.running ? 'running' : 
+                               status.error ? 'error' : 'stopped';
+            
+            const statusText = status.running ? 'Running' :
+                              status.error ? 'Error' : 'Stopped';
+
+            item.innerHTML = `
+                <div class="health-item-info">
+                    <div class="health-item-name">${script.name}</div>
+                    <div class="health-item-description">${script.description}</div>
+                </div>
+                <div class="health-item-status">
+                    <div class="health-status-indicator ${statusClass}"></div>
+                    <div class="health-status-text">${statusText}</div>
+                    ${script.command && !script.command.includes('Browser-based') && !script.command.includes('Integrated') && !script.command.includes('Configuration') && !script.command.includes('Documentation') ? 
+                        `<button class="health-action-btn" onclick="executeScript('${script.command}')">Run</button>` : ''
+                    }
+                </div>
+            `;
+            
+            return item;
+        }
+
+        // Execute script command
+        function executeScript(command) {
+            logToHealthCheck(`🚀 Executing: ${command}`, 'info');
+            // In a real implementation, this would execute the command
+            logToHealthCheck(`⚠️ Script execution requires manual terminal operation`, 'warning');
+        }
+
+        // Log to health check console
+        function logToHealthCheck(message, level = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = {
+                timestamp,
+                message,
+                level
+            };
+            
+            healthLogs.unshift(logEntry);
+            
+            // Keep only last 50 entries
+            if (healthLogs.length > 50) {
+                healthLogs = healthLogs.slice(0, 50);
+            }
+            
+            updateHealthLogs();
+        }
+
+        // Update health logs display
+        function updateHealthLogs() {
+            const logsContainer = document.getElementById('health-logs-content');
+            if (!logsContainer) return;
+            
+            logsContainer.innerHTML = healthLogs.map(log => `
+                <div class="health-log-entry">
+                    <span class="health-log-timestamp">${log.timestamp}</span>
+                    <span class="health-log-message health-log-level-${log.level}">${log.message}</span>
+                </div>
+            `).join('');
+        }
+
+        // Clear health logs
+        function clearHealthLogs() {
+            healthLogs = [];
+            updateHealthLogs();
+            logToHealthCheck('🧹 Health logs cleared', 'info');
+        }
+
+        // ============================================
+        // HEALTH TABLE FUNCTIONS
+        // ============================================
+
+        // Use single shared healthTableData (no local copy)
+        window.healthTableData = window.healthTableData || {};
+
+        // Initialize health table
+        function initializeHealthTable() {
+            populateHealthTable();
+            updateHealthSummary();
+        }
+
+        // Populate the health table with consolidated health scripts
+        function populateHealthTable() {
+            const tableBody = document.getElementById('health-table-body');
+            if (!tableBody) return;
+
+            // Initialize healthTableData if it doesn't exist
+            if (!window.healthTableData) {
+                window.healthTableData = {};
+            }
+
+            // Define all available scripts
+            const availableScripts = {
+                // Health & Monitoring Scripts
+                'system-health': {
+                    name: 'System Health',
+                    description: 'Core system components, network connectivity, and resource monitoring',
+                    category: 'Health',
+                    module: 'Infrastructure'
+                },
+                'development-health': {
+                    name: 'Development Environment',
+                    description: 'Development tools, syntax validation, and debugging capabilities',
+                    category: 'Health',
+                    module: 'Tools'
+                },
+                'testing-health': {
+                    name: 'Testing Infrastructure',
+                    description: 'Testing framework, automation capabilities, and test environment validation',
+                    category: 'Health',
+                    module: 'Quality'
+                },
+                'continuous-monitor': {
+                    name: 'Continuous Monitor',
+                    description: '24/7 production monitoring with alerting and automatic recovery',
+                    category: 'Monitoring',
+                    module: 'Production'
+                },
+                
+                // Development & Automation Scripts  
+                'dev-server': {
+                    name: 'Development Server',
+                    description: 'Enhanced development server with auto-restart and coordination',
+                    category: 'Development',
+                    module: 'Server'
+                },
+                'init': {
+                    name: 'Context Initialization',
+                    description: 'Initialize Cupido context for Claude Code sessions',
+                    category: 'Development', 
+                    module: 'Context'
+                },
+                'setup-context-automation': {
+                    name: 'Setup Context Automation',
+                    description: 'Configure automated context preservation and loading system',
+                    category: 'Development',
+                    module: 'Automation'
+                },
+                'install-claude-hooks': {
+                    name: 'Install Claude Hooks',
+                    description: 'Install Claude Code hooks for seamless workflow integration',
+                    category: 'Development',
+                    module: 'Integration'
+                },
+                
+                // Testing & Debugging Scripts
+                'auto-test-reflect': {
+                    name: 'Auto Test Reflect',
+                    description: 'Automated Chrome-based UI testing for Reflect tab functionality',
+                    category: 'Testing',
+                    module: 'Automation'
+                },
+                'debug-browser-reality': {
+                    name: 'Debug Browser Reality',
+                    description: 'Advanced browser state debugging and analysis',
+                    category: 'Debug',
+                    module: 'Browser'
+                },
+                
+                // Deployment & Build Scripts
+                'deploy': {
+                    name: 'Deploy',
+                    description: 'Build for web and deploy to Surge with automated validation',
+                    category: 'Deployment',
+                    module: 'Production'
+                },
+                
+                // Utilities
+                'version-control': {
+                    name: 'Version Control',
+                    description: 'App.tsx backup/restore system with version history',
+                    category: 'Utilities',
+                    module: 'Backup'
+                },
+                
+                // JavaScript Utilities
+                'analyze-supabase-data': {
+                    name: 'Analyze Supabase Data',
+                    description: 'Comprehensive Supabase database analysis and insights',
+                    category: 'Analysis',
+                    module: 'Database'
+                },
+                'test-simulator': {
+                    name: 'Test Simulator',
+                    description: 'Test simulator API endpoints and persona responses',
+                    category: 'Testing',
+                    module: 'Simulator'
+                },
+                'import-prompts': {
+                    name: 'Import Prompts',
+                    description: 'Import prompts from JSON to Supabase database',
+                    category: 'Management',
+                    module: 'Prompts'
+                },
+                'check-supabase-schema': {
+                    name: 'Check Supabase Schema',
+                    description: 'Validate and analyze Supabase database schema',
+                    category: 'Analysis',
+                    module: 'Database'
+                },
+                'session-logger': {
+                    name: 'Session Logger',
+                    description: 'Log and track development session activities',
+                    category: 'Development',
+                    module: 'Logging'
+                },
+                'auto-init': {
+                    name: 'Auto Initialize',
+                    description: 'Automatic context initialization for development sessions',
+                    category: 'Development',
+                    module: 'Context'
+                }
+            };
+
+            const rows = Object.entries(availableScripts).map(([scriptId, metadata]) => {
+                const status = window.healthTableData[scriptId] || { status: 'pending', lastRun: null, message: null };
+                return createHealthScriptRow(scriptId, metadata, status);
+            }).join('');
+
+            tableBody.innerHTML = rows;
+        }
+
+        // Create a table row for a health script
+        function createHealthScriptRow(scriptId, metadata, status) {
+            const statusClass = status.status;
+            const statusIcon = getStatusIcon(status.status);
+            const lastRun = status.lastRun ? new Date(status.lastRun).toLocaleTimeString() : 'Never';
+
+            return `
+                <tr data-script-id="${scriptId}">
+                    <td>
+                        <span class="health-status ${statusClass}">
+                            ${statusIcon}
+                            ${status.status.charAt(0).toUpperCase() + status.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>${metadata.name}</strong>
+                        <div style="font-size: 12px; color: #8E8E93; margin-top: 2px;">
+                            ${metadata.description}
+                        </div>
+                    </td>
+                    <td>${metadata.category}</td>
+                    <td>${metadata.module}</td>
+                    <td>${lastRun}</td>
+                    <td>
+                        <button class="test-action-btn" onclick="runSingleHealthScript('${scriptId}')">
+                            Run
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Create a table row for a test
+        function createHealthTableRow(testId, metadata, status) {
+            const statusClass = status.status;
+            const statusIcon = getStatusIcon(status.status);
+            const lastRun = status.lastRun ? new Date(status.lastRun).toLocaleTimeString() : 'Never';
+
+            return `
+                <tr>
+                    <td>
+                        <span class="health-status ${statusClass}">
+                            ${statusIcon}
+                            ${status.status.charAt(0).toUpperCase() + status.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>${metadata.name}</strong>
+                        <div style="font-size: 12px; color: #8E8E93; margin-top: 2px;">
+                            ${metadata.description}
+                        </div>
+                    </td>
+                    <td>${metadata.category}</td>
+                    <td>${metadata.module}</td>
+                    <td>${lastRun}</td>
+                    <td>
+                        <button class="test-action-btn" onclick="runScript('${testId}')">
+                            Run
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Get status icon
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'passed': return '✓';
+                case 'failed': return '✗';
+                case 'pending': return '○';
+                case 'running': return '⟳';
+                default: return '○';
+            }
+        }
+
+        // Update health table with script results
+        function updateHealthTableWithScript(scriptId, name, description, status, message) {
+            // Initialize healthTableData if it doesn't exist for scripts
+            if (!window.healthTableData) {
+                window.healthTableData = {};
+            }
+            
+            window.healthTableData[scriptId] = {
+                status: status,
+                lastRun: new Date().toISOString(),
+                message: message || ''
+            };
+            
+            // Create a simple health table entry for scripts
+            const tableBody = document.getElementById('health-table-body');
+            if (!tableBody) return;
+            
+            const statusIcon = getStatusIcon(status);
+            const lastRun = new Date().toLocaleTimeString();
+            
+            // Find existing row or create new one
+            let existingRow = document.querySelector(`tr[data-script-id="${scriptId}"]`);
+            
+            const rowHTML = `
+                <tr data-script-id="${scriptId}">
+                    <td>
+                        <span class="health-status ${status}">
+                            ${statusIcon}
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>${name}</strong>
+                        <div style="font-size: 12px; color: #8E8E93; margin-top: 2px;">
+                            ${description}
+                        </div>
+                    </td>
+                    <td>Health Check</td>
+                    <td>System</td>
+                    <td>${lastRun}</td>
+                    <td>
+                        <button class="test-action-btn" onclick="runSingleHealthScript('${scriptId}')">
+                            Run
+                        </button>
+                    </td>
+                </tr>
+            `;
+            
+            if (existingRow) {
+                existingRow.outerHTML = rowHTML;
+            } else {
+                tableBody.insertAdjacentHTML('beforeend', rowHTML);
+            }
+        }
+
+        // Run a single health script
+        async function runSingleHealthScript(scriptId) {
+            console.log(`Running health script: ${scriptId}`);
+            
+            try {
+                const response = await fetch(`/api/run-script/${scriptId}`);
+                const output = await response.text();
+                
+                if (response.ok) {
+                    console.log(`${scriptId} completed successfully`);
+                    logToHealthCheck(`✅ ${scriptId} completed successfully`, 'success');
+                    
+                    const scriptNames = {
+                        'system-health': 'System Health',
+                        'development-health': 'Development Environment', 
+                        'testing-health': 'Testing Infrastructure',
+                        'continuous-monitor': 'Continuous Monitor',
+                        'dev-server': 'Development Server',
+                        'init': 'Context Initialization',
+                        'setup-context-automation': 'Setup Context Automation',
+                        'install-claude-hooks': 'Install Claude Hooks',
+                        'auto-test-reflect': 'Auto Test Reflect',
+                        'debug-browser-reality': 'Debug Browser Reality',
+                        'deploy': 'Deploy',
+                        'version-control': 'Version Control',
+                        'analyze-supabase-data': 'Analyze Supabase Data',
+                        'test-simulator': 'Test Simulator',
+                        'import-prompts': 'Import Prompts',
+                        'check-supabase-schema': 'Check Supabase Schema',
+                        'session-logger': 'Session Logger',
+                        'auto-init': 'Auto Initialize'
+                    };
+                    
+                    const scriptDescriptions = {
+                        'system-health': 'System core components and connectivity',
+                        'development-health': 'Development tools and environment validation',
+                        'testing-health': 'Testing framework and automation validation',
+                        'continuous-monitor': '24/7 production monitoring with alerting',
+                        'dev-server': 'Enhanced development server with coordination',
+                        'init': 'Initialize Cupido context for Claude Code sessions',
+                        'setup-context-automation': 'Configure automated context preservation',
+                        'install-claude-hooks': 'Install Claude Code hooks for seamless workflow',
+                        'auto-test-reflect': 'Automated Chrome-based UI testing',
+                        'debug-browser-reality': 'Advanced browser state debugging',
+                        'deploy': 'Build for web and deploy to Surge',
+                        'version-control': 'App.tsx backup/restore system',
+                        'analyze-supabase-data': 'Comprehensive Supabase database analysis',
+                        'test-simulator': 'Test simulator API endpoints and responses',
+                        'import-prompts': 'Import prompts from JSON to Supabase',
+                        'check-supabase-schema': 'Validate Supabase database schema',
+                        'session-logger': 'Log and track development session activities',
+                        'auto-init': 'Automatic context initialization'
+                    };
+                    
+                    updateHealthTableWithScript(
+                        scriptId, 
+                        scriptNames[scriptId] || scriptId, 
+                        scriptDescriptions[scriptId] || 'Health check script',
+                        'passed', 
+                        'Health check completed successfully'
+                    );
+                } else {
+                    console.error(`${scriptId} failed`);
+                    logToHealthCheck(`❌ ${scriptId} failed`, 'error');
+                    updateHealthTableWithScript(scriptId, scriptId, 'Health check script', 'failed', 'Health check failed');
+                }
+            } catch (error) {
+                console.error(`Error running ${scriptId}:`, error);
+                logToHealthCheck(`❌ ${scriptId} error: ${error.message}`, 'error');
+                updateHealthTableWithScript(scriptId, scriptId, 'Health check script', 'failed', error.message);
+            }
+        }
+
+        // Run all health checks using consolidated scripts
+        async function runAllHealthChecks() {
+            console.log('🚀 Starting system health checks...');
+            logToHealthCheck('🚀 Starting comprehensive system health check...', 'info');
+            
+            const button = document.querySelector('.health-run-btn');
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Running...
+                `;
+            }
+
+            try {
+                let healthChecksPassed = 0;
+                let totalHealthChecks = 3; // We have 3 consolidated scripts
+
+                // Run System Health Check
+                try {
+                    logToHealthCheck('🔄 Running system health check...', 'info');
+                    const systemHealthResponse = await fetch('/api/run-script/system-health');
+                    const systemHealthText = await systemHealthResponse.text();
+                    
+                    if (systemHealthResponse.ok) {
+                        logToHealthCheck('✅ System health check completed', 'success');
+                        console.log('System Health Output:', systemHealthText);
+                        healthChecksPassed++;
+                        
+                        // Update health table with system health status
+                        updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'passed', 'All system components operational');
+                    } else {
+                        logToHealthCheck('❌ System health check failed', 'error');
+                        updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'failed', 'System health check failed');
+                    }
+                } catch (error) {
+                    console.error('System health check error:', error);
+                    logToHealthCheck(`❌ System health check failed: ${error.message}`, 'error');
+                    updateHealthTableWithScript('system-health', 'System Health', 'System core components and connectivity', 'failed', error.message);
+                }
+
+                // Run Development Health Check
+                try {
+                    logToHealthCheck('🔄 Running development environment check...', 'info');
+                    const devHealthResponse = await fetch('/api/run-script/development-health');
+                    const devHealthText = await devHealthResponse.text();
+                    
+                    if (devHealthResponse.ok) {
+                        logToHealthCheck('✅ Development environment check completed', 'success');
+                        console.log('Development Health Output:', devHealthText);
+                        healthChecksPassed++;
+                        
+                        updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'passed', 'Development environment healthy');
+                    } else {
+                        logToHealthCheck('❌ Development environment check failed', 'error');
+                        updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'failed', 'Development environment check failed');
+                    }
+                } catch (error) {
+                    console.error('Development health check error:', error);
+                    logToHealthCheck(`❌ Development environment check failed: ${error.message}`, 'error');
+                    updateHealthTableWithScript('development-health', 'Development Environment', 'Development tools and environment validation', 'failed', error.message);
+                }
+
+                // Run Testing Infrastructure Health Check
+                try {
+                    logToHealthCheck('🔄 Running testing infrastructure check...', 'info');
+                    const testingHealthResponse = await fetch('/api/run-script/testing-health');
+                    const testingHealthText = await testingHealthResponse.text();
+                    
+                    if (testingHealthResponse.ok) {
+                        logToHealthCheck('✅ Testing infrastructure check completed', 'success');
+                        console.log('Testing Health Output:', testingHealthText);
+                        healthChecksPassed++;
+                        
+                        updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'passed', 'Testing infrastructure healthy');
+                    } else {
+                        logToHealthCheck('❌ Testing infrastructure check failed', 'error');
+                        updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'failed', 'Testing infrastructure check failed');
+                    }
+                } catch (error) {
+                    console.error('Testing health check error:', error);
+                    logToHealthCheck(`❌ Testing infrastructure check failed: ${error.message}`, 'error');
+                    updateHealthTableWithScript('testing-health', 'Testing Infrastructure', 'Testing framework and automation validation', 'failed', error.message);
+                }
+                
+                // Summary
+                logToHealthCheck(`🏁 Health check complete: ${healthChecksPassed}/${totalHealthChecks} health checks passed`, 'info');
+                
+                // Update summary display
+                updateHealthSummary();
+                
+            } catch (error) {
+                console.error('Health check failed:', error);
+                logToHealthCheck(`❌ Health check failed: ${error.message}`, 'error');
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1l7 4-7 4L1 5l7-4z" fill="currentColor"/>
+                        </svg>
+                        Run Health Checks
+                    `;
+                }
+                populateHealthTable();
+                updateHealthSummary();
+            }
+        }
+
+        // Run a script
+        async function runScript(scriptId) {
+            // Use shared available scripts definition
+            const availableScripts = HEALTH_AVAILABLE_SCRIPTS;
+
+            if (!availableScripts[scriptId]) {
+                console.warn(`Script not found: ${scriptId}`);
+                return;
+            }
+
+            window.healthTableData = window.healthTableData || {};
+            window.healthTableData[scriptId] = { status: 'running', lastRun: new Date(), message: 'Running...' };
+            populateHealthTable();
+            
+            logToConsole(`🚀 Started script: ${availableScripts[scriptId]?.name || scriptId}`, 'info', 'script');
+
+            try {
+                const response = await fetch(`/api/run-script/${scriptId}`);
+                const result = await response.text();
+                const success = response.ok;
+                
+                window.healthTableData[scriptId] = {
+                    status: success ? 'passed' : 'failed',
+                    lastRun: new Date(),
+                    message: success ? 'Completed successfully' : result.substring(0, 100)
+                };
+                populateHealthTable();
+                
+                const scriptName = availableScripts[scriptId]?.name || scriptId;
+                if (success) {
+                    logToConsole(`✅ Script completed: ${scriptName}`, 'info', 'script');
+                } else {
+                    logToConsole(`❌ Script failed: ${scriptName} - ${result.substring(0, 50)}`, 'error', 'script');
+                }
+            } catch (error) {
+                window.healthTableData[scriptId] = {
+                    status: 'failed',
+                    lastRun: new Date(),
+                    message: error.message
+                };
+                populateHealthTable();
+                
+                const scriptName = availableScripts[scriptId]?.name || scriptId;
+                logToConsole(`💥 Script error: ${scriptName} - ${error.message}`, 'error', 'script');
+            }
+
+            updateHealthSummary();
+        }
+
+
+        // Update health table with test results
+        function updateHealthTableResults(results) {
+            if (!results || typeof results !== 'object') return;
+
+            Object.entries(results).forEach(([testId, result]) => {
+                healthTableData[testId] = {
+                    status: result.pass ? 'passed' : 'failed',
+                    lastRun: new Date(),
+                    message: result.message
+                };
+            });
+        }
+
+        // Refresh health table
+        function refreshHealthTable() {
+            populateHealthTable();
+            updateHealthSummary();
+            logToHealthCheck('🔄 Health table refreshed', 'info');
+        }
+
+        // Update health summary stats
+        function updateHealthSummary() {
+            // Use shared available scripts definition
+            const availableScripts = HEALTH_AVAILABLE_SCRIPTS;
+            
+            const totalScripts = Object.keys(availableScripts).length;
+            const passedScripts = Object.values(window.healthTableData || {}).filter(script => script.status === 'passed').length;
+            const failedScripts = Object.values(window.healthTableData || {}).filter(script => script.status === 'failed').length;
+            const availableCount = totalScripts; // All scripts are available
+            const healthPercentage = totalScripts > 0 ? Math.round((passedScripts / totalScripts) * 100) : 0;
+
+            // Update summary display
+            const passedEl = document.getElementById('passed-count');
+            const failedEl = document.getElementById('failed-count');
+            const pendingEl = document.getElementById('pending-count');
+            const healthEl = document.getElementById('health-percentage');
+
+            if (passedEl) passedEl.textContent = passedScripts;
+            if (failedEl) failedEl.textContent = failedScripts;
+            if (pendingEl) pendingEl.textContent = availableCount;
+            if (healthEl) healthEl.textContent = `${healthPercentage}%`;
+        }
+
+        // Auto-refresh health table every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('health-tab').classList.contains('active')) {
+                refreshHealthTable();
+            }
+        }, 30000);
     </script>
 </body>
 </html>

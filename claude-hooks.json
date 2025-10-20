@@ -1,0 +1,90 @@
+{
+  "hooks": [
+    {
+      "name": "cupido_session_start",
+      "description": "Auto-initialize Cupido context when entering the project directory",
+      "trigger": {
+        "type": "SessionStart",
+        "conditions": {
+          "working_directory_contains": "Cupido",
+          "file_exists": ["CLAUDE.md", "init.sh"]
+        }
+      },
+      "action": {
+        "type": "bash",
+        "command": "./init.sh",
+        "async": false,
+        "show_output": true
+      }
+    },
+    {
+      "name": "cupido_activity_logger", 
+      "description": "Log significant activities to maintain context",
+      "trigger": {
+        "type": "PostToolUse",
+        "tools": ["Write", "Edit", "MultiEdit", "Bash"],
+        "conditions": {
+          "working_directory_contains": "Cupido"
+        }
+      },
+      "action": {
+        "type": "bash",
+        "command": "node session-logger.js log '${tool_name}' '${description}' ${file_paths}",
+        "async": true,
+        "show_output": false
+      }
+    },
+    {
+      "name": "cupido_context_update",
+      "description": "Update CLAUDE.md when major changes occur",
+      "trigger": {
+        "type": "PostToolUse", 
+        "tools": ["Write", "MultiEdit"],
+        "conditions": {
+          "working_directory_contains": "Cupido",
+          "file_extensions": [".js", ".html", ".json", ".md"]
+        }
+      },
+      "action": {
+        "type": "bash",
+        "command": "node session-logger.js log 'file_modification' 'Modified ${file_name}' '${file_path}'",
+        "async": true,
+        "show_output": false
+      }
+    },
+    {
+      "name": "cupido_health_check",
+      "description": "Periodic health check and context validation",
+      "trigger": {
+        "type": "UserPromptSubmit",
+        "conditions": {
+          "working_directory_contains": "Cupido",
+          "prompt_contains": ["status", "health", "check", "context"]
+        }
+      },
+      "action": {
+        "type": "bash",
+        "command": "node init-context.js",
+        "async": false,
+        "show_output": true
+      }
+    }
+  ],
+  "settings": {
+    "enabled": true,
+    "debug_mode": false,
+    "timeout": 30000,
+    "working_directory": "/Users/kishore/Desktop/Claude-experiments/Cupido"
+  },
+  "security": {
+    "warning": "These hooks execute shell commands automatically. Review carefully!",
+    "allowed_commands": [
+      "./init.sh",
+      "node init-context.js", 
+      "node session-logger.js"
+    ],
+    "restricted_paths": [
+      "/Users/kishore/Desktop/Claude-experiments/Cupido"
+    ]
+  }
+}
