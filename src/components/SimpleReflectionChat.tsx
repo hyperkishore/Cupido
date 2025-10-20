@@ -776,10 +776,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         throw new Error('Failed to save image attachment');
       }
 
-      // Create user message with image
+      // Create user message with image (will be updated with description)
       const userMessage = await chatDatabase.saveMessage(
         currentConversation.id,
-        'Shared an image',
+        'Image uploaded', // Temporary text, will be updated
         false, // is_bot
         undefined,
         { hasImage: true, imageAttachmentId: imageAttachment.id }
@@ -788,7 +788,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       if (userMessage) {
         const messageWithImage: Message = {
           id: userMessage.id,
-          text: 'Shared an image',
+          text: '', // Hide text for image messages
           isBot: false,
           timestamp: new Date(userMessage.created_at),
           imageAttachments: [imageAttachment]
@@ -799,11 +799,39 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         // Generate AI response with image
         setIsTyping(true);
         try {
-          const promptText = "I just shared an image with you. Please analyze what you see and tell me about it. What details do you notice? What story might this image tell?";
+          // Step 1: Get a brief description of the image for context
+          const descriptionPrompt = "Please describe this image in one concise sentence, focusing on the main subject and setting. Keep it under 20 words.";
+          
+          const descriptionResponse = await chatAiService.generateResponseWithImage(
+            descriptionPrompt,
+            [], // No conversation history for description
+            0,
+            { base64: imageData.base64, mimeType: imageData.mimeType }
+          );
+
+          const imageDescription = descriptionResponse.message;
+          console.log('🖼️ Generated image description:', imageDescription);
+
+          // Step 2: Update the user message with the image description for context
+          await chatDatabase.saveMessage(
+            currentConversation.id,
+            `[Image: ${imageDescription}]`,
+            false, // user message
+            undefined,
+            { 
+              hasImage: true, 
+              imageAttachmentId: imageAttachment.id,
+              imageDescription: imageDescription,
+              isDescriptiveText: true
+            }
+          );
+
+          // Step 3: Generate the main AI response with full context
+          const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
           
           const aiResponse = await chatAiService.generateResponseWithImage(
-            promptText,
-            [...conversationHistory, { role: 'user' as const, content: promptText }],
+            conversationPrompt,
+            [...conversationHistory, { role: 'user' as const, content: `[Image: ${imageDescription}]` }],
             conversationCount,
             { base64: imageData.base64, mimeType: imageData.mimeType }
           );
@@ -815,7 +843,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             {
               model: aiResponse.usedModel,
               analyzedAt: new Date().toISOString(),
-              promptUsed: promptText
+              promptUsed: conversationPrompt,
+              imageDescription: imageDescription
             }
           );
 
@@ -838,10 +867,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             setMessages(prev => [...prev, botMessage]);
           }
 
-          // Update conversation history
+          // Update conversation history WITH image description for future context
           setConversationHistory([
             ...conversationHistory,
-            { role: 'user', content: promptText },
+            { role: 'user', content: `[Image: ${imageDescription}]` },
             { role: 'assistant', content: aiResponse.message }
           ]);
 
@@ -1098,7 +1127,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 isFromUser={!message.isBot}
                 message={imgIndex === 0 ? message.text : undefined} // Only show text on first image
                 timestamp={message.timestamp.toISOString()}
-                showMetadata={true}
+                showMetadata={false}
               />
             ));
           }

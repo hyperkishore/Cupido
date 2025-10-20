@@ -2464,7 +2464,7 @@
             <div class="controls-bar">
                 <div class="controls-left">
                     <select id="test-scope" onchange="filterTestsByCategory()">
-                        <option value="all" id="all-tests-option">All Tests (81)</option>
+                        <option value="all" id="all-tests-option">All Tests (89)</option>
                         <option value="foundation">Foundation Tests (5)</option>
                         <option value="prompts">Prompt Management (3)</option>
                         <option value="console">Console Error Detection (5)</option>
@@ -2478,6 +2478,7 @@
                         <option value="api">API & Performance (4)</option>
                         <option value="simulator">Simulator Testing (18)</option>
                         <option value="infra">Infrastructure Validation (6)</option>
+                        <option value="image">Image Upload & Vision (8)</option>
                     </select>
                     <button class="btn btn-primary" onclick="runSelectedTests()">Run Tests</button>
                     <button class="btn btn-danger" onclick="forceResetTests()" title="Force reset stuck tests">Reset Tests</button>
@@ -3190,7 +3191,8 @@
             state: { name: 'State Management', count: 6 },
             api: { name: 'API & Performance', count: 4 },
             simulator: { name: 'Simulator Testing', count: 18 },
-            infra: { name: 'Infrastructure Validation', count: 6 }
+            infra: { name: 'Infrastructure Validation', count: 6 },
+            image: { name: 'Image Upload & Vision', count: 8 }
         };
 
         // Initialize tests
