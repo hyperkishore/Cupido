@@ -5130,9 +5130,9 @@ Include the exact code snippets that need to be changed.`;
 
                     case 'chat-exported':
                         // Handle chat export response from TestBridge
-                        const chatData = event.data.payload;
-                        if (chatData && event.data.success) {
-                            logToConsole(`✅ Chat exported: ${chatData.messageCount} messages`, 'success', 'app');
+                        const exportedChatData = event.data.payload;
+                        if (exportedChatData && event.data.success) {
+                            logToConsole(`✅ Chat exported: ${exportedChatData.messageCount} messages`, 'success', 'app');
                         } else {
                             logToConsole('❌ Chat export failed', 'error', 'app');
                         }
