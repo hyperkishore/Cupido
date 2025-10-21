@@ -7,6 +7,12 @@ export interface ChatConversation {
   title?: string;
   created_at: string;
   updated_at: string;
+  // Context strategy fields
+  conversation_summary?: string;
+  summary_token_count?: number;
+  total_messages?: number;
+  total_tokens?: number;
+  last_summary_update?: string;
 }
 
 export interface ChatMessage {
@@ -20,8 +26,15 @@ export interface ChatMessage {
     tags?: string[];
     response_time?: number;
     token_count?: number;
+    // Context strategy fields
+    estimated_tokens?: number;
+    message_type?: 'user' | 'assistant' | 'system' | 'image_upload';
+    context_weight?: number; // Importance for summary inclusion
+    image_references?: string[]; // [Image:id:1234] style references
   };
   created_at: string;
+  // Pre-computed for performance
+  estimated_tokens?: number;
 }
 
 export interface UserProfile {
@@ -47,6 +60,48 @@ export interface ImageAttachment {
   created_at: string;
   analyzed_at?: string;
   metadata?: any;
+}
+
+// CONTEXT STRATEGY: Active memory management interfaces
+export interface ConversationTurn {
+  messageId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  estimatedTokens: number;
+  metadata?: {
+    imageReferences?: string[];
+    contextWeight?: number;
+    messageType?: string;
+  };
+}
+
+export interface ConversationContext {
+  conversationId: string;
+  // Active memory - most recent turns kept verbatim
+  recentTurns: ConversationTurn[];
+  // Compressed memory - older context summarized
+  conversationSummary: string;
+  summaryTokenCount: number;
+  // Performance tracking
+  totalMessages: number;
+  totalTokens: number;
+  lastSummaryUpdate: string;
+  // Configuration
+  maxRecentTurns: number;
+  maxTokensBeforeSummary: number;
+}
+
+export interface ContextAssembly {
+  // For Claude prompt
+  systemMemory: string; // conversationSummary
+  recentMessages: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  // Performance metadata
+  totalTokensEstimate: number;
+  contextStrategy: 'full' | 'summarized' | 'minimal';
 }
 
 class ChatDatabaseService {
@@ -269,14 +324,21 @@ class ChatDatabaseService {
     }
   }
 
-  // Get chat history for a conversation
-  async getChatHistory(conversationId: string, limit: number = 200): Promise<ChatMessage[]> {
+  // Get chat history for a conversation with pagination support
+  async getChatHistory(conversationId: string, limit: number = 200, beforeTimestamp?: string): Promise<ChatMessage[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('chat_messages')
         .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
+        .eq('conversation_id', conversationId);
+      
+      // Add timestamp filter for pagination
+      if (beforeTimestamp) {
+        query = query.lt('created_at', beforeTimestamp);
+      }
+      
+      const { data, error } = await query
+        .order('created_at', { ascending: false }) // Get newest first for pagination
         .limit(limit);
 
       if (error) {
@@ -284,7 +346,8 @@ class ChatDatabaseService {
         return [];
       }
 
-      return data || [];
+      // Reverse to maintain chronological order (oldest first)
+      return (data || []).reverse();
     } catch (error) {
       console.error('Error in getChatHistory:', error);
       return [];
@@ -776,6 +839,143 @@ class ChatDatabaseService {
     } catch (error) {
       console.error('Error in clearConversationMessages:', error);
       return false;
+    }
+  }
+
+  // CONTEXT STRATEGY: Token estimation utility
+  estimateTokens(text: string): number {
+    // Rough approximation: 1 token ≈ 4 characters for English
+    // More accurate than word count, accounts for punctuation and spaces
+    const baseTokens = Math.ceil(text.length / 4);
+    
+    // Adjust for content type
+    const hasCode = /```|`[^`]+`/.test(text);
+    const hasEmojis = /[\u{1F300}-\u{1F9FF}]/u.test(text);
+    const hasLinks = /https?:\/\//.test(text);
+    
+    let multiplier = 1.0;
+    if (hasCode) multiplier += 0.2; // Code uses more tokens
+    if (hasEmojis) multiplier += 0.1; // Emojis can be multiple tokens
+    if (hasLinks) multiplier += 0.1; // URLs often tokenize unusually
+    
+    return Math.ceil(baseTokens * multiplier);
+  }
+
+  // CONTEXT STRATEGY: Save message with token estimation
+  async saveMessageWithTokens(
+    conversationId: string,
+    content: string,
+    isBot: boolean,
+    aiModel?: 'haiku' | 'sonnet',
+    metadata?: any
+  ): Promise<ChatMessage | null> {
+    const estimatedTokens = this.estimateTokens(content);
+    
+    const enrichedMetadata = {
+      ...metadata,
+      estimated_tokens: estimatedTokens,
+      message_type: isBot ? 'assistant' : 'user',
+      context_weight: metadata?.context_weight || 1.0
+    };
+
+    return this.saveMessage(conversationId, content, isBot, aiModel, enrichedMetadata);
+  }
+
+  // CONTEXT STRATEGY: Update conversation summary
+  async updateConversationSummary(
+    conversationId: string, 
+    summary: string, 
+    summaryTokenCount: number,
+    totalMessages: number,
+    totalTokens: number
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('chat_conversations')
+        .update({
+          conversation_summary: summary,
+          summary_token_count: summaryTokenCount,
+          total_messages: totalMessages,
+          total_tokens: totalTokens,
+          last_summary_update: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      if (error) {
+        console.error('Error updating conversation summary:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateConversationSummary:', error);
+      return false;
+    }
+  }
+
+  // CONTEXT STRATEGY: Get conversation with summary
+  async getConversationWithSummary(conversationId: string): Promise<ChatConversation | null> {
+    try {
+      const { data, error } = await supabase
+        .from('chat_conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching conversation with summary:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getConversationWithSummary:', error);
+      return null;
+    }
+  }
+
+  // CONTEXT STRATEGY: Get messages with token estimates for context building
+  async getMessagesForContext(
+    conversationId: string, 
+    limit: number = 20,
+    beforeTimestamp?: string
+  ): Promise<ConversationTurn[]> {
+    try {
+      let query = supabase
+        .from('chat_messages')
+        .select('id, content, is_bot, created_at, estimated_tokens, metadata')
+        .eq('conversation_id', conversationId);
+      
+      if (beforeTimestamp) {
+        query = query.lt('created_at', beforeTimestamp);
+      }
+      
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching messages for context:', error);
+        return [];
+      }
+
+      // Convert to ConversationTurn format
+      return (data || []).reverse().map(msg => ({
+        messageId: msg.id,
+        role: msg.is_bot ? 'assistant' : 'user',
+        content: msg.content,
+        timestamp: msg.created_at,
+        estimatedTokens: msg.estimated_tokens || this.estimateTokens(msg.content),
+        metadata: {
+          imageReferences: msg.metadata?.image_references || [],
+          contextWeight: msg.metadata?.context_weight || 1.0,
+          messageType: msg.metadata?.message_type
+        }
+      }));
+    } catch (error) {
+      console.error('Error in getMessagesForContext:', error);
+      return [];
     }
   }
 }

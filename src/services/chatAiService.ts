@@ -283,7 +283,7 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
       
       // Always log response received
       console.log(`✅ AI Response: Received ${response.length} characters from Claude ${modelToUse.toUpperCase()}`);
-      console.log(`📖 Response preview: "${response.substring(0, 100)}${response.length > 100 ? '...' : ''}"`);;
+      console.log(`📖 Response preview: "${response.substring(0, 100)}${response.length > 100 ? '...' : ''}"`);
 
       if (DEBUG) console.log('✅ SUCCESS - Returning Claude response:', {
         responseLength: response.length,

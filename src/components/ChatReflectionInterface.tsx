@@ -561,7 +561,7 @@ export const ChatReflectionInterface = () => {
     // Update personality insights based on response
     updatePersonalityInsights(answerText);
     
-    let response = generateAuthenticResponse(answerText, userResponse, responseLength);
+    const response = generateAuthenticResponse(answerText, userResponse, responseLength);
     
     const feedbackMessage: ChatMessage = {
       id: generateId(),
@@ -580,9 +580,9 @@ export const ChatReflectionInterface = () => {
 
   const updatePersonalityInsights = (answer: string) => {
     const words = answer.toLowerCase();
-    let newTraits: string[] = [];
-    let newInterests: string[] = [];
-    let newValues: string[] = [];
+    const newTraits: string[] = [];
+    const newInterests: string[] = [];
+    const newValues: string[] = [];
     
     // Extract traits
     if (words.includes('creative') || words.includes('art') || words.includes('music')) {

@@ -36,6 +36,8 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [actualImageData, setActualImageData] = useState<ImageAttachment | null>(null);
+  const [fullImageData, setFullImageData] = useState<string | null>(null);
+  const [isLoadingFullImage, setIsLoadingFullImage] = useState(false);
 
   const { width: screenWidth } = Dimensions.get('window');
   const maxImageWidth = screenWidth * 0.7; // 70% of screen width
@@ -88,9 +90,30 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   // Use actual image data if available, otherwise fall back to placeholder
   const displayImage = actualImageData || imageAttachment;
   
-  // Create data URL for display (only if we have actual image data)
-  const imageDataUrl = displayImage.image_data ? 
-    createDataUrl(displayImage.image_data, displayImage.mime_type) : null;
+  // CRITICAL FIX: Handle thumbnail vs full image display
+  const getThumbnailUrl = () => {
+    // Check if this is inline storage with thumbnail
+    const inlineImage = displayImage.metadata?.inlineImage;
+    if (inlineImage?.thumbnail) {
+      return inlineImage.thumbnail; // Use compressed thumbnail for list view
+    }
+    
+    // Fallback to full image data if available
+    return displayImage.image_data ? 
+      createDataUrl(displayImage.image_data, displayImage.mime_type) : null;
+  };
+  
+  // Get full image for display (lazy loaded)
+  const getFullImageUrl = () => {
+    if (fullImageData) {
+      return fullImageData; // Use cached full image
+    }
+    
+    // Use thumbnail as fallback while loading
+    return getThumbnailUrl();
+  };
+  
+  const imageDataUrl = getThumbnailUrl();
 
   // Calculate display dimensions
   const aspectRatio = imageAttachment.width && imageAttachment.height 
@@ -105,11 +128,65 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
     displayWidth = displayHeight * aspectRatio;
   }
 
-  const handleImagePress = () => {
+  const handleImagePress = async () => {
     if (onImagePress) {
       onImagePress(imageAttachment);
     } else {
+      // Load full image before showing full screen
+      await loadFullImageForViewing();
       setShowFullScreen(true);
+    }
+  };
+  
+  // Load full image from IndexedDB when needed for viewing
+  const loadFullImageForViewing = async () => {
+    const inlineImage = displayImage.metadata?.inlineImage;
+    if (inlineImage?.fullImageId && !fullImageData && !isLoadingFullImage) {
+      setIsLoadingFullImage(true);
+      try {
+        // Retrieve full image from IndexedDB
+        const fullImage = await getFullImageFromIndexedDB(inlineImage.fullImageId);
+        if (fullImage) {
+          setFullImageData(fullImage);
+          console.log('📱 Loaded full image for viewing:', inlineImage.fullImageId);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load full image:', error);
+      } finally {
+        setIsLoadingFullImage(false);
+      }
+    }
+  };
+  
+  // Utility to get full image from IndexedDB
+  const getFullImageFromIndexedDB = async (fullImageId: string): Promise<string | null> => {
+    try {
+      if (!('indexedDB' in window)) {
+        return null;
+      }
+
+      return new Promise((resolve) => {
+        const dbRequest = indexedDB.open('CupidoImageCache', 1);
+        
+        dbRequest.onerror = () => resolve(null);
+        
+        dbRequest.onsuccess = () => {
+          const db = dbRequest.result;
+          const transaction = db.transaction(['images'], 'readonly');
+          const store = transaction.objectStore('images');
+          const getRequest = store.get(fullImageId);
+          
+          getRequest.onsuccess = () => {
+            const result = getRequest.result;
+            resolve(result?.base64 || null);
+          };
+          
+          getRequest.onerror = () => resolve(null);
+        };
+      });
+    } catch (error) {
+      console.error('Error retrieving full image:', error);
+      return null;
     }
   };
 
@@ -224,10 +301,16 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
           showsHorizontalScrollIndicator={false}
         >
           <Image
-            source={{ uri: imageDataUrl }}
+            source={{ uri: getFullImageUrl() }}
             style={styles.fullScreenImage}
             resizeMode="contain"
           />
+          {isLoadingFullImage && (
+            <View style={styles.fullImageLoadingOverlay}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading full image...</Text>
+            </View>
+          )}
         </ScrollView>
 
         {imageAttachment.ai_analysis && (
@@ -394,6 +477,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  fullImageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 8,
+    fontSize: 14,
   },
   closeButton: {
     width: 44,
