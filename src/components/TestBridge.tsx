@@ -39,7 +39,7 @@ export const TestBridge: React.FC = () => {
             window.parent.postMessage({
               type: 'test-message-sent',
               success: true,
-            }, '*');
+            }, window.location.origin);
           }, 500);
           break;
 
@@ -57,7 +57,7 @@ export const TestBridge: React.FC = () => {
             type: 'APP_STATE_RESPONSE',
             requestId,
             payload: appState,
-          }, '*');
+          }, window.location.origin);
           break;
 
         case 'QUERY_DOM':
@@ -77,7 +77,7 @@ export const TestBridge: React.FC = () => {
                 textContent: el.textContent?.substring(0, 100),
               })),
             },
-          }, '*');
+          }, window.location.origin);
           break;
 
         case 'export-chat':
@@ -90,7 +90,7 @@ export const TestBridge: React.FC = () => {
             requestId,
             success: true,
             payload: chatData,
-          }, '*');
+          }, window.location.origin);
           break;
 
         default:
@@ -108,7 +108,7 @@ export const TestBridge: React.FC = () => {
         timestamp: Date.now(),
         platform: Platform.OS,
       },
-    }, '*');
+    }, window.location.origin);
 
     console.log('[TestBridge] Test bridge ready and listening for messages');
 

@@ -267,12 +267,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
 
-      window.parent.postMessage({
-        type: 'app-console-log',
-        level,
-        message,
-        timestamp: new Date().toISOString()
-      }, '*');
+      // Only send messages to parent if we're in an iframe for testing
+      if (window.parent !== window) {
+        const targetOrigin = window.location.origin;
+        window.parent.postMessage({
+          type: 'app-console-log',
+          level,
+          message,
+          timestamp: new Date().toISOString()
+        }, targetOrigin);
+      }
     };
 
     const originalLog = console.log;
