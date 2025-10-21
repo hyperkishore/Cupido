@@ -1,6 +1,6 @@
 [build]
   # Build command for React Native Web + copy test dashboard
-  command = "npx expo export --platform web && cp cupido-test-dashboard.html comprehensive-test-functions.js infrastructure-tests.js dist/"
+  command = "npx expo export --platform web && node -e \"const fs=require('fs'); const d=fs.readFileSync('cupido-test-dashboard.html','utf8'); const t=fs.readFileSync('comprehensive-test-functions.js','utf8'); const i=fs.readFileSync('infrastructure-tests.js','utf8'); const n=d.replace('<script src=\\\"comprehensive-test-functions.js\\\"></script>',\\\`<script>\\n\\\${t}\\n</script>\\\`).replace('<script src=\\\"infrastructure-tests.js\\\"></script>',\\\`<script>\\n\\\${i}\\n</script>\\\`); fs.writeFileSync('dist/cupido-test-dashboard.html',n);\" && echo \"✅ Deployed self-contained dashboard\""
   # Output directory for Expo web build
   publish = "dist"
   # Netlify functions directory
