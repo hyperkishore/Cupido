@@ -722,27 +722,48 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [onKeyboardToggle]);
 
+  // Force scroll to bottom helper function
+  const scrollToBottom = (animated: boolean = true) => {
+    if (flatListRef.current && messages.length > 0) {
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToEnd({ animated });
+      });
+    }
+  };
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    // Use setTimeout directly to avoid undefined memoryManager
+    // Delay to ensure DOM has updated
     const scrollTimeout = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 150); // Slightly longer delay for better reliability
+      scrollToBottom(true);
+    }, 200);
     
-    // Cleanup function to cancel timeout if messages change again quickly
-    return () => {
-      clearTimeout(scrollTimeout);
-    };
-  }, [messages]);
+    return () => clearTimeout(scrollTimeout);
+  }, [messages.length]); // Use length to trigger on any change
 
   // Scroll to bottom on initial load
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false }); // No animation on initial load
-      }, 300);
+      // Longer delay for initial load to ensure rendering complete
+      const initialScrollTimeout = setTimeout(() => {
+        scrollToBottom(false);
+      }, 500);
+      
+      return () => clearTimeout(initialScrollTimeout);
     }
   }, [isLoading]);
+  
+  // Scroll after keyboard appears/disappears
+  useEffect(() => {
+    if (messages.length > 0) {
+      const keyboardTimeout = setTimeout(() => {
+        scrollToBottom(true);
+      }, 300);
+      
+      return () => clearTimeout(keyboardTimeout);
+    }
+  }, [keyboardVisible]);
 
   // Simple cleanup on unmount
   useEffect(() => {
@@ -941,9 +962,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             }
             if (DEBUG) console.log('✅ Adding bot message to UI');
             // Scroll to bottom after bot message
-            setTimeout(() => {
-              flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
+            requestAnimationFrame(() => {
+              scrollToBottom(true);
+            });
             return [...prev, botMessage];
           });
         }
@@ -962,6 +983,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       setConversationCount(prev => prev + 1);
       
       // No need to maintain conversationHistory state - we build it from messages
+      
+      // Ensure we scroll to bottom after bot response
+      requestAnimationFrame(() => {
+        scrollToBottom(true);
+      });
 
     } catch (error) {
       log.error('Failed to generate AI response', error instanceof Error ? error : new Error(String(error)), {
@@ -1767,9 +1793,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     isSendingRef.current = false;
     
     // Scroll to bottom after adding user message
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 50);
+    requestAnimationFrame(() => {
+      scrollToBottom(true);
+    });
 
     // Save user message to database in background (non-blocking)
     if (activeConversation) {
@@ -1998,6 +2024,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         showsVerticalScrollIndicator={false}
         testID="messages-scroll-view"
         inverted={false} // Keep normal order since we want to load older messages at top
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 10
+        }}
         // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
