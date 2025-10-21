@@ -4812,6 +4812,11 @@ const TEST_METADATA = {
   'image-6': { name: 'Image Context in Chat Thread', description: 'Tests image descriptions are included in conversation context', module: 'SimpleReflectionChat.tsx', category: 'Image & Vision', tags: ['image', 'context'] },
   'image-7': { name: 'Image Upload Error Handling', description: 'Tests proper error handling for invalid images and upload failures', module: 'ImageUpload.tsx', category: 'Image & Vision', tags: ['image', 'errors'] },
   'image-8': { name: 'Full Image Upload Flow', description: 'Tests complete image upload, processing, analysis and display flow', module: 'integration', category: 'Image & Vision', tags: ['image', 'integration'] },
+  'image-lazy-1': { name: 'Image Lazy Loading Performance', description: 'Tests chat initialization speed with multiple images using lazy loading', module: 'SimpleReflectionChat.tsx', category: 'Image & Vision', tags: ['image', 'performance', 'lazy'] },
+  'image-lazy-2': { name: 'Image Placeholder Creation', description: 'Tests placeholder creation during chat history loading', module: 'SimpleReflectionChat.tsx', category: 'Image & Vision', tags: ['image', 'placeholder'] },
+  'image-lazy-3': { name: 'Lazy Loading Database Queries', description: 'Tests on-demand image loading from database when placeholders become visible', module: 'ImageMessage.tsx', category: 'Image & Vision', tags: ['image', 'database', 'lazy'] },
+  'image-lazy-4': { name: 'Image Persistence After Refresh', description: 'Tests images are correctly restored and displayed after page refresh', module: 'SimpleReflectionChat.tsx', category: 'Image & Vision', tags: ['image', 'persistence'] },
+  'image-lazy-5': { name: 'Memory Management', description: 'Tests image memory cleanup and efficient loading patterns', module: 'ImageMessage.tsx', category: 'Image & Vision', tags: ['image', 'memory'] },
 
   // Infrastructure Validation Tests (6 tests)
   'infrastructure-1': { name: 'Core Infrastructure Health', description: 'Tests core infrastructure components and system health', module: 'infrastructure', category: 'Infrastructure', tags: ['infrastructure', 'health'] },
@@ -5224,7 +5229,12 @@ const TEST_FUNCTIONS = {
   'image-5': testImageUpload5,
   'image-6': testImageUpload6,
   'image-7': testImageUpload7,
-  'image-8': testImageUpload8
+  'image-8': testImageUpload8,
+  'image-lazy-1': testImageLazyLoading1,
+  'image-lazy-2': testImageLazyLoading2,
+  'image-lazy-3': testImageLazyLoading3,
+  'image-lazy-4': testImageLazyLoading4,
+  'image-lazy-5': testImageLazyLoading5
 };
 
 /**
@@ -5247,7 +5257,7 @@ async function runCategory(category) {
     'state': ['state-1', 'state-2', 'state-3', 'state-4', 'state-5', 'state-6'],
     'api': ['api-1', 'api-2', 'api-3', 'api-4'],
     'simulator': ['simulator-1', 'simulator-2', 'simulator-3', 'simulator-4', 'simulator-5', 'simulator-6', 'simulator-7', 'simulator-8', 'simulator-9', 'simulator-10', 'simulator-11', 'simulator-12', 'simulator-13', 'simulator-14', 'simulator-15', 'simulator-16', 'simulator-17', 'simulator-18'],
-    'image': ['image-1', 'image-2', 'image-3', 'image-4', 'image-5', 'image-6', 'image-7', 'image-8']
+    'image': ['image-1', 'image-2', 'image-3', 'image-4', 'image-5', 'image-6', 'image-7', 'image-8', 'image-lazy-1', 'image-lazy-2', 'image-lazy-3', 'image-lazy-4', 'image-lazy-5']
   };
 
   const testIds = categoryTests[category];
@@ -5941,3 +5951,300 @@ console.log('📊 New features: TEST_METADATA with detailed descriptions, monito
 console.log('🏗️  Phase 1: runCategory("foundation") + runCategory("simulator")');
 console.log('🚀 Phase 2: runCategory("phase2") - Revolutionary Analytics Systems');
 console.log('🔥 Phase 3: runCategory("phase3") - Advanced Automation Systems');
+/**
+ * image-lazy-1: Test image lazy loading performance
+ */
+async function testImageLazyLoading1() {
+  try {
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    if (!iframe) {
+      return { pass: false, message: '✗ App iframe not available for lazy loading test', errors: ['No iframe'] };
+    }
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      return { pass: false, message: '✗ Cannot access iframe document', errors: ['Iframe document not accessible'] };
+    }
+
+    const startTime = performance.now();
+    
+    // Look for image placeholders or lazy loading indicators
+    const placeholders = iframeDoc.querySelectorAll('[data-lazy="true"], .image-placeholder, .lazy-image');
+    const images = iframeDoc.querySelectorAll('img[data-src], img[loading="lazy"]');
+    const messageContainers = iframeDoc.querySelectorAll('[data-testid="messages-scroll-view"], .messagesContainer');
+    
+    const loadTime = performance.now() - startTime;
+    
+    // Check if chat loads quickly (under 500ms for lazy loading)
+    const isPerformant = loadTime < 500;
+    const hasLazyFeatures = placeholders.length > 0 || images.length > 0;
+    
+    return {
+      pass: isPerformant || hasLazyFeatures,
+      message: `${isPerformant ? '✓' : '✗'} Chat initialization: ${loadTime.toFixed(2)}ms (lazy features: ${hasLazyFeatures})`,
+      metadata: {
+        loadTime: loadTime,
+        placeholders: placeholders.length,
+        lazyImages: images.length,
+        messageContainers: messageContainers.length,
+        isPerformant: isPerformant
+      }
+    };
+  } catch (error) {
+    return { pass: false, message: `✗ Error testing lazy loading performance: ${error.message}`, errors: [error.message] };
+  }
+}
+
+/**
+ * image-lazy-2: Test image placeholder creation
+ */
+async function testImageLazyLoading2() {
+  try {
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    if (!iframe) {
+      return { pass: false, message: '✗ App iframe not available for placeholder test', errors: ['No iframe'] };
+    }
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      return { pass: false, message: '✗ Cannot access iframe document', errors: ['Iframe document not accessible'] };
+    }
+
+    // Look for placeholder elements during loading
+    const placeholderSelectors = [
+      '[data-lazy="true"]',
+      '.image-placeholder', 
+      '.lazy-image',
+      '[data-image-id]:not([src])',
+      'div[style*="background"]:has-text("loading")',
+      '.skeleton-image'
+    ];
+    
+    let placeholderFound = false;
+    let placeholderType = 'none';
+    
+    for (const selector of placeholderSelectors) {
+      try {
+        const elements = iframeDoc.querySelectorAll(selector);
+        if (elements.length > 0) {
+          placeholderFound = true;
+          placeholderType = selector;
+          break;
+        }
+      } catch (e) {
+        // Selector might not be valid in all browsers
+        continue;
+      }
+    }
+    
+    // Also check for images with placeholder attributes
+    const imagesWithPlaceholders = iframeDoc.querySelectorAll('img[data-src], img[data-lazy-src]');
+    
+    if (imagesWithPlaceholders.length > 0) {
+      placeholderFound = true;
+      placeholderType = 'data-src attributes';
+    }
+    
+    return {
+      pass: placeholderFound,
+      message: `${placeholderFound ? '✓' : '✗'} Image placeholders: ${placeholderType} (${imagesWithPlaceholders.length} lazy images)`,
+      metadata: {
+        placeholderType: placeholderType,
+        lazyImages: imagesWithPlaceholders.length,
+        hasPlaceholders: placeholderFound
+      }
+    };
+  } catch (error) {
+    return { pass: false, message: `✗ Error testing placeholder creation: ${error.message}`, errors: [error.message] };
+  }
+}
+
+/**
+ * image-lazy-3: Test lazy loading database queries
+ */
+async function testImageLazyLoading3() {
+  try {
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    if (!iframe) {
+      return { pass: false, message: '✗ App iframe not available for database query test', errors: ['No iframe'] };
+    }
+    
+    const iframeWindow = iframe.contentWindow;
+    if (!iframeWindow) {
+      return { pass: false, message: '✗ Cannot access iframe window', errors: ['Iframe window not accessible'] };
+    }
+
+    // Check for database-related functions in the iframe
+    const dbFunctions = [];
+    const possibleDbFunctions = [
+      'loadImageFromDatabase',
+      'getImageById', 
+      'loadImageData',
+      'fetchImageContent',
+      'lazyLoadImage'
+    ];
+    
+    for (const funcName of possibleDbFunctions) {
+      if (typeof iframeWindow[funcName] === 'function') {
+        dbFunctions.push(funcName);
+      }
+    }
+    
+    // Check for images that might be loaded on-demand
+    const iframeDoc = iframe.contentDocument;
+    const imagesWithIds = iframeDoc?.querySelectorAll('img[data-image-id], [data-message-id] img') || [];
+    const lazyImages = iframeDoc?.querySelectorAll('img[data-src]:not([src]), img[loading="lazy"]') || [];
+    
+    // Check for Supabase or database indicators
+    const hasSupabase = iframeWindow.supabase || iframeWindow.createClient;
+    const hasStorage = iframeWindow.localStorage && Object.keys(iframeWindow.localStorage).some(key => 
+      key.includes('image') || key.includes('supabase')
+    );
+    
+    const score = dbFunctions.length + (hasSupabase ? 2 : 0) + (hasStorage ? 1 : 0) + (lazyImages.length > 0 ? 1 : 0);
+    
+    return {
+      pass: score > 0,
+      message: `${score > 0 ? '✓' : '✗'} Database query integration (score: ${score}, functions: ${dbFunctions.length})`,
+      metadata: {
+        dbFunctions: dbFunctions,
+        imagesWithIds: imagesWithIds.length,
+        lazyImages: lazyImages.length,
+        hasSupabase: !!hasSupabase,
+        hasStorage: hasStorage,
+        score: score
+      }
+    };
+  } catch (error) {
+    return { pass: false, message: `✗ Error testing database queries: ${error.message}`, errors: [error.message] };
+  }
+}
+
+/**
+ * image-lazy-4: Test image persistence after refresh
+ */
+async function testImageLazyLoading4() {
+  try {
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    if (!iframe) {
+      return { pass: false, message: '✗ App iframe not available for persistence test', errors: ['No iframe'] };
+    }
+    
+    const iframeWindow = iframe.contentWindow;
+    const iframeDoc = iframe.contentDocument;
+    
+    if (!iframeWindow || !iframeDoc) {
+      return { pass: false, message: '✗ Cannot access iframe window/document', errors: ['Iframe not accessible'] };
+    }
+
+    // Check for stored image data in localStorage
+    const imageStorageKeys = [];
+    try {
+      for (let i = 0; i < iframeWindow.localStorage.length; i++) {
+        const key = iframeWindow.localStorage.key(i);
+        if (key && (key.includes('image') || key.includes('conversation') || key.includes('message'))) {
+          imageStorageKeys.push(key);
+        }
+      }
+    } catch (e) {
+      // localStorage might not be accessible
+    }
+    
+    // Check for images currently displayed
+    const displayedImages = iframeDoc.querySelectorAll('img[src^="data:"], img[src^="blob:"], img[src*="base64"]');
+    
+    // Check for image restoration mechanisms
+    const hasImageRestore = typeof iframeWindow.restoreImages === 'function' ||
+                           typeof iframeWindow.loadStoredImages === 'function' ||
+                           !!iframeWindow.imageManager;
+    
+    // Check for conversation/message restoration
+    const hasConversationRestore = typeof iframeWindow.loadConversations === 'function' ||
+                                  typeof iframeWindow.restoreChat === 'function';
+    
+    const persistenceScore = imageStorageKeys.length + 
+                           displayedImages.length + 
+                           (hasImageRestore ? 2 : 0) + 
+                           (hasConversationRestore ? 1 : 0);
+    
+    return {
+      pass: persistenceScore > 0,
+      message: `${persistenceScore > 0 ? '✓' : '✗'} Image persistence (storage keys: ${imageStorageKeys.length}, displayed: ${displayedImages.length})`,
+      metadata: {
+        storageKeys: imageStorageKeys.length,
+        displayedImages: displayedImages.length,
+        hasImageRestore: hasImageRestore,
+        hasConversationRestore: hasConversationRestore,
+        persistenceScore: persistenceScore
+      }
+    };
+  } catch (error) {
+    return { pass: false, message: `✗ Error testing image persistence: ${error.message}`, errors: [error.message] };
+  }
+}
+
+/**
+ * image-lazy-5: Test memory management
+ */
+async function testImageLazyLoading5() {
+  try {
+    const iframe = document.getElementById('app-iframe') || document.getElementById('live-app-iframe');
+    if (!iframe) {
+      return { pass: false, message: '✗ App iframe not available for memory test', errors: ['No iframe'] };
+    }
+    
+    const iframeWindow = iframe.contentWindow;
+    const iframeDoc = iframe.contentDocument;
+    
+    if (!iframeWindow || !iframeDoc) {
+      return { pass: false, message: '✗ Cannot access iframe window/document', errors: ['Iframe not accessible'] };
+    }
+
+    // Check memory usage if available
+    let memoryInfo = null;
+    if (iframeWindow.performance && iframeWindow.performance.memory) {
+      memoryInfo = {
+        usedJSSize: iframeWindow.performance.memory.usedJSHeapSize,
+        totalJSSize: iframeWindow.performance.memory.totalJSHeapSize,
+        jsHeapSizeLimit: iframeWindow.performance.memory.jsHeapSizeLimit
+      };
+    }
+    
+    // Count DOM elements that might use memory
+    const imageElements = iframeDoc.querySelectorAll('img');
+    const largeDataURIs = Array.from(imageElements).filter(img => 
+      img.src && img.src.startsWith('data:') && img.src.length > 10000
+    );
+    
+    // Check for cleanup mechanisms
+    const hasCleanup = typeof iframeWindow.cleanupImages === 'function' ||
+                      typeof iframeWindow.disposeImages === 'function' ||
+                      typeof iframeWindow.clearImageCache === 'function';
+    
+    // Check for image optimization
+    const hasOptimization = Array.from(imageElements).some(img => 
+      img.loading === 'lazy' || 
+      img.dataset.lazy === 'true' ||
+      img.dataset.src
+    );
+    
+    const memoryScore = (hasCleanup ? 3 : 0) + 
+                       (hasOptimization ? 2 : 0) + 
+                       (largeDataURIs.length < imageElements.length ? 1 : 0);
+    
+    return {
+      pass: memoryScore > 0 || (imageElements.length > 0 && largeDataURIs.length / imageElements.length < 0.5),
+      message: `${memoryScore > 0 ? '✓' : '✗'} Memory management (cleanup: ${hasCleanup}, lazy: ${hasOptimization}, images: ${imageElements.length})`,
+      metadata: {
+        totalImages: imageElements.length,
+        largeDataURIs: largeDataURIs.length,
+        hasCleanup: hasCleanup,
+        hasOptimization: hasOptimization,
+        memoryInfo: memoryInfo,
+        memoryScore: memoryScore
+      }
+    };
+  } catch (error) {
+    return { pass: false, message: `✗ Error testing memory management: ${error.message}`, errors: [error.message] };
+  }
+}

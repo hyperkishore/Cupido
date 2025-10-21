@@ -492,35 +492,30 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               timestamp: new Date(msg.created_at),
             };
 
-            // Check if this message has image attachments
+            // Check if this message has image attachments - use lazy loading
             if (msg.metadata?.hasImage) {
-              try {
-                // Try to load by specific attachment ID first
-                if (msg.metadata?.imageAttachmentId) {
-                  const imageAttachment = await chatDatabase.getImageAttachment(msg.metadata.imageAttachmentId);
-                  if (imageAttachment) {
-                    baseMessage.imageAttachments = [imageAttachment];
-                    // Hide message text for image messages unless it's descriptive
-                    if (!msg.metadata?.isDescriptiveText) {
-                      baseMessage.text = '';
-                    }
-                    console.log('🖼️ Loaded image attachment for message:', msg.id);
-                  }
-                } else {
-                  // Fallback: Load all images for this message
-                  const messageImages = await chatDatabase.getMessageImages(msg.id);
-                  if (messageImages.length > 0) {
-                    baseMessage.imageAttachments = messageImages;
-                    // Hide message text for image messages unless it's descriptive
-                    if (!msg.metadata?.isDescriptiveText) {
-                      baseMessage.text = '';
-                    }
-                    console.log(`🖼️ Loaded ${messageImages.length} image attachment(s) for message:`, msg.id);
-                  }
+              // Create placeholder for lazy loading - don't block chat initialization
+              baseMessage.imageAttachments = [{
+                id: msg.metadata?.imageAttachmentId || `placeholder_${msg.id}`,
+                conversation_id: conversation.id,
+                user_id: user.id,
+                image_data: '', // Empty - will be loaded on demand
+                mime_type: 'image/jpeg', // Default
+                file_size: 0,
+                created_at: msg.created_at,
+                metadata: { 
+                  isPlaceholder: true, 
+                  messageId: msg.id,
+                  attachmentId: msg.metadata?.imageAttachmentId 
                 }
-              } catch (error) {
-                console.error('❌ Error loading image attachment for message:', msg.id, error);
+              } as ImageAttachment];
+              
+              // Hide message text for image messages unless it's descriptive
+              if (!msg.metadata?.isDescriptiveText) {
+                baseMessage.text = '';
               }
+              
+              console.log('📋 Created image placeholder for message:', msg.id);
             }
 
             return baseMessage;

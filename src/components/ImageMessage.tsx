@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { createDataUrl, formatFileSize, extractImageMetadata, ImageMetadata } from '../utils/imageUtils';
-import { ImageAttachment } from '../services/chatDatabase';
+import { ImageAttachment, chatDatabase } from '../services/chatDatabase';
 
 interface ImageMessageProps {
   imageAttachment: ImageAttachment;
@@ -35,13 +35,62 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [actualImageData, setActualImageData] = useState<ImageAttachment | null>(null);
 
   const { width: screenWidth } = Dimensions.get('window');
   const maxImageWidth = screenWidth * 0.7; // 70% of screen width
   const maxImageHeight = 300;
 
-  // Create data URL for display
-  const imageDataUrl = createDataUrl(imageAttachment.image_data, imageAttachment.mime_type);
+  // Check if this is a placeholder that needs lazy loading
+  const isPlaceholder = imageAttachment.metadata?.isPlaceholder;
+
+  // Load actual image data when component mounts (lazy loading)
+  useEffect(() => {
+    if (isPlaceholder && !actualImageData) {
+      const loadImageData = async () => {
+        try {
+          setImageLoading(true);
+          const attachmentId = imageAttachment.metadata?.attachmentId;
+          const messageId = imageAttachment.metadata?.messageId;
+          
+          let loadedImage: ImageAttachment | null = null;
+          
+          if (attachmentId) {
+            loadedImage = await chatDatabase.getImageAttachment(attachmentId);
+          } else if (messageId) {
+            const messageImages = await chatDatabase.getMessageImages(messageId);
+            loadedImage = messageImages[0] || null;
+          }
+          
+          if (loadedImage) {
+            setActualImageData(loadedImage);
+            console.log('🖼️ Lazy loaded image:', loadedImage.id);
+          } else {
+            setImageError(true);
+            console.error('❌ Failed to lazy load image for placeholder:', imageAttachment.id);
+          }
+        } catch (error) {
+          console.error('❌ Error during lazy loading:', error);
+          setImageError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      };
+      
+      loadImageData();
+    } else if (!isPlaceholder) {
+      // Not a placeholder, use image data directly
+      setActualImageData(imageAttachment);
+      setImageLoading(false);
+    }
+  }, [isPlaceholder, imageAttachment, actualImageData]);
+
+  // Use actual image data if available, otherwise fall back to placeholder
+  const displayImage = actualImageData || imageAttachment;
+  
+  // Create data URL for display (only if we have actual image data)
+  const imageDataUrl = displayImage.image_data ? 
+    createDataUrl(displayImage.image_data, displayImage.mime_type) : null;
 
   // Calculate display dimensions
   const aspectRatio = imageAttachment.width && imageAttachment.height 
@@ -96,13 +145,20 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
       );
     }
 
+    // Show loading placeholder for lazy loading or missing image data
+    if (imageLoading || !imageDataUrl) {
+      return (
+        <View style={[styles.imagePlaceholder, { width: displayWidth, height: displayHeight }]}>
+          <ActivityIndicator size="small" color="#007AFF" />
+          <Text style={styles.loadingText}>
+            {isPlaceholder ? 'Loading image...' : 'Processing...'}
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.imageContainer}>
-        {imageLoading && (
-          <View style={[styles.loadingOverlay, { width: displayWidth, height: displayHeight }]}>
-            <ActivityIndicator size="small" color="#007AFF" />
-          </View>
-        )}
         <TouchableOpacity
           onPress={handleImagePress}
           activeOpacity={0.8}
@@ -279,6 +335,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#C7C7CC',
     marginTop: 4,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginTop: 8,
+    textAlign: 'center',
   },
   messageText: {
     fontSize: 16,
