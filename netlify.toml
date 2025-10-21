@@ -1,6 +1,6 @@
 [build]
   # Build command for React Native Web + copy test dashboard
-  command = "npx expo export --platform web && cp cupido-test-dashboard.html dist/ && echo \"✅ Deployed self-contained dashboard\""
+  command = "npx expo export --platform web && cp cupido-test-dashboard.html comprehensive-test-functions.js infrastructure-tests.js dist/ && echo \"✅ Deployed dashboard with all dependencies\""
   # Output directory for Expo web build
   publish = "dist"
   # Netlify functions directory
