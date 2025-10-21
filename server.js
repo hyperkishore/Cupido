@@ -412,7 +412,7 @@ app.post('/api/extract-profile', async (req, res) => {
 });
 
 // Error logger integration
-const errorLogger = require('./error-logger');
+const errorLogger = require('./scripts/error-logger');
 
 // Start error logger file watcher
 errorLogger.startWatching();
@@ -2077,7 +2077,7 @@ app.get('/test-dashboard', (req, res) => {
 
 // Serve comprehensive test functions
 app.get('/comprehensive-test-functions.js', (req, res) => {
-  const functionsPath = path.join(__dirname, 'comprehensive-test-functions.js');
+  const functionsPath = path.join(__dirname, 'tool-output/comprehensive-test-functions.js');
   if (fs.existsSync(functionsPath)) {
     res.sendFile(functionsPath);
   } else {
@@ -2117,7 +2117,7 @@ app.get('/test-dashboard-console-check.html', (req, res) => {
 
 // Serve new Cupido test dashboard
 app.get('/cupido-test-dashboard', (req, res) => {
-  const dashboardPath = path.join(__dirname, 'cupido-test-dashboard.html');
+  const dashboardPath = path.join(__dirname, 'dashboards/cupido-test-dashboard.html');
   if (fs.existsSync(dashboardPath)) {
     res.sendFile(dashboardPath);
   } else {
