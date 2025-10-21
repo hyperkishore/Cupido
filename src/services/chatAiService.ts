@@ -561,10 +561,14 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
 
     const buildUrl = (protocol: string, host: string, port: string) => `${protocol}//${host}:${port}/api/chat`;
 
+    // Check for real device vs simulator/emulator detection
+    const isRealDevice = !__DEV__ || (Platform.OS === 'ios' && !Constants.isDevice === false);
+    
     const manifest2Host = (Constants as any)?.manifest2?.extra?.expoClient?.hostUri;
     if (typeof manifest2Host === 'string') {
       const host = manifest2Host.split(':')[0];
-      if (host) {
+      if (host && host !== '127.0.0.1' && host !== 'localhost') {
+        // Use actual network IP for real devices
         return buildUrl('http:', host, '3001');
       }
     }
@@ -572,7 +576,8 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     const debuggerHost = (Constants as any)?.manifest?.debuggerHost || expoExtra?.debuggerHost;
     if (typeof debuggerHost === 'string') {
       const host = debuggerHost.split(':')[0];
-      if (host) {
+      if (host && host !== '127.0.0.1' && host !== 'localhost') {
+        // Use actual network IP for real devices
         return buildUrl('http:', host, '3001');
       }
     }
@@ -580,14 +585,51 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     const hostUri = (Constants as any)?.expoConfig?.hostUri;
     if (typeof hostUri === 'string') {
       const host = hostUri.split(':')[0];
-      if (host) {
+      if (host && host !== '127.0.0.1' && host !== 'localhost') {
+        // Use actual network IP for real devices
         return buildUrl('http:', host, '3001');
       }
     }
 
+    // Try to get the development server's actual IP address for real devices
+    if (isRealDevice && Platform.OS === 'ios') {
+      // For real iOS devices, try to use the development server IP
+      // This should be the same IP that the Metro bundler uses
+      const devServerUrl = (Constants as any)?.experienceUrl || (Constants as any)?.linkingUrl;
+      if (devServerUrl) {
+        try {
+          const url = new URL(devServerUrl);
+          const host = url.hostname;
+          if (host && host !== '127.0.0.1' && host !== 'localhost' && !host.includes('exp.host')) {
+            return buildUrl('http:', host, '3001');
+          }
+        } catch (e) {
+          console.warn('Failed to parse dev server URL:', devServerUrl);
+        }
+      }
+    }
+
     // Android emulator uses special loopback address
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' && !isRealDevice) {
       return 'http://10.0.2.2:3001/api/chat';
+    }
+
+    // For real Android devices, try to determine network IP
+    if (Platform.OS === 'android' && isRealDevice) {
+      // Real Android devices should use the development server's IP
+      // This will be set by Expo when connecting to the dev server
+      const devUrl = (Constants as any)?.experienceUrl;
+      if (devUrl) {
+        try {
+          const url = new URL(devUrl);
+          const host = url.hostname;
+          if (host && host !== '127.0.0.1' && host !== 'localhost') {
+            return buildUrl('http:', host, '3001');
+          }
+        } catch (e) {
+          console.warn('Failed to parse Android dev URL:', devUrl);
+        }
+      }
     }
 
     // iOS simulator and other fallbacks

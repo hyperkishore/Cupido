@@ -891,7 +891,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
         // BACKGROUND PROCESSING: Start AI analysis without blocking UI
         setTimeout(() => {
-          processImageInBackground(imageData, placeholderId);
+          processImageInBackground(imageData, imageAttachment, placeholderId);
         }, 100);
       }
     } catch (error) {
@@ -901,7 +901,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   };
 
   // Background image processing function  
-  const processImageInBackground = async (imageData: ImageProcessingResult, placeholderId: string) => {
+  const processImageInBackground = async (
+    imageData: ImageProcessingResult,
+    imageAttachment: ImageAttachment,
+    placeholderId: string
+  ) => {
     try {
       // Show progress to user
       updatePlaceholderMessage(placeholderId, '📷 Analyzing your image...');
@@ -936,13 +940,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           
           console.log('✅ Saved descriptive message:', descriptiveMessage?.id);
 
-          // Step 3: Generate the main AI response with full context
+          // Step 3: Generate the main AI response with trimmed context for better performance
           setTypingMessage('generating response...');
           const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
           
+          // Trim conversation history for image requests to improve performance and reduce payload
+          const trimmedHistory = conversationHistory.slice(-10); // Only keep last 10 exchanges for context
+          
           const aiResponse = await chatAiService.generateResponseWithImage(
             conversationPrompt,
-            [...conversationHistory, { role: 'user' as const, content: `[Image: ${imageDescription}]` }],
+            [...trimmedHistory, { role: 'user' as const, content: `[Image: ${imageDescription}]` }],
             conversationCount,
             { base64: imageData.base64, mimeType: imageData.mimeType }
           );
@@ -1364,9 +1371,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             placeholderTextColor="#999"
             multiline
             maxLength={10000}
-            returnKeyType={isMobileBrowser ? 'default' : 'send'}
+            returnKeyType={Platform.OS === 'web' ? 'send' : 'default'}
             blurOnSubmit={false}
-            onSubmitEditing={isMobileBrowser ? undefined : () => handleSend()}
+            onSubmitEditing={Platform.OS === 'web' ? () => handleSend() : undefined}
             onKeyPress={(e: any) => {
               // Handle Enter key on web (without Shift)
               if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -1400,9 +1407,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               (!inputText.trim() || isSending) && styles.sendButtonDisabled,
               pressed && styles.sendButtonPressed
             ]}
-            onPress={isMobileBrowser ? undefined : () => handleSend()}
-            onLongPress={() => handleSend()}
-            delayLongPress={250}
+            onPress={() => handleSend()}
             disabled={!inputText.trim() || isSending}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
