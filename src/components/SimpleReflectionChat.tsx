@@ -162,7 +162,7 @@ interface SimpleReflectionChatProps {
   onKeyboardToggle?: (isVisible: boolean) => void;
 }
 
-const DEBUG = false; // Set to true for verbose logging during development
+const DEBUG = true; // Set to true for verbose logging during development
 const DEFAULT_INPUT_AREA_HEIGHT = 70;
 
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
@@ -476,8 +476,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       // Initialize user profile service
       if (DEBUG) console.log('[initializeChat] Step 1: Initializing user profile service...');
-      await userProfileService.initialize();
-      if (DEBUG) console.log('[initializeChat] ✓ User profile service initialized');
+      try {
+        await userProfileService.initialize();
+        if (DEBUG) console.log('[initializeChat] ✓ User profile service initialized');
+      } catch (error) {
+        console.error('[initializeChat] Failed to initialize user profile service:', error);
+        // Continue anyway - this shouldn't block chat
+      }
 
       // Use authenticated user or generate demo user
       let sessionUserId: string;
@@ -529,6 +534,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       if (!user) {
         console.error('[initializeChat] ❌ Failed to create user - user is null/undefined');
+        console.error('[initializeChat] Debug info:', { sessionUserId, userName, authUser: !!authUser });
+        // Set loading to false even on failure
+        setIsLoading(false);
         return;
       }
 
