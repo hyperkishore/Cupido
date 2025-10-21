@@ -1,6 +1,6 @@
 {
   "name": "cupido",
-  "version": "1.2.13",
+  "version": "1.2.14",
   "main": "index.ts",
   "scripts": {
     "docs:manifest": "node scripts/generate-docs-manifest.js",
@@ -11,6 +11,7 @@
     "web": "expo start --web",
     "build": "expo export --platform web",
     "prebuild": "npm run docs:manifest",
+    "build:web": "expo export:web",
     "build:production": "NODE_ENV=production expo export --platform web",
     "serve": "npx serve dist",
     "deploy": "npm run build:production && npm run serve",
