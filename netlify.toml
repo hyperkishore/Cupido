@@ -14,7 +14,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  conditions = {Path = "!*.html"}
+  conditions = {Path = "!*.html,!*.js,!*.css,!*.ico,!*.png,!*.jpg,!*.gif,!*.svg,!*.json"}
 
 # API routes to functions
 [[redirects]]
