@@ -11,6 +11,7 @@ import {
   Keyboard,
   Alert,
   Image,
+  Pressable,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1156,7 +1157,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const messagesBottomPadding = INPUT_AREA_HEIGHT + tabBarHeight + 10;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       {/* Messages area */}
       <ScrollView
         ref={scrollViewRef}
@@ -1334,24 +1339,26 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               }
             }}
           />
-          <TouchableOpacity
+          <Pressable
             testID="send-button"
-            style={[
+            style={({ pressed }) => [
               styles.sendButton,
-              (!inputText.trim() || isSending) && styles.sendButtonDisabled
+              (!inputText.trim() || isSending) && styles.sendButtonDisabled,
+              pressed && styles.sendButtonPressed
             ]}
             onPress={handleSend}
             disabled={!inputText.trim() || isSending}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Feather
               name="send"
               size={20}
               color={(inputText.trim() && !isSending) ? '#007AFF' : '#C0C0C0'}
             />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -1457,6 +1464,10 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  sendButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   attachButton: {
     width: 44,

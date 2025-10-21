@@ -487,35 +487,20 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     
     const lowerMessage = userMessage.toLowerCase();
     
-    const responses = [
-      "That's really interesting! Tell me more about that.",
-      "I love hearing about this! What got you into it?",
-      "That sounds amazing! How did that make you feel?",
-      "Wow, that's so cool! What's your favorite part about it?",
-      "I can totally see why that would appeal to you! What else do you enjoy?",
-      "That's such a unique perspective! What's been your experience with that?",
+    // Simple offline messages instead of generic canned responses
+    const offlineMessages = [
+      "brb, Cupido's getting coffee",
+      "brb, servers are taking a quick break", 
+      "brb, fixing some connection issues",
+      "brb, upgrading the love algorithm",
+      "brb, Cupido will be right back",
+      "brb, just a moment while we reconnect",
+      "brb, technical difficulties - hang tight",
+      "brb, maintenance mode activated",
     ];
 
-    const questions = [
-      "What's something you're really passionate about?",
-      "What's the best part of your typical week?",
-      "If you could have any superpower, what would it be?",
-      "What's something that always makes you smile?",
-      "What's your idea of a perfect weekend?",
-      "What's something you've learned recently that excited you?",
-    ];
-
-    let message;
-    if (conversationCount < 3) {
-      message = responses[Math.floor(Math.random() * responses.length)];
-    } else {
-      const shouldAskQuestion = Math.random() > 0.4;
-      if (shouldAskQuestion) {
-        message = `${responses[Math.floor(Math.random() * responses.length)]} ${questions[Math.floor(Math.random() * questions.length)]}`;
-      } else {
-        message = responses[Math.floor(Math.random() * responses.length)];
-      }
-    }
+    // Simple random selection - no complex logic for offline mode
+    const message = offlineMessages[Math.floor(Math.random() * offlineMessages.length)];
 
     return {
       message,
