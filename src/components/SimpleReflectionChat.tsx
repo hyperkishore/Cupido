@@ -1311,9 +1311,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             placeholderTextColor="#999"
             multiline
             maxLength={10000}
-            returnKeyType="send"
+            returnKeyType={Platform.OS === 'web' ? 'send' : 'default'}
             blurOnSubmit={false}
-            onSubmitEditing={Platform.OS !== 'web' ? () => handleSend() : undefined}
+            onSubmitEditing={Platform.OS === 'web' ? () => handleSend() : undefined}
             onKeyPress={(e: any) => {
               // Handle Enter key on web (without Shift)
               if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -1347,7 +1347,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               (!inputText.trim() || isSending) && styles.sendButtonDisabled,
               pressed && styles.sendButtonPressed
             ]}
-            onPress={() => handleSend()}
+            onPress={Platform.OS === 'web' ? () => handleSend() : undefined}
+            onLongPress={() => handleSend()}
+            delayLongPress={250}
             disabled={!inputText.trim() || isSending}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
