@@ -723,12 +723,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [onKeyboardToggle]);
 
-  // Force scroll to bottom helper function
+  // Force scroll to bottom helper function with content offset adjustment
   const scrollToBottom = (animated: boolean = true) => {
     if (flatListRef.current && messages.length > 0) {
       // Use requestAnimationFrame for better timing
       requestAnimationFrame(() => {
+        // Add a small offset to ensure the last message is visible above input
         flatListRef.current?.scrollToEnd({ animated });
+        // Double-tap scroll for reliability (sometimes first one doesn't work)
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, animated ? 300 : 100);
       });
     }
   };
@@ -1891,7 +1896,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const inputBottomPosition = 0; // Always at the bottom
   const effectiveInputHeight = Math.max(inputAreaHeight, DEFAULT_INPUT_AREA_HEIGHT);
   // Don't add tab bar height when keyboard is visible (tabs are hidden)
-  const messagesBottomPadding = effectiveInputHeight + (keyboardVisible ? 0 : tabBarHeight) + 10;
+  // Add extra padding to prevent messages from hiding behind input
+  const messagesBottomPadding = effectiveInputHeight + (keyboardVisible ? 20 : tabBarHeight + 20);
 
   // Render function for FlatList virtualization
   const renderMessage = ({ item: message, index }: { item: Message; index: number }) => {
@@ -2029,6 +2035,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           minIndexForVisible: 0,
           autoscrollToTopThreshold: 10
         }}
+        // Add keyboard avoiding behavior
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
         // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
