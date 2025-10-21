@@ -687,6 +687,30 @@ class ChatDatabaseService {
     }
   }
 
+  // Update image attachment with additional data (like message_id)
+  async updateImageAttachment(
+    imageId: string,
+    updates: Partial<ImageAttachment>
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('image_attachments')
+        .update(updates)
+        .eq('id', imageId);
+
+      if (error) {
+        console.error('Error updating image attachment:', error);
+        return false;
+      }
+
+      console.log(`✅ Updated image attachment: ${imageId}`);
+      return true;
+    } catch (error) {
+      console.error('Error in updateImageAttachment:', error);
+      return false;
+    }
+  }
+
   // Get image attachments for a specific message
   async getMessageImages(messageId: string): Promise<ImageAttachment[]> {
     try {

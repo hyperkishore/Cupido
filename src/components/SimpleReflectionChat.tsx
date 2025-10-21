@@ -482,13 +482,50 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       if (DEBUG) console.log(`📚 Loaded ${history.length} messages from database for conversation ${conversation.id}`);
 
       if (history.length > 0) {
-        // Convert DB messages to UI messages
-        const uiMessages: Message[] = history.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          isBot: msg.is_bot,
-          timestamp: new Date(msg.created_at),
-        }));
+        // Convert DB messages to UI messages and load image attachments
+        const uiMessages: Message[] = await Promise.all(
+          history.map(async (msg) => {
+            const baseMessage: Message = {
+              id: msg.id,
+              text: msg.content,
+              isBot: msg.is_bot,
+              timestamp: new Date(msg.created_at),
+            };
+
+            // Check if this message has image attachments
+            if (msg.metadata?.hasImage) {
+              try {
+                // Try to load by specific attachment ID first
+                if (msg.metadata?.imageAttachmentId) {
+                  const imageAttachment = await chatDatabase.getImageAttachment(msg.metadata.imageAttachmentId);
+                  if (imageAttachment) {
+                    baseMessage.imageAttachments = [imageAttachment];
+                    // Hide message text for image messages unless it's descriptive
+                    if (!msg.metadata?.isDescriptiveText) {
+                      baseMessage.text = '';
+                    }
+                    console.log('🖼️ Loaded image attachment for message:', msg.id);
+                  }
+                } else {
+                  // Fallback: Load all images for this message
+                  const messageImages = await chatDatabase.getMessageImages(msg.id);
+                  if (messageImages.length > 0) {
+                    baseMessage.imageAttachments = messageImages;
+                    // Hide message text for image messages unless it's descriptive
+                    if (!msg.metadata?.isDescriptiveText) {
+                      baseMessage.text = '';
+                    }
+                    console.log(`🖼️ Loaded ${messageImages.length} image attachment(s) for message:`, msg.id);
+                  }
+                }
+              } catch (error) {
+                console.error('❌ Error loading image attachment for message:', msg.id, error);
+              }
+            }
+
+            return baseMessage;
+          })
+        );
         
         setMessages(uiMessages);
         setConversationCount(history.filter(msg => !msg.is_bot).length);
@@ -784,6 +821,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         undefined,
         { hasImage: true, imageAttachmentId: imageAttachment.id }
       );
+
+      // Update the image attachment with the message ID for proper linking
+      if (userMessage) {
+        await chatDatabase.updateImageAttachment(imageAttachment.id, {
+          message_id: userMessage.id
+        });
+      }
 
       if (userMessage) {
         const messageWithImage: Message = {
