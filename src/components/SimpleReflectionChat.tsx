@@ -164,6 +164,27 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  // Mobile browser detection (Platform.OS is always 'web' in browsers)
+  const isMobileBrowser = Platform.OS === 'web' && typeof window !== 'undefined' && (
+    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768 || // Small screen
+    ('ontouchstart' in window) // Touch support
+  );
+  
+  // Debug logging for mobile detection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('🔍 Mobile Detection Debug:', {
+        'Platform.OS': Platform.OS,
+        'User Agent': navigator.userAgent,
+        'Window Width': window.innerWidth,
+        'Touch Support': 'ontouchstart' in window,
+        'Is Mobile Browser': isMobileBrowser,
+        'Return Key Type': isMobileBrowser ? 'default' : 'send'
+      });
+    }
+  }, [isMobileBrowser]);
   const [isTyping, setIsTyping] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [conversationCount, setConversationCount] = useState(0);
@@ -1311,9 +1332,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             placeholderTextColor="#999"
             multiline
             maxLength={10000}
-            returnKeyType={Platform.OS === 'web' ? 'send' : 'default'}
+            returnKeyType={isMobileBrowser ? 'default' : 'send'}
             blurOnSubmit={false}
-            onSubmitEditing={Platform.OS === 'web' ? () => handleSend() : undefined}
+            onSubmitEditing={isMobileBrowser ? undefined : () => handleSend()}
             onKeyPress={(e: any) => {
               // Handle Enter key on web (without Shift)
               if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -1347,7 +1368,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               (!inputText.trim() || isSending) && styles.sendButtonDisabled,
               pressed && styles.sendButtonPressed
             ]}
-            onPress={Platform.OS === 'web' ? () => handleSend() : undefined}
+            onPress={isMobileBrowser ? undefined : () => handleSend()}
             onLongPress={() => handleSend()}
             delayLongPress={250}
             disabled={!inputText.trim() || isSending}
