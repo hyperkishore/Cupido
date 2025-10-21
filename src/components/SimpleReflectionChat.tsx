@@ -446,10 +446,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           // Save to database if conversation exists
           if (currentConversation) {
             try {
-              await chatDatabase.addMessage(
+              await chatDatabase.saveMessage(
                 currentConversation.id,
                 simResponse,
-                'ai',
+                true, // is_bot
+                undefined, // no AI model for test
                 { simulatorPersona: personaName }
               );
             } catch (error) {
@@ -563,8 +564,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       conversationIdRef.current = conversation.id;
       if (DEBUG) console.log('[initializeChat] ✅ Conversation set in state AND ref:', conversation.id);
 
-      // Load chat history (increased limit to load more messages)
-      const history = await chatDatabase.getChatHistory(conversation.id, 200);
+      // Load chat history (initial page size for snappy load)
+      const history = await chatDatabase.getChatHistory(conversation.id, 50);
       if (DEBUG) console.log(`📚 Loaded ${history.length} messages from database for conversation ${conversation.id}`);
 
       if (history.length > 0) {
@@ -804,7 +805,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   };
 
   const loadOlderMessages = async () => {
-    if (isLoadingOlderMessages || !hasMoreMessages || !activeConversation) {
+    if (isLoadingOlderMessages || !hasMoreMessages || !currentConversation) {
       return;
     }
 
@@ -817,7 +818,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       
       // Load older messages from database
       const olderMessages = await chatDatabase.getChatHistory(
-        activeConversation.id, 
+        currentConversation.id, 
         MESSAGE_PAGE_SIZE,
         beforeTimestamp?.toISOString()
       );
@@ -2035,8 +2036,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         initialNumToRender={15}
         windowSize={21}
         getItemLayout={undefined} // Let FlatList calculate dynamically for variable heights
-        // Pagination for loading older messages
-        onScrollToTop={loadOlderMessages}
+        // Pagination for loading older messages (pull-to-refresh)
         refreshing={isLoadingOlderMessages}
         onRefresh={hasMoreMessages ? loadOlderMessages : undefined}
         // Header for loading indicator
