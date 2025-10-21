@@ -896,19 +896,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     let contextAssembly: any = null; // Available in all scopes
 
     try {
-      // CONTEXT STRATEGY: Add user message to intelligent context management
+      // CONTEXT STRATEGY: Get context WITHOUT adding current message yet
+      // We'll add both user and assistant messages AFTER the AI responds to avoid duplication
       if (activeConversationId) {
-        await conversationContext.addTurn(
-          activeConversationId,
-          'user',
-          userMessage,
-          {
-            messageType: 'user',
-            contextWeight: 1.0
-          }
-        );
-
-        // PERFORMANCE: Use cached context assembly
+        // PERFORMANCE: Use cached context assembly (WITHOUT current message)
         const contextStartTime = performance.now();
         contextAssembly = await getCachedContextAssembly(activeConversationId);
         measureContextPerformance('Context assembly', performance.now() - contextStartTime, {
@@ -969,6 +960,15 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           content: msg.content
         })));
 
+        if (DEBUG) {
+          console.log('📋 CONTEXT DEBUG - Messages being sent to AI:', {
+            historyCount: conversationHistory.length,
+            currentUserMessage: userMessage.substring(0, 50) + '...',
+            lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...',
+            isUserMessageInHistory: conversationHistory.some(msg => msg.content === userMessage)
+          });
+        }
+
         // Call AI service with optimized context (use actual userMessage parameter)
         var aiResponsePromise = chatAiService.generateResponse(
           userMessage, // Use the ACTUAL current user message, not an old one from context
@@ -1027,8 +1027,21 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           }
         );
 
-        // Add AI response to context strategy
+        // CONTEXT STRATEGY: Add BOTH user and assistant messages to context now
+        // This prevents duplicate context since we didn't add user message before AI call
         if (savedBotMessage) {
+          // First add the user message that triggered this response
+          await conversationContext.addTurn(
+            activeConversationId,
+            'user',
+            userMessage,
+            {
+              messageType: 'user',
+              contextWeight: 1.0
+            }
+          );
+          
+          // Then add the AI response
           await conversationContext.addTurn(
             activeConversationId,
             'assistant',
