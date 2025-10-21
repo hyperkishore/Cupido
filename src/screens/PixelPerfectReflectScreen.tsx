@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SimpleReflectionChat } from '../components/SimpleReflectionChat';
+import { VersionDisplay } from '../components/VersionDisplay';
 import { useNavigation } from '@react-navigation/native';
 import { userProfileService } from '../services/userProfileService';
 
@@ -40,6 +41,9 @@ export const PixelPerfectReflectScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <VersionDisplay />
+      </View>
       <View style={styles.chatContainer}>
         <SimpleReflectionChat onKeyboardToggle={handleKeyboardToggle} />
       </View>
@@ -51,6 +55,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   chatContainer: {
     flex: 1,

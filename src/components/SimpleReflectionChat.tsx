@@ -1313,7 +1313,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             maxLength={10000}
             returnKeyType="send"
             blurOnSubmit={false}
-            onSubmitEditing={Platform.OS !== 'web' ? handleSend : undefined}
+            onSubmitEditing={Platform.OS !== 'web' ? () => handleSend() : undefined}
             onKeyPress={(e: any) => {
               // Handle Enter key on web (without Shift)
               if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {

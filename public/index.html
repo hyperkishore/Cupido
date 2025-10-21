@@ -56,13 +56,22 @@
     <link rel="preconnect" href="https://api.openai.com" crossorigin />
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;
-      connect-src 'self' https: wss: http://localhost:3001 http://127.0.0.1:3001 http://192.168.0.104:3001;
-      img-src 'self' data: https: blob:;
-      media-src 'self' data: https: blob:;
-      font-src 'self' data: https:;
-    " />
+    <script>
+      // Dynamic CSP based on current hostname for development
+      const isDev = !window.location.hostname.includes('netlify.app');
+      const currentHost = window.location.hostname;
+      const devConnectSrc = isDev ? ` http://${currentHost}:3001 http://localhost:3001 http://127.0.0.1:3001` : '';
+      
+      const cspContent = `
+        default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;
+        connect-src 'self' https: wss:${devConnectSrc};
+        img-src 'self' data: https: blob:;
+        media-src 'self' data: https: blob:;
+        font-src 'self' data: https:;
+      `.replace(/\s+/g, ' ').trim();
+      
+      document.write(`<meta http-equiv="Content-Security-Policy" content="${cspContent}" />`);
+    </script>
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     
