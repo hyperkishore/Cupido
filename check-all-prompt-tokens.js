@@ -1,8 +1,13 @@
 // Check token count of all stored system prompts
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://rquhrsxgpkaxofbzqmnw.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxdWhyc3hncGtheG9mYnpxbW53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjkzMDAwNTcsImV4cCI6MjA0NDg3NjA1N30.3FDiZnMcXS38gEAi_WHLrKaHu-Yh-dddlcqz-qFUdz4';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

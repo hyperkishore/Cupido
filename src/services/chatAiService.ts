@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { userProfileService } from './userProfileService';
 import { promptService } from './promptService';
 
-const DEBUG = true; // Set to true for verbose logging during development
+const DEBUG = process.env.NODE_ENV === 'development' || __DEV__;
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
