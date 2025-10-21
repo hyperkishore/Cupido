@@ -808,7 +808,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         component: 'SimpleReflectionChat' 
       });
     };
-  }, [currentConversation?.id]);
+  }, []); // Empty dependency array - only cleanup on unmount, not when conversation changes
 
   // Message pagination and memory management
   const trimMessagesIfNeeded = (messagesList: Message[]): Message[] => {
@@ -960,14 +960,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           content: msg.content
         })));
 
-        if (DEBUG) {
-          console.log('📋 CONTEXT DEBUG - Messages being sent to AI:', {
-            historyCount: conversationHistory.length,
-            currentUserMessage: userMessage.substring(0, 50) + '...',
-            lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...',
-            isUserMessageInHistory: conversationHistory.some(msg => msg.content === userMessage)
-          });
-        }
+        // Always log context info for debugging
+        console.log('📋 CONTEXT DEBUG - Messages being sent to AI:', {
+          historyCount: conversationHistory.length,
+          currentUserMessage: userMessage.substring(0, 50) + '...',
+          lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...',
+          isUserMessageInHistory: conversationHistory.some(msg => msg.content === userMessage),
+          contextStrategy: contextAssembly.contextStrategy,
+          recentTurnsFromContext: contextAssembly.recentMessages.length,
+          hasSystemMemory: !!contextAssembly.systemMemory
+        });
 
         // Call AI service with optimized context (use actual userMessage parameter)
         var aiResponsePromise = chatAiService.generateResponse(
