@@ -208,7 +208,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [typingMessage, setTypingMessage] = useState('typing...');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [conversationCount, setConversationCount] = useState(0);
-  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'assistant'; content: string}>>([]);
+  // Removed conversationHistory state - we build context from messages array instead
   const [currentConversation, setCurrentConversation] = useState<ChatConversation | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -719,23 +719,26 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [onKeyboardToggle]);
 
-  // Auto-scroll
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    const scrollTimeout = memoryManager.setTimeout(() => {
+    // Use setTimeout directly to avoid undefined memoryManager
+    const scrollTimeout = setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
     
     // Cleanup function to cancel timeout if messages change again quickly
     return () => {
-      scrollTimeout.cleanup();
+      clearTimeout(scrollTimeout);
     };
-  }, [messages, memoryManager]);
+  }, [messages]);
 
   // Simple cleanup on unmount
   useEffect(() => {
     return () => {
-      // Clean up any pending timeouts
-      memoryManager.clearAll();
+      // Clean up any pending timeouts if memoryManager exists
+      if (memoryManager?.clearAll) {
+        memoryManager.clearAll();
+      }
     };
   }, [memoryManager]);
 
@@ -823,21 +826,28 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     const activeConversationId = conversationId || currentConversation?.id;
 
     try {
-      // SIMPLE APPROACH: Just use the conversation history we already have
+      // SIMPLE APPROACH: Build context from the last N messages in the UI
       // No complex context assembly, no caching, no summaries - just the last N messages
+      const recentMessages = messages.slice(-20); // Last 20 messages for context
+      const simpleHistory = recentMessages
+        .filter(m => !m.isPending && !m.imageUri && !m.imageAttachments) // Exclude pending messages and images
+        .map(m => ({
+          role: m.isBot ? 'assistant' : 'user' as 'user' | 'assistant',
+          content: m.text
+        }));
       
       if (DEBUG) {
         console.log('📋 SIMPLE CONTEXT - Messages being sent to AI:', {
-          historyCount: conversationHistory.length,
+          historyCount: simpleHistory.length,
           currentUserMessage: userMessage.substring(0, 50) + '...',
-          lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...'
+          lastHistoryMessage: simpleHistory[simpleHistory.length - 1]?.content?.substring(0, 50) + '...'
         });
       }
 
-      // Call AI service with simple conversation history
+      // Call AI service with simple conversation history built from messages
       const aiResponsePromise = chatAiService.generateResponse(
         userMessage,
-        conversationHistory, // Use the existing conversation history
+        simpleHistory, // Use the simple history built from UI messages
         conversationCount
       );
 
@@ -849,8 +859,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]);
       log.debug('[generateResponse] AI Response received', { hasResponse: !!aiResponse, component: 'SimpleReflectionChat' });
 
-      // Add natural delay to feel more human
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
+      // No artificial delay - users want fast responses
 
       // Save bot message to database
       if (DEBUG) console.log('🔍 Active conversation ID for saving bot message:', activeConversationId);
@@ -922,19 +931,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       setConversationCount(prev => prev + 1);
       
-      // SIMPLE: Update conversation history and keep it bounded
-      setConversationHistory(prev => {
-        const updated = [
-          ...prev,
-          { role: 'user', content: userMessage },
-          { role: 'assistant', content: aiResponse.message }
-        ];
-        // Keep only the last MAX_CONVERSATION_HISTORY messages
-        if (updated.length > MAX_CONVERSATION_HISTORY) {
-          return updated.slice(-MAX_CONVERSATION_HISTORY);
-        }
-        return updated;
-      });
+      // No need to maintain conversationHistory state - we build it from messages
 
     } catch (error) {
       log.error('Failed to generate AI response', error instanceof Error ? error : new Error(String(error)), {
@@ -1498,7 +1495,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
           
           // Trim conversation history for image requests to improve performance and reduce payload
-          const trimmedHistory = conversationHistory.slice(-10); // Only keep last 10 exchanges for context
+          // Build trimmed history from messages for image context
+          const recentMessages = messages.slice(-10); // Last 10 messages for context
+          const trimmedHistory = recentMessages
+            .filter(m => !m.isPending && !m.imageUri && !m.imageAttachments)
+            .map(m => ({
+              role: m.isBot ? 'assistant' : 'user' as 'user' | 'assistant',
+              content: m.text
+            }))
           
           const aiResponse = await chatAiService.generateResponseWithImage(
             conversationPrompt,
@@ -1577,18 +1581,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           updatePlaceholderMessage(placeholderId, aiResponse.message);
           
           // SIMPLE: Update conversation history with image context
-          setConversationHistory(prev => {
-            const updated = [
-              ...prev,
-              { role: 'user', content: `[Image: ${imageDescription}]` },
-              { role: 'assistant', content: aiResponse.message }
-            ];
-            // Keep only the last MAX_CONVERSATION_HISTORY messages
-            if (updated.length > MAX_CONVERSATION_HISTORY) {
-              return updated.slice(-MAX_CONVERSATION_HISTORY);
-            }
-            return updated;
-          });
+          // No need to maintain conversationHistory state - we build it from messages
 
         } catch (error) {
           log.error('Error generating AI response for image', error, { component: 'SimpleReflectionChat' });
@@ -1727,7 +1720,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     setIsSending(true);
     isSendingRef.current = true; // Update ref immediately for test compatibility
 
-    // OPTIMISTIC UI UPDATE: Show message immediately, save asynchronously
+    // OPTIMISTIC UI: Show message immediately
     const optimisticUserMessage: Message = {
       id: `temp_user_${Date.now()}`,
       text: messageText,
@@ -1736,58 +1729,52 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       isPending: true, // Mark as pending save
     };
 
-    // Add to UI immediately for instant response with automatic trimming
+    // Add to UI immediately for instant response
     setMessages(prev => trimMessagesIfNeeded([...prev, optimisticUserMessage]));
-    log.debug('Optimistic UI: User message added immediately', { component: 'SimpleReflectionChat' });
+    
+    // Release send button immediately
+    setIsSending(false);
+    isSendingRef.current = false;
 
-    // Wrap everything in try/finally to ensure isSending always gets reset
-    try {
-      // Save user message to database asynchronously (don't block UI)
-      if (activeConversation) {
-        // SIMPLE: Save user message
-        chatDatabase.saveMessage(
-          activeConversation.id,
-          messageText,
-          false, // is_bot = false for user
-          undefined, // no AI model for user messages
-          { 
-            message_length: messageText.length
-          }
-        ).then(savedUserMessage => {
-          // Update the optimistic message with real database ID
-          if (savedUserMessage) {
-            setMessages(prev => prev.map(msg => 
-              msg.id === optimisticUserMessage.id 
-                ? { ...msg, id: savedUserMessage.id, isPending: false }
-                : msg
-            ));
-            log.debug('Database save completed, updated message ID', { component: 'SimpleReflectionChat' });
-          } else {
-            // Mark as failed but keep in UI
-            setMessages(prev => prev.map(msg => 
-              msg.id === optimisticUserMessage.id 
-                ? { ...msg, isPending: false, saveFailed: true }
-                : msg
-            ));
-            console.error('❌ Failed to save user message to database');
-          }
-        }).catch(error => {
-          // Handle save errors gracefully
+    // Save user message to database in background (non-blocking)
+    if (activeConversation) {
+      chatDatabase.saveMessage(
+        activeConversation.id,
+        messageText,
+        false, // is_bot = false for user
+        undefined, // no AI model for user messages
+        { 
+          message_length: messageText.length
+        }
+      ).then(savedUserMessage => {
+        // Update the optimistic message with real database ID
+        if (savedUserMessage) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === optimisticUserMessage.id 
+              ? { ...msg, id: savedUserMessage.id, isPending: false }
+              : msg
+          ));
+        } else {
+          // Mark as failed but keep in UI
           setMessages(prev => prev.map(msg => 
             msg.id === optimisticUserMessage.id 
               ? { ...msg, isPending: false, saveFailed: true }
               : msg
           ));
-          log.error('Error saving user message', error, { component: 'SimpleReflectionChat' });
-        });
+          console.error('❌ Failed to save user message to database');
+        }
+      }).catch(error => {
+        // Handle save errors gracefully
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticUserMessage.id 
+            ? { ...msg, isPending: false, saveFailed: true }
+            : msg
+        ));
+        console.error('Error saving user message:', error);
+      });
+    }
 
-        // Add small delay to ensure UI renders before proceeding (prevents message disappearing)
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      // User message is now visible - release the send button immediately
-      setIsSending(false);
-      isSendingRef.current = false;
+    try {
       if (DEBUG) console.log('[handleSend] ✅ User message sent, isSending=false');
 
       // Extract profile information in background (non-blocking)
@@ -1975,6 +1962,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         testID="messages-scroll-view"
+        inverted={false} // Keep normal order since we want to load older messages at top
         // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
