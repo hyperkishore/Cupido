@@ -31,7 +31,8 @@ import { useMemoryManager } from '../utils/memoryManager';
 import { escapeHtml, sanitizeMessageContent } from '../utils/sanitizer';
 import { log } from '../utils/logger';
 import { validateChatMessage } from '../utils/validation';
-import { conversationContext } from '../services/conversationContext';
+// REMOVED: Complex context strategy - keeping it simple
+// import { conversationContext } from '../services/conversationContext';
 
 interface Message {
   id: string;
@@ -213,60 +214,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  // CONTEXT STRATEGY: Performance guardrails and memoization
-  const contextCache = useRef(new Map());
-  const lastContextAssembly = useRef<any>(null);
-  const lastAssemblyTimestamp = useRef(0);
-  const CONTEXT_CACHE_TTL = 30000; // 30 seconds cache
-
-  // Memoized context assembly to prevent unnecessary recalculations
-  const getCachedContextAssembly = useCallback(async (conversationId: string) => {
-    const now = Date.now();
-    const cacheKey = `${conversationId}_assembly`;
-    const cached = contextCache.current.get(cacheKey);
-    
-    // Return cached version if still valid
-    if (cached && (now - cached.timestamp) < CONTEXT_CACHE_TTL) {
-      log.debug('Using cached context assembly', { 
-        conversationId, 
-        age: now - cached.timestamp,
-        component: 'SimpleReflectionChat' 
-      });
-      return cached.data;
-    }
-    
-    // Generate new assembly
-    const assembly = await conversationContext.assembleContext(conversationId);
-    
-    // Cache the result
-    contextCache.current.set(cacheKey, {
-      data: assembly,
-      timestamp: now
-    });
-    
-    // Clear old cache entries to prevent memory leaks
-    if (contextCache.current.size > 10) {
-      const entries = Array.from(contextCache.current.entries());
-      entries.slice(0, -5).forEach(([key]) => {
-        contextCache.current.delete(key);
-      });
-    }
-    
-    return assembly;
-  }, []);
-
-  // Performance monitoring for context operations
-  const measureContextPerformance = useCallback((operation: string, duration: number, metadata?: any) => {
-    if (duration > 1000) { // Log slow operations
-      log.warn(`Slow context operation: ${operation}`, { 
-        duration, 
-        metadata,
-        component: 'SimpleReflectionChat' 
-      });
-    } else {
-      log.perf(operation, duration, metadata);
-    }
-  }, []);
+  // Simple conversation history limit - no complex context strategy needed
+  const MAX_CONVERSATION_HISTORY = 20; // Keep last 20 messages (10 exchanges) for context
 
   // Refs for test message handler to avoid race conditions
   const messagesRef = useRef<Message[]>([]);
@@ -684,17 +633,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         setMessages(uiMessages);
         setConversationCount(history.filter(msg => !msg.is_bot).length);
         
-        // CONTEXT STRATEGY: Initialize conversation context for cold-start
-        if (DEBUG) console.log('🧠 Initializing conversation context for cold-start...');
-        await conversationContext.initializeContext(conversation.id);
-        if (DEBUG) console.log('✅ Context initialized successfully');
-        
-        // Rebuild conversation history for AI (legacy fallback)
-        const aiHistory = history.map(msg => ({
+        // Build conversation history for AI - simple and reliable
+        const aiHistory = history.slice(-MAX_CONVERSATION_HISTORY).map(msg => ({
           role: msg.is_bot ? 'assistant' as const : 'user' as const,
           content: msg.content,
         }));
         setConversationHistory(aiHistory);
+        
+        if (DEBUG) console.log('✅ Loaded conversation history:', aiHistory.length, 'messages');
       } else {
         // Start with a greeting if no history
         const greetings = [
@@ -724,14 +670,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             timestamp: new Date(savedMessage.created_at),
           };
           setMessages([greeting]);
-          
-          // CONTEXT STRATEGY: Initialize context for new conversation
-          if (DEBUG) console.log('🧠 Initializing conversation context for new conversation...');
-          await conversationContext.initializeContext(conversation.id);
-          if (DEBUG) console.log('✅ Context initialized for new conversation');
-        } else {
-          // Even if greeting save failed, initialize context
-          await conversationContext.initializeContext(conversation.id);
         }
       }
       
@@ -793,22 +731,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [messages, memoryManager]);
 
-  // CONTEXT STRATEGY: Cleanup cache and context on unmount
+  // Simple cleanup on unmount
   useEffect(() => {
     return () => {
-      // Clear context cache
-      contextCache.current.clear();
-      
-      // Clear conversation context from memory if conversation exists
-      if (currentConversation?.id) {
-        conversationContext.clearContext(currentConversation.id);
-      }
-      
-      log.debug('Cleaned up context strategy resources', { 
-        component: 'SimpleReflectionChat' 
-      });
+      // Clean up any pending timeouts
+      memoryManager.clearAll();
     };
-  }, []); // Empty dependency array - only cleanup on unmount, not when conversation changes
+  }, [memoryManager]);
 
   // Message pagination and memory management
   const trimMessagesIfNeeded = (messagesList: Message[]): Message[] => {
@@ -887,111 +816,30 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   const generateResponse = async (userMessage: string, conversationId?: string) => {
     log.debug('[generateResponse] called', { messageLength: userMessage.length, component: 'SimpleReflectionChat' });
-    log.debug('[generateResponse] currentConversation check', { hasConversation: !!currentConversation, component: 'SimpleReflectionChat' });
     if (DEBUG) console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
     setIsTyping(true);
 
     // Define activeConversationId in function scope so it's available in catch block
     const activeConversationId = conversationId || currentConversation?.id;
-    let contextAssembly: any = null; // Available in all scopes
 
     try {
-      // CONTEXT STRATEGY: Get context WITHOUT adding current message yet
-      // We'll add both user and assistant messages AFTER the AI responds to avoid duplication
-      if (activeConversationId) {
-        // PERFORMANCE: Use cached context assembly (WITHOUT current message)
-        const contextStartTime = performance.now();
-        contextAssembly = await getCachedContextAssembly(activeConversationId);
-        measureContextPerformance('Context assembly', performance.now() - contextStartTime, {
-          conversationId: activeConversationId,
-          strategy: contextAssembly.contextStrategy
-        });
-        
-        log.perf('Context assembly completed', performance.now(), {
-          conversationId: activeConversationId,
-          systemMemoryLength: contextAssembly.systemMemory.length,
-          recentMessagesCount: contextAssembly.recentMessages.length,
-          totalTokensEstimate: contextAssembly.totalTokensEstimate,
-          contextStrategy: contextAssembly.contextStrategy
-        });
-
-        // Prepare enhanced messages for Claude
-        const messagesForClaude = [];
-        
-        // Add system memory as context (if exists)
-        if (contextAssembly.systemMemory.trim()) {
-          messagesForClaude.push({
-            role: 'system' as const,
-            content: `Context from previous conversation: ${contextAssembly.systemMemory}`
-          });
-        }
-
-        // Add recent conversation turns
-        messagesForClaude.push(...contextAssembly.recentMessages);
-
-        if (DEBUG) {
-          console.log('🧠 Context Strategy Assembly:', {
-            strategy: contextAssembly.contextStrategy,
-            totalTokensEstimate: contextAssembly.totalTokensEstimate,
-            systemMemoryChars: contextAssembly.systemMemory.length,
-            recentTurns: contextAssembly.recentMessages.length,
-            messagesForClaude: messagesForClaude.length
-          });
-        }
-
-        // CONTEXT STRATEGY: Convert context assembly to expected format
-        const conversationHistory: Array<{role: 'user' | 'assistant'; content: string}> = [];
-        
-        // Extract system memory and recent messages
-        const systemMemory = contextAssembly.systemMemory;
-        const recentMessages = contextAssembly.recentMessages;
-        
-        // Build conversation history with system memory as context
-        if (systemMemory.trim()) {
-          conversationHistory.push({
-            role: 'assistant',
-            content: `[Previous context: ${systemMemory}]`
-          });
-        }
-        
-        // Add all recent messages as conversation history
-        conversationHistory.push(...recentMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })));
-
-        // Always log context info for debugging
-        console.log('📋 CONTEXT DEBUG - Messages being sent to AI:', {
+      // SIMPLE APPROACH: Just use the conversation history we already have
+      // No complex context assembly, no caching, no summaries - just the last N messages
+      
+      if (DEBUG) {
+        console.log('📋 SIMPLE CONTEXT - Messages being sent to AI:', {
           historyCount: conversationHistory.length,
           currentUserMessage: userMessage.substring(0, 50) + '...',
-          lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...',
-          isUserMessageInHistory: conversationHistory.some(msg => msg.content === userMessage),
-          contextStrategy: contextAssembly.contextStrategy,
-          recentTurnsFromContext: contextAssembly.recentMessages.length,
-          hasSystemMemory: !!contextAssembly.systemMemory
+          lastHistoryMessage: conversationHistory[conversationHistory.length - 1]?.content?.substring(0, 50) + '...'
         });
-
-        // Call AI service with optimized context (use actual userMessage parameter)
-        var aiResponsePromise = chatAiService.generateResponse(
-          userMessage, // Use the ACTUAL current user message, not an old one from context
-          conversationHistory,
-          conversationCount
-        );
-      } else {
-        // Fallback to old method if no conversation ID
-        const updatedHistory = [
-          ...conversationHistory,
-          { role: 'user' as const, content: userMessage }
-        ];
-
-        log.debug('[generateResponse] Using fallback context method', { component: 'SimpleReflectionChat' });
-
-        var aiResponsePromise = chatAiService.generateResponse(
-          userMessage,
-          updatedHistory,
-          conversationCount
-        );
       }
+
+      // Call AI service with simple conversation history
+      const aiResponsePromise = chatAiService.generateResponse(
+        userMessage,
+        conversationHistory, // Use the existing conversation history
+        conversationCount
+      );
 
       // Timeout wrapper to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -1014,8 +862,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           shouldAskQuestion: aiResponse.shouldAskQuestion
         });
 
-        // CONTEXT STRATEGY: Save with enhanced metadata and token tracking
-        const savedBotMessage = await chatDatabase.saveMessageWithTokens(
+        // SIMPLE: Save message without complex token tracking
+        const savedBotMessage = await chatDatabase.saveMessage(
           activeConversationId,
           aiResponse.message,
           true, // is_bot
@@ -1023,38 +871,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           {
             response_time: Date.now(),
             conversation_count: conversationCount + 1,
-            shouldAskQuestion: aiResponse.shouldAskQuestion,
-            context_strategy: 'enhanced', // Mark as using new context strategy
-            total_context_tokens: contextAssembly?.totalTokensEstimate || 0
+            shouldAskQuestion: aiResponse.shouldAskQuestion
           }
         );
-
-        // CONTEXT STRATEGY: Add BOTH user and assistant messages to context now
-        // This prevents duplicate context since we didn't add user message before AI call
-        if (savedBotMessage) {
-          // First add the user message that triggered this response
-          await conversationContext.addTurn(
-            activeConversationId,
-            'user',
-            userMessage,
-            {
-              messageType: 'user',
-              contextWeight: 1.0
-            }
-          );
-          
-          // Then add the AI response
-          await conversationContext.addTurn(
-            activeConversationId,
-            'assistant',
-            aiResponse.message,
-            {
-              messageType: 'assistant',
-              contextWeight: 1.0,
-              aiModel: aiResponse.usedModel
-            }
-          );
-        }
 
         if (!savedBotMessage) {
           console.error('❌ Failed to save AI message to database');
@@ -1103,12 +922,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       setConversationCount(prev => prev + 1);
       
-      // FIXED: Use functional update to avoid async state capture
-      setConversationHistory(prev => [
-        ...prev,
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: aiResponse.message }
-      ]);
+      // SIMPLE: Update conversation history and keep it bounded
+      setConversationHistory(prev => {
+        const updated = [
+          ...prev,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: aiResponse.message }
+        ];
+        // Keep only the last MAX_CONVERSATION_HISTORY messages
+        if (updated.length > MAX_CONVERSATION_HISTORY) {
+          return updated.slice(-MAX_CONVERSATION_HISTORY);
+        }
+        return updated;
+      });
 
     } catch (error) {
       log.error('Failed to generate AI response', error instanceof Error ? error : new Error(String(error)), {
@@ -1750,12 +1576,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           // Update placeholder with actual response
           updatePlaceholderMessage(placeholderId, aiResponse.message);
           
-          // FIXED: Use functional update to avoid async state capture  
-          setConversationHistory(prev => [
-            ...prev,
-            { role: 'user', content: `[Image: ${imageDescription}]` },
-            { role: 'assistant', content: aiResponse.message }
-          ]);
+          // SIMPLE: Update conversation history with image context
+          setConversationHistory(prev => {
+            const updated = [
+              ...prev,
+              { role: 'user', content: `[Image: ${imageDescription}]` },
+              { role: 'assistant', content: aiResponse.message }
+            ];
+            // Keep only the last MAX_CONVERSATION_HISTORY messages
+            if (updated.length > MAX_CONVERSATION_HISTORY) {
+              return updated.slice(-MAX_CONVERSATION_HISTORY);
+            }
+            return updated;
+          });
 
         } catch (error) {
           log.error('Error generating AI response for image', error, { component: 'SimpleReflectionChat' });
@@ -1911,16 +1744,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     try {
       // Save user message to database asynchronously (don't block UI)
       if (activeConversation) {
-        // CONTEXT STRATEGY: Save with enhanced token tracking
-        chatDatabase.saveMessageWithTokens(
+        // SIMPLE: Save user message
+        chatDatabase.saveMessage(
           activeConversation.id,
           messageText,
           false, // is_bot = false for user
           undefined, // no AI model for user messages
           { 
-            message_length: messageText.length,
-            message_type: 'user',
-            context_weight: 1.0
+            message_length: messageText.length
           }
         ).then(savedUserMessage => {
           // Update the optimistic message with real database ID
