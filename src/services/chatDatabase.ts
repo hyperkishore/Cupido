@@ -604,14 +604,19 @@ class ChatDatabaseService {
 
       if (error) {
         console.error('Error saving image attachment:', error);
-        return null;
+        const enrichedError: any = new Error(error.message || 'Failed to save image attachment');
+        if (error.code) enrichedError.code = error.code;
+        if (error.details) enrichedError.details = error.details;
+        if (error.hint) enrichedError.hint = error.hint;
+        enrichedError.originalError = error;
+        throw enrichedError;
       }
 
       console.log(`✅ Saved image attachment: ${data.id}`);
       return data;
     } catch (error) {
       console.error('Error in saveImageAttachment:', error);
-      return null;
+      throw error;
     }
   }
 
@@ -729,6 +734,25 @@ class ChatDatabaseService {
     } catch (error) {
       console.error('Error in getMessageImages:', error);
       return [];
+    }
+  }
+
+  async updateMessageMetadata(messageId: string, metadata: any): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ metadata })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error updating message metadata:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateMessageMetadata:', error);
+      return false;
     }
   }
 

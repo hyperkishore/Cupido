@@ -154,6 +154,7 @@ interface SimpleReflectionChatProps {
 }
 
 const DEBUG = false; // Set to true for verbose logging during development
+const DEFAULT_INPUT_AREA_HEIGHT = 70;
 
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
@@ -164,6 +165,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [inputAreaHeight, setInputAreaHeight] = useState(DEFAULT_INPUT_AREA_HEIGHT);
   
   // Mobile browser detection (Platform.OS is always 'web' in browsers)
   const isMobileBrowser = Platform.OS === 'web' && typeof window !== 'undefined' && (
@@ -518,30 +520,60 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               timestamp: new Date(msg.created_at),
             };
 
-            // Check if this message has image attachments - use lazy loading
+            // Check if this message has image attachments
             if (msg.metadata?.hasImage) {
-              // Create placeholder for lazy loading - don't block chat initialization
-              baseMessage.imageAttachments = [{
-                id: msg.metadata?.imageAttachmentId || `placeholder_${msg.id}`,
-                conversation_id: conversation.id,
-                user_id: user.id,
-                image_data: '', // Empty - will be loaded on demand
-                mime_type: 'image/jpeg', // Default
-                file_size: 0,
-                created_at: msg.created_at,
-                metadata: { 
-                  isPlaceholder: true, 
-                  messageId: msg.id,
-                  attachmentId: msg.metadata?.imageAttachmentId 
+              const storageStrategy = msg.metadata?.storageStrategy;
+              const inlineImage = msg.metadata?.inlineImage;
+
+              if (storageStrategy === 'inline' && inlineImage?.base64) {
+                baseMessage.imageAttachments = [{
+                  id: msg.metadata?.imageAttachmentId || `inline_${msg.id}`,
+                  conversation_id: conversation.id,
+                  user_id: user.id,
+                  image_data: inlineImage.base64,
+                  mime_type: inlineImage.mimeType || 'image/jpeg',
+                  file_size: inlineImage.compressedSize || inlineImage.fileSize || 0,
+                  width: inlineImage.width,
+                  height: inlineImage.height,
+                  created_at: msg.created_at,
+                  metadata: {
+                    storageStrategy: 'inline',
+                    fileName: inlineImage.fileName,
+                    originalSize: inlineImage.originalSize,
+                    compressedSize: inlineImage.compressedSize,
+                    imageDescription: inlineImage.description,
+                    aiAnalysis: inlineImage.aiAnalysis,
+                    analyzedAt: inlineImage.analyzedAt,
+                  }
+                } as ImageAttachment];
+
+                if (!msg.metadata?.isDescriptiveText) {
+                  baseMessage.text = '';
                 }
-              } as ImageAttachment];
-              
-              // Hide message text for image messages unless it's descriptive
-              if (!msg.metadata?.isDescriptiveText) {
-                baseMessage.text = '';
+              } else {
+                // Create placeholder for lazy loading - don't block chat initialization
+                baseMessage.imageAttachments = [{
+                  id: msg.metadata?.imageAttachmentId || `placeholder_${msg.id}`,
+                  conversation_id: conversation.id,
+                  user_id: user.id,
+                  image_data: '', // Empty - will be loaded on demand
+                  mime_type: 'image/jpeg', // Default
+                  file_size: 0,
+                  created_at: msg.created_at,
+                  metadata: { 
+                    isPlaceholder: true, 
+                    messageId: msg.id,
+                    attachmentId: msg.metadata?.imageAttachmentId 
+                  }
+                } as ImageAttachment];
+                
+                // Hide message text for image messages unless it's descriptive
+                if (!msg.metadata?.isDescriptiveText) {
+                  baseMessage.text = '';
+                }
+                
+                console.log('📋 Created image placeholder for message:', msg.id);
               }
-              
-              console.log('📋 Created image placeholder for message:', msg.id);
             }
 
             return baseMessage;
@@ -839,59 +871,153 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         compressedSize: imageData.compressedSize
       });
 
-      // Save image attachment to database
-      const imageAttachment = await chatDatabase.saveImageAttachment(
-        currentConversation.id,
-        userId,
-        imageData.base64,
-        imageData.mimeType,
-        undefined, // No message ID yet
-        {
+      const attachmentMetadata = {
+        width: imageData.width,
+        height: imageData.height,
+        fileName: imageData.fileName,
+        originalSize: imageData.originalSize,
+        compressedSize: imageData.compressedSize
+      };
+
+      const inlineMessageMetadata = {
+        hasImage: true,
+        storageStrategy: 'inline' as const,
+        inlineImage: {
+          base64: imageData.base64,
+          mimeType: imageData.mimeType,
           width: imageData.width,
           height: imageData.height,
           fileName: imageData.fileName,
           originalSize: imageData.originalSize,
-          compressedSize: imageData.compressedSize
+          compressedSize: imageData.compressedSize,
         }
-      );
+      };
 
-      if (!imageAttachment) {
+      let imageAttachment: ImageAttachment | null = null;
+      let storageStrategy: 'attachment' | 'inline' = 'attachment';
+
+      try {
+        imageAttachment = await chatDatabase.saveImageAttachment(
+          currentConversation.id,
+          userId,
+          imageData.base64,
+          imageData.mimeType,
+          undefined,
+          attachmentMetadata
+        );
+      } catch (error: any) {
+        const combinedMessage = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+        const missingTable =
+          error?.code === '42P01' ||
+          error?.code === 'PGRST201' ||
+          error?.code === 'PGRST204' ||
+          combinedMessage.includes('image_attachments') && combinedMessage.includes('does not exist');
+
+        if (missingTable) {
+          console.warn('⚠️ image_attachments table unavailable - using inline metadata storage for images.');
+          storageStrategy = 'inline';
+        } else {
+          throw error;
+        }
+      }
+
+      if (!imageAttachment && storageStrategy === 'attachment') {
         throw new Error('Failed to save image attachment');
       }
 
-      // Create user message with image (will be updated with description)
-      const userMessage = await chatDatabase.saveMessage(
-        currentConversation.id,
-        'Image uploaded', // Temporary text, will be updated
-        false, // is_bot
-        undefined,
-        { hasImage: true, imageAttachmentId: imageAttachment.id }
-      );
+      const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
 
-      // Update the image attachment with the message ID for proper linking
-      if (userMessage) {
-        await chatDatabase.updateImageAttachment(imageAttachment.id, {
-          message_id: userMessage.id
-        });
-      }
+      if (storageStrategy === 'attachment' && imageAttachment) {
+        const userMessage = await chatDatabase.saveMessage(
+          currentConversation.id,
+          'Image uploaded',
+          false,
+          undefined,
+          { hasImage: true, imageAttachmentId: imageAttachment.id }
+        );
 
-      if (userMessage) {
+        const messageId = userMessage?.id || `temp_image_${Date.now()}`;
+
+        if (userMessage) {
+          await chatDatabase.updateImageAttachment(imageAttachment.id, {
+            message_id: userMessage.id
+          });
+        }
+
         const messageWithImage: Message = {
-          id: userMessage.id,
-          text: '', // Hide text for image messages
+          id: messageId,
+          text: '',
           isBot: false,
-          timestamp: new Date(userMessage.created_at),
+          timestamp: userMessage ? new Date(userMessage.created_at) : new Date(),
           imageAttachments: [imageAttachment]
         };
 
         setMessages(prev => [...prev, messageWithImage]);
 
-        // IMMEDIATE RESPONSE: Add placeholder message right away
-        const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
-
-        // BACKGROUND PROCESSING: Start AI analysis without blocking UI
         setTimeout(() => {
-          processImageInBackground(imageData, imageAttachment, placeholderId);
+          processImageInBackground(imageData, imageAttachment, placeholderId, {
+            messageId: userMessage?.id,
+            storageStrategy: 'attachment',
+            persisted: Boolean(userMessage)
+          });
+        }, 100);
+      } else {
+        const inlineAttachmentId = `inline_${Date.now()}`;
+        const inlineAttachment: ImageAttachment = {
+          id: inlineAttachmentId,
+          conversation_id: currentConversation.id,
+          user_id: userId,
+          image_data: imageData.base64,
+          mime_type: imageData.mimeType,
+          file_size: imageData.compressedSize,
+          width: imageData.width,
+          height: imageData.height,
+          created_at: new Date().toISOString(),
+          metadata: {
+            storageStrategy: 'inline',
+            fileName: imageData.fileName,
+            originalSize: imageData.originalSize,
+            compressedSize: imageData.compressedSize,
+          }
+        };
+
+        const inlineMessage: DBChatMessage | null = await chatDatabase.saveMessage(
+          currentConversation.id,
+          'Image uploaded',
+          false,
+          undefined,
+          {
+            ...inlineMessageMetadata,
+            imageAttachmentId: inlineAttachmentId
+          }
+        );
+
+        const finalMessageId = inlineMessage?.id || inlineAttachmentId;
+        const finalTimestamp = inlineMessage ? new Date(inlineMessage.created_at) : new Date();
+
+        const messageWithImage: Message = {
+          id: finalMessageId,
+          text: '',
+          isBot: false,
+          timestamp: finalTimestamp,
+          imageAttachments: [{
+            ...inlineAttachment,
+            id: inlineAttachmentId,
+          }]
+        };
+
+        setMessages(prev => [...prev, messageWithImage]);
+
+        setTimeout(() => {
+          processImageInBackground(imageData, inlineAttachment, placeholderId, {
+            messageId: finalMessageId,
+            storageStrategy: 'inline',
+            baseMetadata: {
+              ...inlineMessageMetadata,
+              imageAttachmentId: inlineAttachmentId
+            },
+            persisted: Boolean(inlineMessage)
+          });
         }, 100);
       }
     } catch (error) {
@@ -904,12 +1030,40 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const processImageInBackground = async (
     imageData: ImageProcessingResult,
     imageAttachment: ImageAttachment,
-    placeholderId: string
+    placeholderId: string,
+    options?: {
+      messageId?: string;
+      storageStrategy?: 'attachment' | 'inline';
+      baseMetadata?: any;
+      persisted?: boolean;
+    }
   ) => {
     try {
       // Show progress to user
       updatePlaceholderMessage(placeholderId, '📷 Analyzing your image...');
-      
+      const inferredStrategy = (imageAttachment.metadata as any)?.storageStrategy === 'inline' ? 'inline' : 'attachment';
+      const storageStrategy = options?.storageStrategy || inferredStrategy;
+      const linkedMessageId = options?.messageId;
+      let inlineMetadata = options?.baseMetadata;
+
+      if (storageStrategy === 'inline' && !inlineMetadata) {
+        inlineMetadata = {
+          hasImage: true,
+          storageStrategy: 'inline' as const,
+          imageAttachmentId: imageAttachment.id,
+          inlineImage: {
+            base64: imageAttachment.image_data,
+            mimeType: imageAttachment.mime_type,
+            width: imageAttachment.width,
+            height: imageAttachment.height,
+            fileName: (imageAttachment.metadata as any)?.fileName,
+            originalSize: (imageAttachment.metadata as any)?.originalSize,
+            compressedSize: (imageAttachment.metadata as any)?.compressedSize,
+          }
+        };
+      }
+      const canPersistInline = storageStrategy === 'inline' && !!linkedMessageId && !!inlineMetadata && !!options?.persisted;
+
       try {
           // Step 1: Get a brief description of the image for context
           const descriptionPrompt = "Please describe this image in one concise sentence, focusing on the main subject and setting. Keep it under 20 words.";
@@ -923,6 +1077,38 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
           const imageDescription = descriptionResponse.message;
           console.log('🖼️ Generated image description:', imageDescription);
+
+          if (storageStrategy === 'inline' && linkedMessageId && inlineMetadata) {
+            inlineMetadata = {
+              ...inlineMetadata,
+              imageAttachmentId: imageAttachment.id,
+              inlineImage: {
+                ...(inlineMetadata.inlineImage || {}),
+                description: imageDescription,
+              }
+            };
+            if (canPersistInline) {
+              await chatDatabase.updateMessageMetadata(linkedMessageId, inlineMetadata);
+            }
+            setMessages(prev => prev.map(msg => 
+              msg.id === linkedMessageId
+                ? {
+                    ...msg,
+                    imageAttachments: msg.imageAttachments?.map(att =>
+                      att.id === imageAttachment.id
+                        ? {
+                            ...att,
+                            metadata: {
+                              ...(att.metadata || {}),
+                              imageDescription: imageDescription
+                            }
+                          }
+                        : att
+                    )
+                  }
+                : msg
+            ));
+          }
 
           // Step 2: Save a descriptive message for the chat thread context
           const descriptiveMessage = await chatDatabase.saveMessage(
@@ -955,16 +1141,53 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           );
 
           // Update image attachment with AI analysis
-          await chatDatabase.updateImageAnalysis(
-            imageAttachment.id,
-            aiResponse.message,
-            {
-              model: aiResponse.usedModel,
-              analyzedAt: new Date().toISOString(),
-              promptUsed: conversationPrompt,
-              imageDescription: imageDescription
+          if (storageStrategy === 'attachment') {
+            await chatDatabase.updateImageAnalysis(
+              imageAttachment.id,
+              aiResponse.message,
+              {
+                model: aiResponse.usedModel,
+                analyzedAt: new Date().toISOString(),
+                promptUsed: conversationPrompt,
+                imageDescription: imageDescription
+              }
+            );
+          } else if (storageStrategy === 'inline' && linkedMessageId && inlineMetadata) {
+            const analyzedAt = new Date().toISOString();
+            inlineMetadata = {
+              ...inlineMetadata,
+              imageAttachmentId: imageAttachment.id,
+              inlineImage: {
+                ...(inlineMetadata.inlineImage || {}),
+                description: inlineMetadata.inlineImage?.description || imageDescription,
+                aiAnalysis: aiResponse.message,
+                analyzedAt,
+              }
+            };
+            if (canPersistInline) {
+              await chatDatabase.updateMessageMetadata(linkedMessageId, inlineMetadata);
             }
-          );
+            setMessages(prev => prev.map(msg => 
+              msg.id === linkedMessageId
+                ? {
+                    ...msg,
+                    imageAttachments: msg.imageAttachments?.map(att =>
+                      att.id === imageAttachment.id
+                        ? {
+                            ...att,
+                            metadata: {
+                              ...(att.metadata || {}),
+                              imageDescription: inlineMetadata.inlineImage?.description || imageDescription,
+                              aiAnalysis: aiResponse.message,
+                              analyzedAt
+                            }
+                          }
+                        : att
+                    )
+                  }
+                : msg
+            ));
+          }
 
           // Save AI response message
           const aiMessage = await chatDatabase.saveMessage(
@@ -1212,10 +1435,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   };
 
   // Fixed positioning calculations
-  const INPUT_AREA_HEIGHT = 70;
   const inputBottomPosition = 0; // Always at the bottom
+  const effectiveInputHeight = Math.max(inputAreaHeight, DEFAULT_INPUT_AREA_HEIGHT);
   // Don't add tab bar height when keyboard is visible (tabs are hidden)
-  const messagesBottomPadding = INPUT_AREA_HEIGHT + (keyboardVisible ? 0 : tabBarHeight) + 10;
+  const messagesBottomPadding = effectiveInputHeight + (keyboardVisible ? 0 : tabBarHeight) + 10;
 
   return (
     <KeyboardAvoidingView 
@@ -1351,9 +1574,15 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           styles.inputWrapper,
           {
             bottom: inputBottomPosition,
-            height: INPUT_AREA_HEIGHT,
+            paddingBottom: Math.max(insets.bottom, 12),
           }
         ]}
+        onLayout={(event) => {
+          const { height } = event.nativeEvent.layout;
+          if (Math.abs(height - inputAreaHeight) > 1) {
+            setInputAreaHeight(height);
+          }
+        }}
       >
         <View style={styles.inputContainer} testID="input-container">
           <ImageUpload
@@ -1498,6 +1727,9 @@ const styles = StyleSheet.create({
     elevation: 5,
     justifyContent: 'center',
     paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    minHeight: DEFAULT_INPUT_AREA_HEIGHT,
   },
   inputContainer: {
     flexDirection: 'row',
