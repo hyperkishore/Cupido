@@ -186,6 +186,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   }, [isMobileBrowser]);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingMessage, setTypingMessage] = useState('typing...');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [conversationCount, setConversationCount] = useState(0);
   const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'assistant'; content: string}>>([]);
@@ -793,6 +794,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       setConversationCount(prev => prev + 1);
     } finally {
       setIsTyping(false);
+      setTypingMessage('typing...');
     }
   };
 
@@ -859,6 +861,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
         // Generate AI response with image
         setIsTyping(true);
+        setTypingMessage('analyzing image...');
         try {
           // Step 1: Get a brief description of the image for context
           const descriptionPrompt = "Please describe this image in one concise sentence, focusing on the main subject and setting. Keep it under 20 words.";
@@ -890,6 +893,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           console.log('✅ Saved descriptive message:', descriptiveMessage?.id);
 
           // Step 3: Generate the main AI response with full context
+          setTypingMessage('generating response...');
           const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
           
           const aiResponse = await chatAiService.generateResponseWithImage(
@@ -961,6 +965,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           setMessages(prev => [...prev, fallbackMessage]);
         } finally {
           setIsTyping(false);
+          setTypingMessage('typing...');
         }
       }
     } catch (error) {
@@ -1300,7 +1305,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         
         {isTyping && (
           <View style={styles.typingContainer} testID="typing-indicator">
-            <Text style={styles.typingText}>typing...</Text>
+            <Text style={styles.typingText}>{typingMessage}</Text>
           </View>
         )}
       </ScrollView>

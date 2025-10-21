@@ -363,9 +363,10 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         console.log('🌐 Final URL for fetch:', proxyUrl);
       }
 
-      // Add timeout to prevent hanging forever
+      // Add timeout to prevent hanging forever (longer for images)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+      const timeoutMs = imageData ? 60000 : 25000; // 60s for images, 25s for text
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(proxyUrl, {
         method: 'POST',
@@ -425,8 +426,9 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
     } catch (error: any) {
       // Enhanced error handling with specific error types
       if (error.name === 'AbortError') {
-        console.error('❌ Request timeout - AI response took longer than 25s');
-        throw new Error('TIMEOUT_ERROR: AI request timed out after 25 seconds');
+        const timeoutSec = imageData ? 60 : 25;
+        console.error(`❌ Request timeout - AI response took longer than ${timeoutSec}s`);
+        throw new Error(`TIMEOUT_ERROR: AI request timed out after ${timeoutSec} seconds`);
       } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
         console.error('❌ Network error - cannot reach proxy:', error);
         throw new Error('NETWORK_ERROR: Cannot reach AI proxy server');
