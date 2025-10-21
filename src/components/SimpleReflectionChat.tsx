@@ -727,13 +727,22 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     // Use setTimeout directly to avoid undefined memoryManager
     const scrollTimeout = setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    }, 150); // Slightly longer delay for better reliability
     
     // Cleanup function to cancel timeout if messages change again quickly
     return () => {
       clearTimeout(scrollTimeout);
     };
   }, [messages]);
+
+  // Scroll to bottom on initial load
+  useEffect(() => {
+    if (messages.length > 0 && !isLoading) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false }); // No animation on initial load
+      }, 300);
+    }
+  }, [isLoading]);
 
   // Simple cleanup on unmount
   useEffect(() => {
@@ -831,13 +840,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     try {
       // SIMPLE APPROACH: Build context from the last N messages in the UI
       // No complex context assembly, no caching, no summaries - just the last N messages
-      const recentMessages = messages.slice(-20); // Last 20 messages for context
+      const recentMessages = messages.slice(-30); // Last 30 messages for better context
       const simpleHistory = recentMessages
-        .filter(m => !m.isPending && !m.imageUri && !m.imageAttachments) // Exclude pending messages and images
+        .filter(m => !m.isPending && !m.imageUri && !m.imageAttachments && m.text) // Exclude pending messages, images, and empty text
         .map(m => ({
           role: m.isBot ? 'assistant' : 'user' as 'user' | 'assistant',
           content: m.text
         }));
+      
+      // Add debug to catch context issues
+      if (simpleHistory.length === 0 && messages.length > 0) {
+        console.warn('⚠️ WARNING: No valid messages for context despite having messages in UI');
+        console.warn('Messages in UI:', messages.length, 'Valid for context:', simpleHistory.length);
+      }
       
       if (DEBUG) {
         console.log('📋 SIMPLE CONTEXT - Messages being sent to AI:', {
@@ -847,10 +862,18 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         });
       }
 
+      // Ensure we have at least some context - add a system message if needed
+      const contextForAI = simpleHistory.length > 0 ? simpleHistory : [
+        { 
+          role: 'system' as const, 
+          content: 'You are continuing an ongoing conversation. The user knows who you are. Do not introduce yourself.'
+        }
+      ];
+      
       // Call AI service with simple conversation history built from messages
       const aiResponsePromise = chatAiService.generateResponse(
         userMessage,
-        simpleHistory, // Use the simple history built from UI messages
+        contextForAI, // Use the context with fallback
         conversationCount
       );
 
@@ -917,6 +940,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               return prev;
             }
             if (DEBUG) console.log('✅ Adding bot message to UI');
+            // Scroll to bottom after bot message
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
             return [...prev, botMessage];
           });
         }
@@ -1738,6 +1765,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     // Release send button immediately
     setIsSending(false);
     isSendingRef.current = false;
+    
+    // Scroll to bottom after adding user message
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 50);
 
     // Save user message to database in background (non-blocking)
     if (activeConversation) {
