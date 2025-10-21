@@ -1154,13 +1154,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // Fixed positioning calculations
   const INPUT_AREA_HEIGHT = 70;
   const inputBottomPosition = 0; // Always at the bottom
-  const messagesBottomPadding = INPUT_AREA_HEIGHT + tabBarHeight + 10;
+  // Don't add tab bar height when keyboard is visible (tabs are hidden)
+  const messagesBottomPadding = INPUT_AREA_HEIGHT + (keyboardVisible ? 0 : tabBarHeight) + 10;
 
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? (keyboardVisible ? 0 : 90) : 0}
     >
       {/* Messages area */}
       <ScrollView
@@ -1346,7 +1347,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               (!inputText.trim() || isSending) && styles.sendButtonDisabled,
               pressed && styles.sendButtonPressed
             ]}
-            onPress={handleSend}
+            onPress={() => handleSend()}
             disabled={!inputText.trim() || isSending}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
