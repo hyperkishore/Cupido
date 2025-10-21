@@ -189,7 +189,7 @@ class IntelligentQuestionService {
     criteria: QuestionSelectionCriteria
   ): QuestionWithContext {
     let score = 50; // Base score
-    let reasons: string[] = [];
+    const reasons: string[] = [];
 
     // Progressive depth scoring
     if (criteria.progressiveDepth) {

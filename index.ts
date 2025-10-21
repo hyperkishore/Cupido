@@ -1,6 +1,8 @@
 import { registerRootComponent } from 'expo';
 
 import App from './App';
+// Initialize global error handling early
+import './src/utils/errorHandler';
 
 // Intercept console logs and forward to parent window (test dashboard)
 if (typeof window !== 'undefined' && window.parent !== window) {
@@ -11,13 +13,14 @@ if (typeof window !== 'undefined' && window.parent !== window) {
   console.log = (...args: any[]) => {
     originalLog.apply(console, args);
     try {
+      const targetOrigin = window.location.origin;
       window.parent.postMessage({
         type: 'console-log',
         level: 'info',
         message: args.map(arg =>
           typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
         ).join(' ')
-      }, '*');
+      }, targetOrigin);
     } catch (e) {
       // Ignore postMessage errors
     }
@@ -26,13 +29,14 @@ if (typeof window !== 'undefined' && window.parent !== window) {
   console.error = (...args: any[]) => {
     originalError.apply(console, args);
     try {
+      const targetOrigin = window.location.origin;
       window.parent.postMessage({
         type: 'console-log',
         level: 'error',
         message: args.map(arg =>
           typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
         ).join(' ')
-      }, '*');
+      }, targetOrigin);
     } catch (e) {
       // Ignore postMessage errors
     }
@@ -41,13 +45,14 @@ if (typeof window !== 'undefined' && window.parent !== window) {
   console.warn = (...args: any[]) => {
     originalWarn.apply(console, args);
     try {
+      const targetOrigin = window.location.origin;
       window.parent.postMessage({
         type: 'console-log',
         level: 'warning',
         message: args.map(arg =>
           typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
         ).join(' ')
-      }, '*');
+      }, targetOrigin);
     } catch (e) {
       // Ignore postMessage errors
     }

@@ -3179,6 +3179,12 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Listen for errors from iframe
 window.addEventListener('message', (event) => {
+  // CRITICAL SECURITY: Validate message origin before processing
+  if (event.origin !== window.location.origin) {
+    console.warn('🔒 Blocked postMessage from unauthorized origin:', event.origin);
+    return;
+  }
+
   if (event.data.type === 'console-error') {
     consoleErrors.push({
       message: event.data.message,
@@ -3278,7 +3284,7 @@ function sendMessageToApp(message) {
   frame.contentWindow.postMessage({
     type: 'test-send-message',
     message: message
-  }, '*');
+  }, window.location.origin);
 }
 
 // Helper to get app state from iframe
@@ -3289,6 +3295,12 @@ function getAppState() {
     }, 5000);
 
     const stateListener = (event) => {
+      // CRITICAL SECURITY: Validate message origin before processing
+      if (event.origin !== window.location.origin) {
+        console.warn('🔒 Blocked postMessage from unauthorized origin:', event.origin);
+        return;
+      }
+
       if (event.data.type === 'test-state-response') {
         clearTimeout(timeout);
         window.removeEventListener('message', stateListener);
@@ -3299,7 +3311,7 @@ function getAppState() {
     window.addEventListener('message', stateListener);
 
     const frame = document.getElementById('live-app-iframe');
-    frame.contentWindow.postMessage({ type: 'test-get-state' }, '*');
+    frame.contentWindow.postMessage({ type: 'test-get-state' }, window.location.origin);
   });
 }
 
@@ -3335,6 +3347,12 @@ window.debugIframe = function() {
   // Test postMessage communication
   console.log('14. Testing postMessage...');
   const messageListener = (event) => {
+    // CRITICAL SECURITY: Validate message origin before processing
+    if (event.origin !== window.location.origin) {
+      console.warn('🔒 Blocked postMessage from unauthorized origin:', event.origin);
+      return;
+    }
+
     if (event.data.type === 'test-state-response') {
       console.log('15. ✅ TestBridge responded!', event.data);
       window.removeEventListener('message', messageListener);
@@ -3343,7 +3361,7 @@ window.debugIframe = function() {
     }
   };
   window.addEventListener('message', messageListener);
-  iframe?.contentWindow?.postMessage({ type: 'test-get-state' }, '*');
+  iframe?.contentWindow?.postMessage({ type: 'test-get-state' }, window.location.origin);
 
   setTimeout(() => {
     window.removeEventListener('message', messageListener);
@@ -11614,7 +11632,7 @@ Include the exact code snippets that need to be changed.`;
 
             // Post message to iframe
             const iframe = document.getElementById('live-app-iframe');
-            iframe.contentWindow.postMessage(messageData, '*');
+            iframe.contentWindow.postMessage(messageData, window.location.origin);
 
             const personaName = personaId ? (SIMULATOR_PERSONAS && SIMULATOR_PERSONAS[personaId] ? SIMULATOR_PERSONAS[personaId].name : personaId) : 'User';
             const params = `Style: ${responseStyle}, Rudeness: ${rudenessLevel}`;
@@ -11629,7 +11647,7 @@ Include the exact code snippets that need to be changed.`;
             // Request chat export from iframe
             iframe.contentWindow.postMessage({
                 type: 'export-chat'
-            }, '*');
+            }, window.location.origin);
 
             logToConsole('Exporting chat history...', 'info', 'app');
         }
@@ -12120,6 +12138,12 @@ Include the exact code snippets that need to be changed.`;
         function setupConsoleMonitoring() {
             // Listen for messages from the iframe
             window.addEventListener('message', (event) => {
+                // CRITICAL SECURITY: Validate message origin before processing
+                if (event.origin !== window.location.origin) {
+                    console.warn('🔒 Blocked postMessage from unauthorized origin:', event.origin);
+                    return;
+                }
+
                 if (!event.data || !event.data.type) return;
 
                 switch (event.data.type) {

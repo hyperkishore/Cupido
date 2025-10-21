@@ -39,9 +39,33 @@ class ErrorHandler {
 
       // Handle unhandled promise rejections
       window.addEventListener('unhandledrejection', (event) => {
-        this.captureError(new Error(event.reason), {
+        // Prevent the default behavior (showing error in console)
+        event.preventDefault();
+        
+        // Extract error details
+        const reason = event.reason;
+        let error: Error;
+        
+        if (reason instanceof Error) {
+          error = reason;
+        } else if (typeof reason === 'string') {
+          error = new Error(reason);
+        } else if (typeof reason === 'object' && reason !== null) {
+          error = new Error(JSON.stringify(reason));
+        } else {
+          error = new Error('Unknown promise rejection');
+        }
+        
+        this.captureError(error, {
           type: 'unhandled_promise_rejection',
+          originalReason: reason,
+          reasonType: typeof reason,
         });
+        
+        // Log for debugging but don't crash the app
+        if (environment.debug.debugMode) {
+          console.error('🚨 Unhandled Promise Rejection caught and handled:', error);
+        }
       });
     }
   }
@@ -192,6 +216,36 @@ class ErrorHandler {
       return fallback;
     }
   }
+
+  /**
+   * Safely handle promises to prevent unhandled rejections
+   */
+  safePromise<T>(
+    promise: Promise<T>,
+    fallback?: T,
+    context?: Record<string, any>
+  ): Promise<T | undefined> {
+    return promise.catch((error) => {
+      this.captureError(error instanceof Error ? error : new Error(String(error)), {
+        ...context,
+        component: 'safe_promise_handler',
+      });
+      return fallback;
+    });
+  }
+
+  /**
+   * Create a safe promise wrapper that handles rejections
+   */
+  wrapPromise<T>(promise: Promise<T>, context?: Record<string, any>): Promise<T> {
+    return promise.catch((error) => {
+      this.captureError(error instanceof Error ? error : new Error(String(error)), {
+        ...context,
+        component: 'promise_wrapper',
+      });
+      throw error; // Re-throw so callers can still handle if needed
+    });
+  }
 }
 
 // Global error handler instance
@@ -209,6 +263,12 @@ export const withErrorBoundary = <T>(fn: () => T, fallback?: T) =>
 
 export const withAsyncErrorBoundary = <T>(fn: () => Promise<T>, fallback?: T) =>
   errorHandler.withAsyncErrorBoundary(fn, fallback);
+
+export const safePromise = <T>(promise: Promise<T>, fallback?: T, context?: Record<string, any>) =>
+  errorHandler.safePromise(promise, fallback, context);
+
+export const wrapPromise = <T>(promise: Promise<T>, context?: Record<string, any>) =>
+  errorHandler.wrapPromise(promise, context);
 
 // React Error Boundary HOC
 export const createErrorBoundary = (FallbackComponent?: React.ComponentType<{ error?: Error }>) => {

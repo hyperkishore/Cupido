@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, Fragment } from 'react';
+import React, { useState, useRef, useEffect, Fragment, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +27,11 @@ import { userProfileService } from '../services/userProfileService';
 import { ImageUpload } from './ImageUpload';
 import { ImageMessage } from './ImageMessage';
 import { processImage, ImageProcessingResult } from '../utils/imageUtils';
+import { useMemoryManager } from '../utils/memoryManager';
+import { escapeHtml, sanitizeMessageContent } from '../utils/sanitizer';
+import { log } from '../utils/logger';
+import { validateChatMessage } from '../utils/validation';
+import { conversationContext } from '../services/conversationContext';
 
 interface Message {
   id: string;
@@ -34,6 +40,8 @@ interface Message {
   timestamp: Date;
   imageUri?: string; // Legacy support for existing images
   imageAttachments?: ImageAttachment[]; // New support for processed images
+  isPending?: boolean; // For optimistic UI updates
+  saveFailed?: boolean; // If database save failed
 }
 
 // Natural conversation starters and responses
@@ -108,12 +116,12 @@ const getStoredSessionUserId = async (authUserId: string): Promise<string | null
       // Use window.localStorage directly for better reliability
       if (typeof window !== 'undefined' && window.localStorage) {
         const value = window.localStorage.getItem(key);
-        console.log(`📦 Retrieved session from localStorage: ${key} = ${value}`);
+        log.debug(`Retrieved session from localStorage: ${key}`, { key, hasValue: !!value });
         return value;
       }
       return null;
     } catch (error) {
-      console.warn('Failed to read session from web storage', error);
+      log.warn('Failed to read session from web storage', { error: error.message });
       return null;
     }
   }
@@ -121,7 +129,7 @@ const getStoredSessionUserId = async (authUserId: string): Promise<string | null
   try {
     return await AsyncStorage.getItem(key);
   } catch (error) {
-    console.warn('Failed to read session from AsyncStorage', error);
+    log.warn('Failed to read session from AsyncStorage', { error: error.message });
     return null;
   }
 };
@@ -134,10 +142,10 @@ const setStoredSessionUserId = async (authUserId: string, value: string) => {
       // Use window.localStorage directly for better reliability
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(key, value);
-        console.log(`💾 Saved session to localStorage: ${key} = ${value}`);
+        log.debug(`Saved session to localStorage: ${key}`, { key });
       }
     } catch (error) {
-      console.warn('Failed to persist session to web storage', error);
+      log.warn('Failed to persist session to web storage', { error: error.message });
     }
     return;
   }
@@ -145,7 +153,7 @@ const setStoredSessionUserId = async (authUserId: string, value: string) => {
   try {
     await AsyncStorage.setItem(key, value);
   } catch (error) {
-    console.warn('Failed to persist session to AsyncStorage', error);
+    log.warn('Failed to persist session to AsyncStorage', { error: error.message });
   }
 };
 
@@ -159,10 +167,18 @@ const DEFAULT_INPUT_AREA_HEIGHT = 70;
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
   const { user: authUser } = useAuth(); // Get authenticated user from context
+  const memoryManager = useMemoryManager();
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  
+  // Message pagination constants
+  const MESSAGE_PAGE_SIZE = 50; // Load 50 messages at a time
+  const MAX_MESSAGES_IN_MEMORY = 100; // Keep max 100 messages in memory
+  const TRIM_TO_MESSAGES = 75; // When trimming, keep 75 most recent
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [inputAreaHeight, setInputAreaHeight] = useState(DEFAULT_INPUT_AREA_HEIGHT);
@@ -174,19 +190,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     ('ontouchstart' in window) // Touch support
   );
   
-  // Debug logging for mobile detection
+  // Debug logging for mobile detection  
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      console.log('🔍 Mobile Detection Debug:', {
-        'Platform.OS': Platform.OS,
-        'User Agent': navigator.userAgent,
-        'Window Width': window.innerWidth,
-        'Touch Support': 'ontouchstart' in window,
-        'User Agent Test': /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-        'Width Test': window.innerWidth <= 768,
-        'Is Mobile Browser': isMobileBrowser,
-        'Return Key Type': isMobileBrowser ? 'default' : 'send',
-        'onSubmitEditing': isMobileBrowser ? 'undefined' : 'handleSend'
+      log.debug('Mobile Detection Debug', {
+        component: 'SimpleReflectionChat',
+        platform: Platform.OS,
+        userAgent: navigator.userAgent,
+        windowWidth: window.innerWidth,
+        touchSupport: 'ontouchstart' in window,
+        isMobileBrowser,
       });
     }
   }, [isMobileBrowser]);
@@ -199,6 +212,61 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const [userId, setUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+
+  // CONTEXT STRATEGY: Performance guardrails and memoization
+  const contextCache = useRef(new Map());
+  const lastContextAssembly = useRef<any>(null);
+  const lastAssemblyTimestamp = useRef(0);
+  const CONTEXT_CACHE_TTL = 30000; // 30 seconds cache
+
+  // Memoized context assembly to prevent unnecessary recalculations
+  const getCachedContextAssembly = useCallback(async (conversationId: string) => {
+    const now = Date.now();
+    const cacheKey = `${conversationId}_assembly`;
+    const cached = contextCache.current.get(cacheKey);
+    
+    // Return cached version if still valid
+    if (cached && (now - cached.timestamp) < CONTEXT_CACHE_TTL) {
+      log.debug('Using cached context assembly', { 
+        conversationId, 
+        age: now - cached.timestamp,
+        component: 'SimpleReflectionChat' 
+      });
+      return cached.data;
+    }
+    
+    // Generate new assembly
+    const assembly = await conversationContext.assembleContext(conversationId);
+    
+    // Cache the result
+    contextCache.current.set(cacheKey, {
+      data: assembly,
+      timestamp: now
+    });
+    
+    // Clear old cache entries to prevent memory leaks
+    if (contextCache.current.size > 10) {
+      const entries = Array.from(contextCache.current.entries());
+      entries.slice(0, -5).forEach(([key]) => {
+        contextCache.current.delete(key);
+      });
+    }
+    
+    return assembly;
+  }, []);
+
+  // Performance monitoring for context operations
+  const measureContextPerformance = useCallback((operation: string, duration: number, metadata?: any) => {
+    if (duration > 1000) { // Log slow operations
+      log.warn(`Slow context operation: ${operation}`, { 
+        duration, 
+        metadata,
+        component: 'SimpleReflectionChat' 
+      });
+    } else {
+      log.perf(operation, duration, metadata);
+    }
+  }, []);
 
   // Refs for test message handler to avoid race conditions
   const messagesRef = useRef<Message[]>([]);
@@ -233,18 +301,18 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   // Initialize chat with database - reinitialize when user changes
   useEffect(() => {
-    if (DEBUG) console.log('[useEffect setupChat] 🔄 Triggered - authUser?.id:', authUser?.id);
+    log.debug('[useEffect setupChat] Triggered', { authUserId: authUser?.id, component: 'SimpleReflectionChat' });
     let unsubscribe: (() => void) | undefined;
 
     const setupChat = async () => {
-      if (DEBUG) console.log('[setupChat] 🚀 Starting chat setup...');
+      log.debug('[setupChat] Starting chat setup', { component: 'SimpleReflectionChat' });
       // Clear existing messages when user changes
       setMessages([]);
       setConversationHistory([]);
       setConversationCount(0);
-      if (DEBUG) console.log('[setupChat] ✓ Cleared existing messages');
+      log.debug('[setupChat] Cleared existing messages', { component: 'SimpleReflectionChat' });
 
-      if (DEBUG) console.log('[setupChat] Calling initializeChat...');
+      log.debug('[setupChat] Calling initializeChat', { component: 'SimpleReflectionChat' });
       unsubscribe = await initializeChat();
       if (DEBUG) console.log('[setupChat] ✓ initializeChat returned, unsubscribe:', unsubscribe ? 'function' : 'undefined');
     };
@@ -310,16 +378,38 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     if (Platform.OS !== 'web') return;
 
     const handleTestMessage = async (event: MessageEvent) => {
+      // CRITICAL SECURITY: Validate message origin before processing
+      if (event.origin !== window.location.origin) {
+        console.warn('🔒 Blocked postMessage from unauthorized origin:', event.origin);
+        return;
+      }
+
       const { type, message } = event.data;
 
       switch (type) {
         case 'test-send-message':
+          // Validate test message first
+          const testMessageValidation = validateChatMessage(message);
+          if (!testMessageValidation.isValid) {
+            log.warn('Invalid test message rejected', {
+              component: 'SimpleReflectionChat',
+              errors: testMessageValidation.errors,
+              messagePreview: message.substring(0, 50),
+            });
+            return;
+          }
+
+          const validatedTestMessage = testMessageValidation.sanitizedValue || message;
+
           // Deduplication: Use content-based key (simpler and more reliable than time-based)
           const conversationId = conversationIdRef.current || 'no-conversation';
-          const messageKey = `${conversationId}_${message.trim().toLowerCase()}`;
+          const messageKey = `${conversationId}_${validatedTestMessage.trim().toLowerCase()}`;
 
           if (processedTestMessagesRef.current.has(messageKey)) {
-            console.log('[TEST] ⚠️  DUPLICATE MESSAGE BLOCKED:', message.substring(0, 50));
+            log.warn('Duplicate test message blocked', { 
+            component: 'SimpleReflectionChat',
+            messagePreview: validatedTestMessage.substring(0, 50) 
+          });
             return; // Skip duplicate
           }
 
@@ -327,26 +417,32 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           processedTestMessagesRef.current.add(messageKey);
 
           // Clean up after 5 seconds (prevents memory leak for long test sessions)
-          setTimeout(() => {
+          memoryManager.setTimeout(() => {
             processedTestMessagesRef.current.delete(messageKey);
           }, 5000);
 
           // Simulate sending a message from test dashboard
-          console.log('[TEST] ✅ Received test message command:', message);
+          log.debug('Received test message command', { 
+            component: 'SimpleReflectionChat',
+            message: validatedTestMessage.substring(0, 100) 
+          });
           console.log('[TEST] Current state:', {
             currentInputText: inputText,
             isSending,
-            messageLength: message?.length
+            messageLength: validatedTestMessage?.length
           });
 
-          // Directly call handleSend with the message (no state involved)
+          // Directly call handleSend with the validated message (no state involved)
           console.log('[TEST] Calling handleSend directly with message...');
-          handleSend(message);
+          handleSend(validatedTestMessage);
           break;
 
         case 'test-clear-session':
           // Clear session for testing new user flow
-          console.log('[TEST] Clearing session for new user test');
+          log.info('Clearing session for new user test', { 
+            component: 'SimpleReflectionChat',
+            action: 'test-clear-session' 
+          });
           if (typeof window !== 'undefined' && window.localStorage) {
             const keys = Object.keys(window.localStorage);
             keys.forEach(key => {
@@ -372,10 +468,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           console.log('[TEST] test-get-state response:', state);
           // Send response back to parent window
           if (window.parent !== window) {
+            const targetOrigin = window.location.origin;
             window.parent.postMessage({
               type: 'test-state-response',
               state
-            }, '*');
+            }, targetOrigin);
           }
           break;
           
@@ -384,7 +481,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const { message: simResponse, personaName } = event.data;
           if (!simResponse) break;
           
-          console.log(`[SIMULATOR] Received response from ${personaName || 'simulator'}:`, simResponse);
+          log.debug(`[SIMULATOR] Received response from ${personaName || 'simulator'}`, { responseLength: simResponse.length, component: 'SimpleReflectionChat' });
           
           // Add the simulator response as an AI message
           const newBotMessage: ChatMessageType = {
@@ -407,7 +504,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 { simulatorPersona: personaName }
               );
             } catch (error) {
-              console.error('[SIMULATOR] Error saving message:', error);
+              log.error('[SIMULATOR] Error saving message', error, { component: 'SimpleReflectionChat' });
             }
           }
           break;
@@ -422,8 +519,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   }, []); // Empty dependency array - listener stays active and uses refs
 
   const initializeChat = async (): Promise<(() => void) | undefined> => {
-    if (DEBUG) console.log('[initializeChat] 🚀 Starting initialization...');
-    if (DEBUG) console.log('[initializeChat] authUser:', authUser ? `exists (id: ${authUser.id})` : 'null');
+    log.debug('[initializeChat] Starting initialization', { component: 'SimpleReflectionChat' });
+    log.debug('[initializeChat] authUser check', { hasAuthUser: !!authUser, authUserId: authUser?.id, component: 'SimpleReflectionChat' });
 
     try {
       setIsLoading(true);
@@ -587,7 +684,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         setMessages(uiMessages);
         setConversationCount(history.filter(msg => !msg.is_bot).length);
         
-        // Rebuild conversation history for AI
+        // CONTEXT STRATEGY: Initialize conversation context for cold-start
+        if (DEBUG) console.log('🧠 Initializing conversation context for cold-start...');
+        await conversationContext.initializeContext(conversation.id);
+        if (DEBUG) console.log('✅ Context initialized successfully');
+        
+        // Rebuild conversation history for AI (legacy fallback)
         const aiHistory = history.map(msg => ({
           role: msg.is_bot ? 'assistant' as const : 'user' as const,
           content: msg.content,
@@ -622,6 +724,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             timestamp: new Date(savedMessage.created_at),
           };
           setMessages([greeting]);
+          
+          // CONTEXT STRATEGY: Initialize context for new conversation
+          if (DEBUG) console.log('🧠 Initializing conversation context for new conversation...');
+          await conversationContext.initializeContext(conversation.id);
+          if (DEBUG) console.log('✅ Context initialized for new conversation');
+        } else {
+          // Even if greeting save failed, initialize context
+          await conversationContext.initializeContext(conversation.id);
         }
       }
       
@@ -636,9 +746,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       if (DEBUG) console.log('[initializeChat] ✅ Initialization complete - returning unsubscribe function');
       return unsubscribe;
     } catch (error) {
-      console.error('[initializeChat] ❌ ERROR during initialization:', error);
-      console.error('[initializeChat] Error details:', JSON.stringify(error));
-      console.error('[initializeChat] Stack trace:', error instanceof Error ? error.stack : 'no stack');
+      log.error('Chat initialization failed', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SimpleReflectionChat',
+        function: 'initializeChat',
+        errorDetails: JSON.stringify(error),
+      });
     } finally {
       if (DEBUG) console.log('[initializeChat] Finally block - setting isLoading to false');
       setIsLoading(false);
@@ -671,41 +783,213 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   // Auto-scroll
   useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+    const scrollTimeout = memoryManager.setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [messages]);
+    
+    // Cleanup function to cancel timeout if messages change again quickly
+    return () => {
+      scrollTimeout.cleanup();
+    };
+  }, [messages, memoryManager]);
+
+  // CONTEXT STRATEGY: Cleanup cache and context on unmount
+  useEffect(() => {
+    return () => {
+      // Clear context cache
+      contextCache.current.clear();
+      
+      // Clear conversation context from memory if conversation exists
+      if (currentConversation?.id) {
+        conversationContext.clearContext(currentConversation.id);
+      }
+      
+      log.debug('Cleaned up context strategy resources', { 
+        component: 'SimpleReflectionChat' 
+      });
+    };
+  }, [currentConversation?.id]);
+
+  // Message pagination and memory management
+  const trimMessagesIfNeeded = (messagesList: Message[]): Message[] => {
+    if (messagesList.length <= MAX_MESSAGES_IN_MEMORY) {
+      return messagesList;
+    }
+    
+    log.perf('Message trimming', performance.now(), { 
+      totalMessages: messagesList.length,
+      trimTo: TRIM_TO_MESSAGES 
+    });
+    
+    // Keep the most recent messages and preserve any pending saves
+    const pendingMessages = messagesList.filter(msg => msg.isPending);
+    const savedMessages = messagesList.filter(msg => !msg.isPending);
+    
+    // Take most recent saved messages
+    const recentSaved = savedMessages.slice(-TRIM_TO_MESSAGES);
+    
+    // Combine pending and recent saved
+    const trimmed = [...recentSaved, ...pendingMessages];
+    
+    if (DEBUG) {
+      log.perf('Message trimming completed', performance.now(), { before: messagesList.length, after: trimmed.length });
+    }
+    
+    return trimmed;
+  };
+
+  const loadOlderMessages = async () => {
+    if (isLoadingOlderMessages || !hasMoreMessages || !activeConversation) {
+      return;
+    }
+
+    setIsLoadingOlderMessages(true);
+    
+    try {
+      // Get oldest message timestamp for pagination
+      const oldestMessage = messages[0];
+      const beforeTimestamp = oldestMessage?.timestamp;
+      
+      // Load older messages from database
+      const olderMessages = await chatDatabase.getChatHistory(
+        activeConversation.id, 
+        MESSAGE_PAGE_SIZE,
+        beforeTimestamp?.toISOString()
+      );
+      
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+      
+      // Convert to UI format
+      const uiOlderMessages: Message[] = olderMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isBot: msg.is_bot,
+        timestamp: new Date(msg.created_at),
+      }));
+      
+      // Prepend older messages
+      setMessages(prev => [...uiOlderMessages, ...prev]);
+      
+      // Check if we got less than requested (means we hit the end)
+      if (olderMessages.length < MESSAGE_PAGE_SIZE) {
+        setHasMoreMessages(false);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load older messages:', error);
+    } finally {
+      setIsLoadingOlderMessages(false);
+    }
+  };
 
   const generateResponse = async (userMessage: string, conversationId?: string) => {
-    if (DEBUG) console.log('[MOBILE DEBUG] generateResponse called with:', userMessage);
-    if (DEBUG) console.log('[MOBILE DEBUG] currentConversation in generateResponse:', currentConversation);
+    log.debug('[generateResponse] called', { messageLength: userMessage.length, component: 'SimpleReflectionChat' });
+    log.debug('[generateResponse] currentConversation check', { hasConversation: !!currentConversation, component: 'SimpleReflectionChat' });
     if (DEBUG) console.log('[MOBILE DEBUG] conversationId passed:', conversationId);
     setIsTyping(true);
 
     // Define activeConversationId in function scope so it's available in catch block
     const activeConversationId = conversationId || currentConversation?.id;
+    let contextAssembly: any = null; // Available in all scopes
 
     try {
-      // Update conversation history to include the new user message BEFORE calling AI
-      const updatedHistory = [
-        ...conversationHistory,
-        { role: 'user' as const, content: userMessage }
-      ];
+      // CONTEXT STRATEGY: Add user message to intelligent context management
+      if (activeConversationId) {
+        await conversationContext.addTurn(
+          activeConversationId,
+          'user',
+          userMessage,
+          {
+            messageType: 'user',
+            contextWeight: 1.0
+          }
+        );
 
-      if (DEBUG) console.log('💬 Sending to AI:', {
-        userMessage,
-        historyLength: updatedHistory.length,
-        fullHistory: updatedHistory
-      });
+        // PERFORMANCE: Use cached context assembly
+        const contextStartTime = performance.now();
+        contextAssembly = await getCachedContextAssembly(activeConversationId);
+        measureContextPerformance('Context assembly', performance.now() - contextStartTime, {
+          conversationId: activeConversationId,
+          strategy: contextAssembly.contextStrategy
+        });
+        
+        log.perf('Context assembly completed', performance.now(), {
+          conversationId: activeConversationId,
+          systemMemoryLength: contextAssembly.systemMemory.length,
+          recentMessagesCount: contextAssembly.recentMessages.length,
+          totalTokensEstimate: contextAssembly.totalTokensEstimate,
+          contextStrategy: contextAssembly.contextStrategy
+        });
 
-      if (DEBUG) console.log('[MOBILE DEBUG] Calling chatAiService.generateResponse');
+        // Prepare enhanced messages for Claude
+        const messagesForClaude = [];
+        
+        // Add system memory as context (if exists)
+        if (contextAssembly.systemMemory.trim()) {
+          messagesForClaude.push({
+            role: 'system' as const,
+            content: `Context from previous conversation: ${contextAssembly.systemMemory}`
+          });
+        }
 
-      // Call the AI service with UPDATED conversation history (with 30s timeout)
-      const aiResponsePromise = chatAiService.generateResponse(
-        userMessage,
-        updatedHistory,
-        conversationCount
-      );
+        // Add recent conversation turns
+        messagesForClaude.push(...contextAssembly.recentMessages);
+
+        if (DEBUG) {
+          console.log('🧠 Context Strategy Assembly:', {
+            strategy: contextAssembly.contextStrategy,
+            totalTokensEstimate: contextAssembly.totalTokensEstimate,
+            systemMemoryChars: contextAssembly.systemMemory.length,
+            recentTurns: contextAssembly.recentMessages.length,
+            messagesForClaude: messagesForClaude.length
+          });
+        }
+
+        // CONTEXT STRATEGY: Convert context assembly to expected format
+        const conversationHistory: Array<{role: 'user' | 'assistant'; content: string}> = [];
+        
+        // Extract system memory and recent messages
+        const systemMemory = contextAssembly.systemMemory;
+        const recentMessages = contextAssembly.recentMessages;
+        
+        // Build conversation history with system memory as context
+        if (systemMemory.trim()) {
+          conversationHistory.push({
+            role: 'assistant',
+            content: `[Previous context: ${systemMemory}]`
+          });
+        }
+        
+        // Add all recent messages as conversation history
+        conversationHistory.push(...recentMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })));
+
+        // Call AI service with optimized context (use actual userMessage parameter)
+        var aiResponsePromise = chatAiService.generateResponse(
+          userMessage, // Use the ACTUAL current user message, not an old one from context
+          conversationHistory,
+          conversationCount
+        );
+      } else {
+        // Fallback to old method if no conversation ID
+        const updatedHistory = [
+          ...conversationHistory,
+          { role: 'user' as const, content: userMessage }
+        ];
+
+        log.debug('[generateResponse] Using fallback context method', { component: 'SimpleReflectionChat' });
+
+        var aiResponsePromise = chatAiService.generateResponse(
+          userMessage,
+          updatedHistory,
+          conversationCount
+        );
+      }
 
       // Timeout wrapper to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -713,7 +997,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       );
 
       const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]);
-      if (DEBUG) console.log('[MOBILE DEBUG] AI Response received:', aiResponse);
+      log.debug('[generateResponse] AI Response received', { hasResponse: !!aiResponse, component: 'SimpleReflectionChat' });
 
       // Add natural delay to feel more human
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 800));
@@ -728,17 +1012,34 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           shouldAskQuestion: aiResponse.shouldAskQuestion
         });
 
-        const savedBotMessage = await chatDatabase.saveMessage(
+        // CONTEXT STRATEGY: Save with enhanced metadata and token tracking
+        const savedBotMessage = await chatDatabase.saveMessageWithTokens(
           activeConversationId,
           aiResponse.message,
           true, // is_bot
-          aiResponse.usedModel, // ai_model used (was aiResponse.model)
+          aiResponse.usedModel,
           {
             response_time: Date.now(),
             conversation_count: conversationCount + 1,
-            shouldAskQuestion: aiResponse.shouldAskQuestion
+            shouldAskQuestion: aiResponse.shouldAskQuestion,
+            context_strategy: 'enhanced', // Mark as using new context strategy
+            total_context_tokens: contextAssembly?.totalTokensEstimate || 0
           }
         );
+
+        // Add AI response to context strategy
+        if (savedBotMessage) {
+          await conversationContext.addTurn(
+            activeConversationId,
+            'assistant',
+            aiResponse.message,
+            {
+              messageType: 'assistant',
+              contextWeight: 1.0,
+              aiModel: aiResponse.usedModel
+            }
+          );
+        }
 
         if (!savedBotMessage) {
           console.error('❌ Failed to save AI message to database');
@@ -787,14 +1088,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       setConversationCount(prev => prev + 1);
       
-      // Update conversation history for context (use the updated history we passed to AI)
-      setConversationHistory([
-        ...updatedHistory,
+      // FIXED: Use functional update to avoid async state capture
+      setConversationHistory(prev => [
+        ...prev,
+        { role: 'user', content: userMessage },
         { role: 'assistant', content: aiResponse.message }
       ]);
 
     } catch (error) {
-      console.error('Error generating response:', error);
+      log.error('Failed to generate AI response', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SimpleReflectionChat',
+        function: 'generateResponse',
+        userMessage: userMessage.substring(0, 50),
+        conversationId,
+      });
       
       // Fallback to a friendly error message
       const fallbackText = "Sorry, I'm having trouble connecting right now! But I'm still here - what else would you like to chat about?";
@@ -861,9 +1168,200 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     );
   };
 
+  // CRITICAL FIX: Create thumbnail for metadata storage to prevent massive base64 in JSONB
+  const createThumbnailForMetadata = async (imageData: any): Promise<{thumbnail: string, fullImageId: string}> => {
+    try {
+      // Create small thumbnail for metadata storage (target: ~10KB max)
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      return new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Calculate thumbnail dimensions (max 150px either direction)
+          const maxDimension = 150;
+          const ratio = Math.min(maxDimension / img.width, maxDimension / img.height);
+          
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          
+          // Draw compressed thumbnail
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Convert to low quality JPEG for maximum compression
+          const thumbnailBase64 = canvas.toDataURL('image/jpeg', 0.3); // 30% quality
+          
+          // Store full image in IndexedDB with unique ID
+          const fullImageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Store in IndexedDB for persistence across refreshes
+          if ('indexedDB' in window) {
+            try {
+              const dbRequest = indexedDB.open('CupidoImageCache', 1);
+              dbRequest.onupgradeneeded = () => {
+                const db = dbRequest.result;
+                if (!db.objectStoreNames.contains('images')) {
+                  db.createObjectStore('images', { keyPath: 'id' });
+                }
+              };
+              dbRequest.onsuccess = () => {
+                const db = dbRequest.result;
+                const transaction = db.transaction(['images'], 'readwrite');
+                const store = transaction.objectStore('images');
+                store.add({
+                  id: fullImageId,
+                  base64: imageData.base64,
+                  mimeType: imageData.mimeType,
+                  width: imageData.width,
+                  height: imageData.height,
+                  originalSize: imageData.originalSize,
+                  compressedSize: imageData.compressedSize,
+                  fileName: imageData.fileName,
+                  createdAt: new Date().toISOString()
+                });
+              };
+            } catch (dbError) {
+              console.warn('IndexedDB storage failed, thumbnail only:', dbError);
+            }
+          }
+          
+          const thumbnailSize = Math.ceil((thumbnailBase64.length * 3) / 4);
+          
+          if (DEBUG) {
+            console.log('🖼️ Created thumbnail for metadata storage:', {
+              originalSize: imageData.originalSize || imageData.compressedSize,
+              thumbnailSize,
+              compressionRatio: ((imageData.originalSize || imageData.compressedSize) / thumbnailSize).toFixed(1) + 'x',
+              fullImageId
+            });
+          }
+          
+          resolve({ 
+            thumbnail: thumbnailBase64, 
+            fullImageId 
+          });
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image for thumbnail creation'));
+        img.src = imageData.base64;
+      });
+    } catch (error) {
+      console.error('Thumbnail creation failed, using original (RISK: large metadata):', error);
+      // Emergency fallback - at least truncate if too large
+      const originalSize = Math.ceil((imageData.base64.length * 3) / 4);
+      if (originalSize > 100000) { // 100KB limit for emergency fallback
+        console.warn('⚠️ CRITICAL: Image too large for metadata, using placeholder');
+        return {
+          thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y0ZjRmNCIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+',
+          fullImageId: `large_img_${Date.now()}`
+        };
+      }
+      return {
+        thumbnail: imageData.base64,
+        fullImageId: `fallback_${Date.now()}`
+      };
+    }
+  };
+
+  // PERFORMANCE: Optimize image storage to reduce memory usage
+  const optimizeImageForStorage = async (imageData: any): Promise<{data: string, type: 'base64' | 'blob' | 'url'}> => {
+    try {
+      // For small images, keep as base64 for speed
+      if (imageData.compressedSize && imageData.compressedSize < 50000) { // 50KB threshold
+        return { data: imageData.base64, type: 'base64' };
+      }
+      
+      // For larger images, try to create object URL to save memory
+      if (typeof window !== 'undefined' && window.URL && window.URL.createObjectURL) {
+        try {
+          // Convert base64 to blob
+          const base64Data = imageData.base64.split(',')[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: imageData.mimeType });
+          
+          // Create object URL (much more memory efficient)
+          const objectUrl = URL.createObjectURL(blob);
+          
+          if (DEBUG) {
+            log.perf('Image storage optimization', performance.now(), { originalSize: imageData.compressedSize, storageType: 'blob', component: 'SimpleReflectionChat' });
+          }
+          
+          return { data: objectUrl, type: 'blob' };
+        } catch (blobError) {
+          console.warn('Failed to create blob URL, using base64:', blobError);
+        }
+      }
+      
+      // Fallback to base64
+      return { data: imageData.base64, type: 'base64' };
+    } catch (error) {
+      console.error('Image optimization failed:', error);
+      return { data: imageData.base64, type: 'base64' };
+    }
+  };
+
+  // UTILITY: Retrieve full image from IndexedDB cache
+  const getFullImageFromCache = async (fullImageId: string): Promise<string | null> => {
+    try {
+      if (!('indexedDB' in window)) {
+        console.warn('IndexedDB not available, cannot retrieve full image');
+        return null;
+      }
+
+      return new Promise((resolve, reject) => {
+        const dbRequest = indexedDB.open('CupidoImageCache', 1);
+        
+        dbRequest.onerror = () => reject(new Error('Failed to open IndexedDB'));
+        
+        dbRequest.onsuccess = () => {
+          const db = dbRequest.result;
+          const transaction = db.transaction(['images'], 'readonly');
+          const store = transaction.objectStore('images');
+          const getRequest = store.get(fullImageId);
+          
+          getRequest.onsuccess = () => {
+            const result = getRequest.result;
+            if (result && result.base64) {
+              resolve(result.base64);
+            } else {
+              resolve(null);
+            }
+          };
+          
+          getRequest.onerror = () => resolve(null);
+        };
+      });
+    } catch (error) {
+      console.error('Error retrieving full image from cache:', error);
+      return null;
+    }
+  };
+
+  // PERFORMANCE: Lazy load images to reduce initial memory usage
+  const createLazyImageReference = (imageId: string, metadata: any): ImageAttachment => {
+    return {
+      id: imageId,
+      width: metadata.width || 200,
+      height: metadata.height || 200,
+      image_data: '', // Empty - will be loaded on demand
+      mime_type: metadata.mimeType || 'image/jpeg',
+      file_size: metadata.compressedSize || 0,
+      metadata: {
+        ...metadata,
+        lazy: true, // Mark for lazy loading
+        storageType: 'external'
+      }
+    };
+  };
+
   const handleImageSelected = async (imageData: ImageProcessingResult) => {
     if (!currentConversation) {
-      console.error('❌ No current conversation for image upload');
+      log.error('No current conversation for image upload', undefined, { component: 'SimpleReflectionChat' });
       return;
     }
 
@@ -918,7 +1416,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           combinedMessage.includes('image_attachments') && combinedMessage.includes('does not exist');
 
         if (missingTable) {
-          console.warn('⚠️ image_attachments table unavailable - using inline metadata storage for images.');
+          log.warn('External image storage unavailable - using inline fallback', { storageStrategy: 'inline', component: 'SimpleReflectionChat' });
           storageStrategy = 'inline';
         } else {
           throw error;
@@ -948,12 +1446,23 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           });
         }
 
+        // PERFORMANCE: Create lazy-loaded attachment to reduce memory usage
+        const lazyAttachment = createLazyImageReference(imageAttachment.id, {
+          description: 'User uploaded an image', 
+          fileName: imageData.fileName,
+          originalSize: imageData.originalSize,
+          compressedSize: imageData.compressedSize,
+          width: imageData.width,
+          height: imageData.height,
+          mimeType: imageData.mimeType
+        });
+
         const messageWithImage: Message = {
           id: messageId,
           text: '',
           isBot: false,
           timestamp: userMessage ? new Date(userMessage.created_at) : new Date(),
-          imageAttachments: [imageAttachment]
+          imageAttachments: [lazyAttachment] // Use lazy reference instead of full data
         };
 
         setMessages(prev => [...prev, messageWithImage]);
@@ -967,11 +1476,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         }, 100);
       } else {
         const inlineAttachmentId = `inline_${Date.now()}`;
+        // PERFORMANCE: Optimize inline storage for memory efficiency
+        const optimizedImageData = await optimizeImageForStorage(imageData);
+        
         const inlineAttachment: ImageAttachment = {
           id: inlineAttachmentId,
           conversation_id: currentConversation.id,
           user_id: userId,
-          image_data: imageData.base64,
+          image_data: optimizedImageData.data, // Optimized storage
           mime_type: imageData.mimeType,
           file_size: imageData.compressedSize,
           width: imageData.width,
@@ -1025,7 +1537,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         }, 100);
       }
     } catch (error) {
-      console.error('❌ Error processing image upload:', error);
+      log.error('Image upload processing failed', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SimpleReflectionChat',
+        function: 'handleImageSelected',
+        imageFileName: imageData?.fileName,
+      });
       Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
     }
   };
@@ -1051,18 +1567,23 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       let inlineMetadata = options?.baseMetadata;
 
       if (storageStrategy === 'inline' && !inlineMetadata) {
+        // CRITICAL FIX: Use thumbnail for metadata to prevent massive JSONB storage
+        const thumbnailData = await createThumbnailForMetadata(imageData);
+        
         inlineMetadata = {
           hasImage: true,
           storageStrategy: 'inline' as const,
           imageAttachmentId: imageAttachment.id,
           inlineImage: {
-            base64: imageAttachment.image_data,
+            thumbnail: thumbnailData.thumbnail, // Small thumbnail (~10KB) instead of full base64
+            fullImageId: thumbnailData.fullImageId, // Reference to IndexedDB stored full image
             mimeType: imageAttachment.mime_type,
             width: imageAttachment.width,
             height: imageAttachment.height,
             fileName: (imageAttachment.metadata as any)?.fileName,
             originalSize: (imageAttachment.metadata as any)?.originalSize,
             compressedSize: (imageAttachment.metadata as any)?.compressedSize,
+            compressionNote: 'Full image stored in IndexedDB, thumbnail in metadata for performance'
           }
         };
       }
@@ -1089,6 +1610,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               inlineImage: {
                 ...(inlineMetadata.inlineImage || {}),
                 description: imageDescription,
+                // Note: Keep thumbnail/fullImageId from original metadata, don't overwrite
               }
             };
             if (canPersistInline) {
@@ -1166,6 +1688,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 description: inlineMetadata.inlineImage?.description || imageDescription,
                 aiAnalysis: aiResponse.message,
                 analyzedAt,
+                // Note: Preserve thumbnail/fullImageId, never store full base64 in metadata
               }
             };
             if (canPersistInline) {
@@ -1212,15 +1735,15 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           // Update placeholder with actual response
           updatePlaceholderMessage(placeholderId, aiResponse.message);
           
-          // Update conversation history WITH image description for future context
-          setConversationHistory([
-            ...conversationHistory,
+          // FIXED: Use functional update to avoid async state capture  
+          setConversationHistory(prev => [
+            ...prev,
             { role: 'user', content: `[Image: ${imageDescription}]` },
             { role: 'assistant', content: aiResponse.message }
           ]);
 
         } catch (error) {
-          console.error('❌ Error generating AI response for image:', error);
+          log.error('Error generating AI response for image', error, { component: 'SimpleReflectionChat' });
           
           // Update placeholder with friendly fallback
           const friendlyFallback = error?.message?.includes('TIMEOUT') 
@@ -1230,7 +1753,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           updatePlaceholderMessage(placeholderId, friendlyFallback);
         }
     } catch (error) {
-      console.error('❌ Error in background image processing:', error);
+      log.error('Error in background image processing', error, { component: 'SimpleReflectionChat' });
       updatePlaceholderMessage(placeholderId, "Something went wrong analyzing your image, but I'd love to hear about it! What's happening in this photo?");
     }
   };
@@ -1255,12 +1778,27 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     });
 
     if (!messageToSend.trim() || isSending) {
-      console.warn('[handleSend] Blocked send:', {
-        noText: !messageToSend.trim(),
-        alreadySending: isSending
+      log.warn('Message send blocked', {
+        component: 'SimpleReflectionChat',
+        reason: !messageToSend.trim() ? 'empty_message' : 'already_sending',
+        messageLength: messageToSend.length,
       });
       return;
     }
+
+    // Validate and sanitize the message
+    const messageValidation = validateChatMessage(messageToSend);
+    if (!messageValidation.isValid) {
+      log.warn('Invalid message rejected', {
+        component: 'SimpleReflectionChat',
+        errors: messageValidation.errors,
+        messagePreview: messageToSend.substring(0, 50),
+      });
+      Alert.alert('Invalid Message', messageValidation.errors.join('\n'));
+      return;
+    }
+
+    const validatedMessage = messageValidation.sanitizedValue || messageToSend;
 
     // Use refs for immediate access to latest values (avoids race conditions with React state)
     const effectiveUserId = userIdRef.current || userId;
@@ -1299,18 +1837,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     if (DEBUG) console.log('[handleSend] ✅ Ready to send - activeConversation:', activeConversation.id);
 
     // Content-based duplicate prevention (simpler and more reliable than time-based)
-    const messageText = messageToSend.trim();
+    const messageText = validatedMessage.trim();
     const messageKey = `${activeConversation.id}_${messageText.toLowerCase()}`;
     
     // Notify parent window (test dashboard) if in iframe
     if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      const targetOrigin = window.location.origin;
       window.parent.postMessage({
         type: 'cupido-message',
         sender: 'user',
         message: messageText,
         conversationId: activeConversation.id,
         timestamp: new Date().toISOString()
-      }, '*');
+      }, targetOrigin);
     }
 
     if ((window as any).__pendingMessages?.has(messageKey)) {
@@ -1327,11 +1866,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     (window as any).__pendingMessages.add(messageKey);
 
     // Clear pending after message is processed (or 3s timeout for safety)
-    setTimeout(() => {
+    memoryManager.setTimeout(() => {
       (window as any).__pendingMessages?.delete(messageKey);
     }, 3000);
 
-    console.log(`📤 [${new Date().toISOString()}] Sending message:`, messageText);
+    log.userAction('message_sent', { component: 'SimpleReflectionChat', messageLength: messageText.length });
 
     // Only clear input if we used the actual inputText (not an override)
     if (!messageOverride) {
@@ -1340,49 +1879,60 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     setIsSending(true);
     isSendingRef.current = true; // Update ref immediately for test compatibility
 
+    // OPTIMISTIC UI UPDATE: Show message immediately, save asynchronously
+    const optimisticUserMessage: Message = {
+      id: `temp_user_${Date.now()}`,
+      text: messageText,
+      isBot: false,
+      timestamp: new Date(),
+      isPending: true, // Mark as pending save
+    };
+
+    // Add to UI immediately for instant response with automatic trimming
+    setMessages(prev => trimMessagesIfNeeded([...prev, optimisticUserMessage]));
+    log.debug('Optimistic UI: User message added immediately', { component: 'SimpleReflectionChat' });
+
     // Wrap everything in try/finally to ensure isSending always gets reset
     try {
-      // Save user message to database FIRST (don't wait for profile extraction)
+      // Save user message to database asynchronously (don't block UI)
       if (activeConversation) {
-        const savedUserMessage = await chatDatabase.saveMessage(
+        // CONTEXT STRATEGY: Save with enhanced token tracking
+        chatDatabase.saveMessageWithTokens(
           activeConversation.id,
           messageText,
           false, // is_bot = false for user
           undefined, // no AI model for user messages
-          { message_length: messageText.length }
-        );
-
-        // Always show the user message in UI immediately
-        let userMessage: Message;
-
-        if (!savedUserMessage) {
-          console.error('❌ Failed to save user message to database - showing in UI anyway');
-          // Create temporary message for UI
-          userMessage = {
-            id: `temp_user_${Date.now()}`,
-            text: messageText,
-            isBot: false,
-            timestamp: new Date(),
-          };
-        } else {
-          if (DEBUG) console.log('✅ User message saved to database:', savedUserMessage.id);
-          userMessage = {
-            id: savedUserMessage.id,
-            text: messageText,
-            isBot: false,
-            timestamp: new Date(savedUserMessage.created_at),
-          };
-        }
-
-        // Check if message already exists before adding (only check ID, not text)
-        setMessages(prev => {
-          const exists = prev.find(msg => msg.id === userMessage.id);
-          if (exists) {
-            if (DEBUG) console.log('⚠️ User message already exists, not adding duplicate');
-            return prev;
+          { 
+            message_length: messageText.length,
+            message_type: 'user',
+            context_weight: 1.0
           }
-          if (DEBUG) console.log('✅ Adding user message to UI');
-          return [...prev, userMessage];
+        ).then(savedUserMessage => {
+          // Update the optimistic message with real database ID
+          if (savedUserMessage) {
+            setMessages(prev => prev.map(msg => 
+              msg.id === optimisticUserMessage.id 
+                ? { ...msg, id: savedUserMessage.id, isPending: false }
+                : msg
+            ));
+            log.debug('Database save completed, updated message ID', { component: 'SimpleReflectionChat' });
+          } else {
+            // Mark as failed but keep in UI
+            setMessages(prev => prev.map(msg => 
+              msg.id === optimisticUserMessage.id 
+                ? { ...msg, isPending: false, saveFailed: true }
+                : msg
+            ));
+            console.error('❌ Failed to save user message to database');
+          }
+        }).catch(error => {
+          // Handle save errors gracefully
+          setMessages(prev => prev.map(msg => 
+            msg.id === optimisticUserMessage.id 
+              ? { ...msg, isPending: false, saveFailed: true }
+              : msg
+          ));
+          log.error('Error saving user message', error, { component: 'SimpleReflectionChat' });
         });
 
         // Add small delay to ensure UI renders before proceeding (prevents message disappearing)
@@ -1428,9 +1978,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           console.error('[MOBILE DEBUG] generateResponse failed:', error);
         });
     } catch (error) {
-      console.error('❌ [CRITICAL] Error in handleSend:', error);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      log.error('Critical error in message send', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SimpleReflectionChat',
+        function: 'handleSend',
+        messageText: messageText?.substring(0, 50),
+        conversationId: activeConversation?.id,
+        userId: effectiveUserId,
+      });
 
       // If error occurred before we set isSending=false, reset it now
       setIsSending(false);
@@ -1444,15 +1998,129 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // Don't add tab bar height when keyboard is visible (tabs are hidden)
   const messagesBottomPadding = effectiveInputHeight + (keyboardVisible ? 0 : tabBarHeight) + 10;
 
+  // Render function for FlatList virtualization
+  const renderMessage = ({ item: message, index }: { item: Message; index: number }) => {
+    // Check if message has new image attachments
+    if (message.imageAttachments && message.imageAttachments.length > 0) {
+      return (
+        <Fragment key={message.id}>
+          {message.imageAttachments.map((attachment, imgIndex) => (
+            <ImageMessage
+              key={`${message.id}-img-${imgIndex}`}
+              imageAttachment={attachment}
+              isFromUser={!message.isBot}
+              message={imgIndex === 0 && message.text ? message.text : undefined} // Only show text on first image if not empty
+              timestamp={message.timestamp.toISOString()}
+              showMetadata={false}
+            />
+          ))}
+        </Fragment>
+      );
+    }
+    
+    // Legacy support for imageUri (existing images)
+    if (message.imageUri) {
+      return (
+        <View
+          key={message.id}
+          testID={`message-${index}`}
+          style={[
+            styles.messageContainer,
+            message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
+          ]}
+        >
+          <View
+            testID={`message-bubble-${index}`}
+            style={[
+              styles.messageBubble,
+              message.isBot ? styles.botBubble : styles.userBubble,
+            ]}
+          >
+            <View>
+              <Image
+                source={{ uri: message.imageUri }}
+                style={styles.messageImage}
+                resizeMode="cover"
+              />
+              {message.text && (
+                <Text
+                  style={[
+                    styles.messageText,
+                    message.isBot ? styles.botText : styles.userText,
+                  ]}
+                >
+                  {message.text}
+                </Text>
+              )}
+            </View>
+          </View>
+          <Text style={styles.timestamp}>
+            {message.timestamp.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </Text>
+        </View>
+      );
+    }
+    
+    // Regular text message with optimistic UI indicators
+    return (
+      <View
+        key={message.id}
+        testID={`message-${index}`}
+        style={[
+          styles.messageContainer,
+          message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
+          message.isPending && styles.pendingMessage,
+          message.saveFailed && styles.failedMessage,
+        ]}
+      >
+        <View
+          testID={`message-bubble-${index}`}
+          style={[
+            styles.messageBubble,
+            message.isBot ? styles.botBubble : styles.userBubble,
+          ]}
+        >
+          <Text
+            testID={`message-text-${index}`}
+            style={[
+              styles.messageText,
+              message.isBot ? styles.botText : styles.userText,
+            ]}
+          >
+            {message.text}
+          </Text>
+          {message.isPending && (
+            <Text style={styles.pendingIndicator}>Saving...</Text>
+          )}
+          {message.saveFailed && (
+            <Text style={styles.failedIndicator}>Failed to save</Text>
+          )}
+        </View>
+        <Text style={styles.timestamp}>
+          {message.timestamp.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? (keyboardVisible ? 0 : 90) : 0}
     >
-      {/* Messages area */}
-      <ScrollView
-        ref={scrollViewRef}
+      {/* Messages area - Virtualized with FlatList for performance */}
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id}
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
@@ -1461,115 +2129,38 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         testID="messages-scroll-view"
-      >
-        {messages.map((message, index) => {
-          // Check if message has new image attachments
-          if (message.imageAttachments && message.imageAttachments.length > 0) {
-            return (
-              <Fragment key={message.id}>
-                {message.imageAttachments.map((attachment, imgIndex) => (
-                  <ImageMessage
-                    key={`${message.id}-img-${imgIndex}`}
-                    imageAttachment={attachment}
-                    isFromUser={!message.isBot}
-                    message={imgIndex === 0 && message.text ? message.text : undefined} // Only show text on first image if not empty
-                    timestamp={message.timestamp.toISOString()}
-                    showMetadata={false}
-                  />
-                ))}
-              </Fragment>
-            );
-          }
-          
-          // Legacy support for imageUri (existing images)
-          if (message.imageUri) {
-            return (
-              <View
-                key={message.id}
-                testID={`message-${index}`}
-                style={[
-                  styles.messageContainer,
-                  message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
-                ]}
-              >
-                <View
-                  testID={`message-bubble-${index}`}
-                  style={[
-                    styles.messageBubble,
-                    message.isBot ? styles.botBubble : styles.userBubble,
-                  ]}
-                >
-                  <View>
-                    <Image
-                      source={{ uri: message.imageUri }}
-                      style={styles.messageImage}
-                      resizeMode="cover"
-                    />
-                    {message.text && (
-                      <Text
-                        style={[
-                          styles.messageText,
-                          message.isBot ? styles.botText : styles.userText,
-                        ]}
-                      >
-                        {message.text}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-                <Text style={styles.timestamp}>
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </Text>
-              </View>
-            );
-          }
-          
-          // Regular text message
-          return (
-            <View
-              key={message.id}
-              testID={`message-${index}`}
-              style={[
-                styles.messageContainer,
-                message.isBot ? styles.botMessageContainer : styles.userMessageContainer,
-              ]}
-            >
-              <View
-                testID={`message-bubble-${index}`}
-                style={[
-                  styles.messageBubble,
-                  message.isBot ? styles.botBubble : styles.userBubble,
-                ]}
-              >
-                <Text
-                  testID={`message-text-${index}`}
-                  style={[
-                    styles.messageText,
-                    message.isBot ? styles.botText : styles.userText,
-                  ]}
-                >
-                  {message.text}
-                </Text>
-              </View>
-              <Text style={styles.timestamp}>
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        windowSize={21}
+        getItemLayout={undefined} // Let FlatList calculate dynamically for variable heights
+        // Pagination for loading older messages
+        onScrollToTop={loadOlderMessages}
+        refreshing={isLoadingOlderMessages}
+        onRefresh={hasMoreMessages ? loadOlderMessages : undefined}
+        // Header for loading indicator
+        ListHeaderComponent={
+          isLoadingOlderMessages ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading older messages...</Text>
             </View>
-          );
-        })}
-        
-        {isTyping && (
-          <View style={styles.typingContainer} testID="typing-indicator">
-            <Text style={styles.typingText}>{typingMessage}</Text>
-          </View>
-        )}
-      </ScrollView>
+          ) : !hasMoreMessages && messages.length > MESSAGE_PAGE_SIZE ? (
+            <View style={styles.endOfHistoryContainer}>
+              <Text style={styles.endOfHistoryText}>You've reached the beginning of this conversation</Text>
+            </View>
+          ) : null
+        }
+        // Footer for typing indicator
+        ListFooterComponent={
+          isTyping ? (
+            <View style={styles.typingContainer} testID="typing-indicator">
+              <Text style={styles.typingText}>{typingMessage}</Text>
+            </View>
+          ) : null
+        }
+      />
 
       {/* Fixed input area */}
       <View
@@ -1782,5 +2373,44 @@ const styles = StyleSheet.create({
   },
   imageUploadButton: {
     // ImageUpload component will handle its own styling
+  },
+  // Optimistic UI styles
+  pendingMessage: {
+    opacity: 0.7,
+  },
+  failedMessage: {
+    opacity: 0.8,
+  },
+  pendingIndicator: {
+    fontSize: 10,
+    color: '#888',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  failedIndicator: {
+    fontSize: 10,
+    color: '#ff6b6b',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  // Pagination styles
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  endOfHistoryContainer: {
+    padding: 15,
+    alignItems: 'center',
+  },
+  endOfHistoryText: {
+    color: '#999',
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });
