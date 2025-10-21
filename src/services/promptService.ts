@@ -281,7 +281,7 @@ class PromptService {
 
       // Try server storage as backup
       try {
-        const response = await fetch(`${API_BASE_URL}/api/user-preferences/selected-prompt`);
+        const response = await fetch(resolveApiUrl('/api/user-preferences/selected-prompt'));
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.selectedPromptId) {
@@ -347,7 +347,7 @@ class PromptService {
    */
   private async syncPromptPreferenceToServer(promptId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user-preferences/selected-prompt`, {
+      const response = await fetch(resolveApiUrl('/api/user-preferences/selected-prompt'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
