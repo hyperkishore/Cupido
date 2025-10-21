@@ -257,7 +257,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       log.debug('[setupChat] Starting chat setup', { component: 'SimpleReflectionChat' });
       // Clear existing messages when user changes
       setMessages([]);
-      setConversationHistory([]);
+      // Removed setConversationHistory - no longer needed
       setConversationCount(0);
       log.debug('[setupChat] Cleared existing messages', { component: 'SimpleReflectionChat' });
 
@@ -633,14 +633,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         setMessages(uiMessages);
         setConversationCount(history.filter(msg => !msg.is_bot).length);
         
-        // Build conversation history for AI - simple and reliable
-        const aiHistory = history.slice(-MAX_CONVERSATION_HISTORY).map(msg => ({
-          role: msg.is_bot ? 'assistant' as const : 'user' as const,
-          content: msg.content,
-        }));
-        setConversationHistory(aiHistory);
-        
-        if (DEBUG) console.log('✅ Loaded conversation history:', aiHistory.length, 'messages');
+        // No longer need to maintain conversationHistory state
+        // Context is built directly from messages array when needed
+        if (DEBUG) console.log('✅ Loaded messages from database:', history.length, 'messages');
       } else {
         // Start with a greeting if no history
         const greetings = [
