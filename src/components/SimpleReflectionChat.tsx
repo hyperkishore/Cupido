@@ -180,8 +180,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         'User Agent': navigator.userAgent,
         'Window Width': window.innerWidth,
         'Touch Support': 'ontouchstart' in window,
+        'User Agent Test': /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+        'Width Test': window.innerWidth <= 768,
         'Is Mobile Browser': isMobileBrowser,
-        'Return Key Type': isMobileBrowser ? 'default' : 'send'
+        'Return Key Type': isMobileBrowser ? 'default' : 'send',
+        'onSubmitEditing': isMobileBrowser ? 'undefined' : 'handleSend'
       });
     }
   }, [isMobileBrowser]);
@@ -798,6 +801,30 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
+  // Helper function to add a placeholder message that can be updated later
+  const addPlaceholderMessage = (text: string, isBot: boolean = true): string => {
+    const placeholderId = `placeholder_${Date.now()}`;
+    const placeholderMessage: Message = {
+      id: placeholderId,
+      text: text,
+      isBot: isBot,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, placeholderMessage]);
+    return placeholderId;
+  };
+
+  // Helper function to update a placeholder message
+  const updatePlaceholderMessage = (messageId: string, newText: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, text: newText, timestamp: new Date() }
+          : msg
+      )
+    );
+  };
+
   const handleImageSelected = async (imageData: ImageProcessingResult) => {
     if (!currentConversation) {
       console.error('❌ No current conversation for image upload');
@@ -859,10 +886,27 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
         setMessages(prev => [...prev, messageWithImage]);
 
-        // Generate AI response with image
-        setIsTyping(true);
-        setTypingMessage('analyzing image...');
-        try {
+        // IMMEDIATE RESPONSE: Add placeholder message right away
+        const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
+
+        // BACKGROUND PROCESSING: Start AI analysis without blocking UI
+        setTimeout(() => {
+          processImageInBackground(imageData, placeholderId);
+        }, 100);
+      }
+    } catch (error) {
+      console.error('❌ Error processing image upload:', error);
+      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+    }
+  };
+
+  // Background image processing function  
+  const processImageInBackground = async (imageData: ImageProcessingResult, placeholderId: string) => {
+    try {
+      // Show progress to user
+      updatePlaceholderMessage(placeholderId, '📷 Analyzing your image...');
+      
+      try {
           // Step 1: Get a brief description of the image for context
           const descriptionPrompt = "Please describe this image in one concise sentence, focusing on the main subject and setting. Keep it under 20 words.";
           
@@ -924,27 +968,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             { imageAnalysis: true, imageAttachmentId: imageAttachment.id }
           );
 
+          // Log the saved message but don't add to UI (we update placeholder instead)
           if (aiMessage) {
             console.log('✅ Saved AI response:', aiMessage.id);
-            const botMessage: Message = {
-              id: aiMessage.id,
-              text: aiResponse.message,
-              isBot: true,
-              timestamp: new Date(aiMessage.created_at)
-            };
-            setMessages(prev => [...prev, botMessage]);
           } else {
-            console.error('❌ Failed to save AI message to database');
-            // Still show the message even if database save fails
-            const tempBotMessage: Message = {
-              id: `temp_ai_${Date.now()}`,
-              text: aiResponse.message,
-              isBot: true,
-              timestamp: new Date()
-            };
-            setMessages(prev => [...prev, tempBotMessage]);
+            console.error('❌ Failed to save AI message to database (but continuing with placeholder)');
           }
 
+          // Update placeholder with actual response
+          updatePlaceholderMessage(placeholderId, aiResponse.message);
+          
           // Update conversation history WITH image description for future context
           setConversationHistory([
             ...conversationHistory,
@@ -955,22 +988,16 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         } catch (error) {
           console.error('❌ Error generating AI response for image:', error);
           
-          // Add fallback message
-          const fallbackMessage: Message = {
-            id: `fallback_${Date.now()}`,
-            text: 'I can see your image! Tell me more about it - what\'s the story behind this photo?',
-            isBot: true,
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, fallbackMessage]);
-        } finally {
-          setIsTyping(false);
-          setTypingMessage('typing...');
+          // Update placeholder with friendly fallback
+          const friendlyFallback = error?.message?.includes('TIMEOUT') 
+            ? "I couldn't finish analyzing your photo, but I'd love to hear the story behind it! Tell me more about what's happening here."
+            : "I can see your image! Tell me more about it - what's the story behind this photo?";
+          
+          updatePlaceholderMessage(placeholderId, friendlyFallback);
         }
-      }
     } catch (error) {
-      console.error('❌ Error processing image upload:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      console.error('❌ Error in background image processing:', error);
+      updatePlaceholderMessage(placeholderId, "Something went wrong analyzing your image, but I'd love to hear about it! What's happening in this photo?");
     }
   };
 
