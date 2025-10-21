@@ -298,20 +298,38 @@ The app follows a strict minimalist design philosophy:
 - [`API.md`](../Code%20Documentation/API.md) and [`API_REQUIREMENTS.md`](../Code%20Documentation/API_REQUIREMENTS.md) describe current contracts and expected evolutions.
 - [`DESIGN_ANALYSIS.md`](../Product%20Documentation/DESIGN_ANALYSIS.md) explains design principles that influence component structure.
 
-### Component & Screen Reference
-- `COMPONENT_GUIDE.md` catalogs reusable UI primitives and their props.
-- `src/screens/` contains pixel-perfect screen variants for home, reflect, matches, and profile views.
-- `src/components/` houses shared inputs, feedback utilities, and higher-order wrappers.
+## Project Structure
 
-### Services, State, and Data
-- `src/services/` centralizes Supabase access, matching logic, and analytics helpers.
-- `src/contexts/` documents global state providers for app flow and feedback.
-- `database/production-schema.sql` reflects the canonical PostgreSQL schema.
+The project follows a clean, organized folder structure for better maintainability:
 
-### Testing & Quality
-- `tests/` holds integration and scenario-driven test cases.
-- [`DEBUG_RUNBOOK.md`](../Code%20Documentation/DEBUG_RUNBOOK.md) and [`RESTORE_INSTRUCTIONS.md`](../Code%20Documentation/RESTORE_INSTRUCTIONS.md) provide workflows for diagnosing issues and recovering environments.
-- [`VERSIONING_GUIDE.md`](../Code%20Documentation/VERSIONING_GUIDE.md) establishes release numbering and changelog expectations.
+### Documentation & Guides
+- `docs/` - All project documentation including guides, architecture docs, and development workflows
+  - `CLAUDE.md` - Development context and methodology
+  - `PRODUCTION-ARCHITECTURE.md` - System architecture documentation
+  - `DEBUG_GUIDE.md` - Debugging workflows and troubleshooting
+  - And many more comprehensive guides
+
+### Application Source
+- `src/` - Main application source code
+  - `src/screens/` - Pixel-perfect screen variants for home, reflect, matches, and profile views
+  - `src/components/` - Shared inputs, feedback utilities, and higher-order wrappers
+  - `src/services/` - Supabase access, matching logic, and analytics helpers
+  - `src/contexts/` - Global state providers for app flow and feedback
+
+### Tools & Development
+- `scripts/` - Development scripts, build tools, health checks, and automation utilities
+- `dashboards/` - HTML test dashboards, analytics interfaces, and debugging tools
+- `tool-output/` - Generated files, test results, logs, and analysis reports
+- `testing/` - Integration tests, bug reports, and quality assurance files
+
+### Data & Configuration
+- `data/prompts/` - Prompt management files and JSON configurations
+- `legacy/app-variants/` - Historical App.tsx variants for reference
+
+### Standard Project Files
+- `public/` - Static web assets and documentation sites
+- `assets/` - App icons, images, and media files
+- `tests/` - Unit and integration test suites
 
 ## Contributing
 
