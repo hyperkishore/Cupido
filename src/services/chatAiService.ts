@@ -536,10 +536,18 @@ The journey has no end point. Only deeper understanding, emerging readiness, and
         return '/.netlify/functions/chat';
       }
 
-      // If on localhost, try to use local proxy server
+      // Development environments - handle localhost, IP addresses, and custom hostnames
       if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         return `${location.protocol}//${location.hostname}:3001/api/chat`;
       }
+
+      // IP address access (mobile on same network)
+      if (location.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        return `http://${location.hostname}:3001/api/chat`;
+      }
+
+      // Any other hostname (.local, custom domains, tunnels) - use current hostname
+      return `http://${location.hostname}:3001/api/chat`;
     }
 
     const expoExtra = Constants?.expoConfig?.extra ?? Constants?.manifest?.extra ?? {};

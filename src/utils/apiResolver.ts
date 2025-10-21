@@ -46,7 +46,13 @@ export function resolveApiUrl(endpoint: string): string {
     }
 
     // Development - localhost
-    return `http://localhost:3001${endpoint}`;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://localhost:3001${endpoint}`;
+    }
+
+    // Development - any other hostname (.local, custom domains, tunnels)
+    // Treat as development and use current hostname with port 3001
+    return `http://${hostname}:3001${endpoint}`;
   }
 
   // React Native mobile environments
