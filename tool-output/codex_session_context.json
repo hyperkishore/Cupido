@@ -1,0 +1,40 @@
+{
+  "project": "Cupido",
+  "timestamp": "2025-10-23T18:12:26Z",
+  "branch": "restore-oct-9-to-19",
+  "commit": {
+    "hash": "f46eef9",
+    "message": "feat: Beta launch preparation - security and stability"
+  },
+  "summary": {
+    "verifiedFixes": [
+      "Realtime subscriptions enabled with de-dup (web/native ref Set)",
+      "Phone normalization to +E.164 without hyphen rejection",
+      "Profiles upsert with onConflict=phone_number",
+      "Normalized DB lookups with legacy fallback + in-place update",
+      "Message timestamps handled by DB defaults",
+      "Auth gating before chat init",
+      "Session manager initialized with profile UUID (not phone)",
+      "Conversations rely on DB defaults for timestamps",
+      "No redundant updated_at after message insert",
+      "UI Message type includes metadata",
+      "Demo stub includes channel/removeChannel and core chains (order/limit/in/delete)"
+    ],
+    "uxNotes": [
+      "Demo stub: consider adding a no-op .lt() for pagination (used in history queries)",
+      "Guard window.* usage in handleSend for native (use Platform check)",
+      "Optional: add chat screen to navigator if not already wired in your app flow",
+      "Optional: implement native image picker (expo-image-picker) instead of placeholder"
+    ]
+  },
+  "keyFiles": [
+    "src/components/SimpleReflectionChat.tsx",
+    "src/services/chatDatabase.ts",
+    "src/services/supabase.ts",
+    "src/utils/phoneNormalizer.ts",
+    "src/services/sessionManager.ts",
+    "supabase/migrations/create_active_sessions.sql"
+  ],
+  "reloadInstructions": "Open tool-output/codex_session_context.json or tool-output/codex_session_context.md at session start and say: 'Load the saved Codex context.'"
+}
+

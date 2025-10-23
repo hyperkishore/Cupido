@@ -39,11 +39,11 @@
 ---
 
 ## 🎯 CURRENT STATUS
-- **Server**: Port 3001
+- **Server**: Port 8081 (Expo Web), Port 3001 (Express API)
 - **Branch**: restore-oct-9-to-19  
-- **Version**: 1.2.6
+- **Version**: 1.2.24
 - **Test Success**: 72/72 tests passing (100%)
-- **Last Updated**: October 21, 2025
+- **Last Updated**: October 23, 2025
 
 ## 🏗️ SYSTEM ARCHITECTURE
 
@@ -61,7 +61,8 @@
 - **Testing**: Self-validating framework with health monitoring
 
 ### Access Points
-- Main App: `http://localhost:3001/app`
+- Main App: `http://localhost:8081` (Expo Web)
+- Express Server: `http://localhost:3001/app` (API Proxy)
 - Test Dashboard: `http://localhost:3001/cupido-test-dashboard`
 - Analytics Dashboard: `http://localhost:3001/analytics-dashboard`
 
@@ -129,7 +130,15 @@ npm run lint       # Linting
 
 ## 🔄 RECENT CRITICAL CHANGES
 
-### Latest Session (October 21, 2025)
+### Latest Session (October 23, 2025) - Auto-Scroll Fixes
+1. **Smart Auto-Scrolling**: Implemented intelligent scroll behavior with `shouldAutoScrollRef`
+   - Added `onContentSizeChange` handler to FlatList (line 2234-2239)
+   - Fixed bottom detection accounting for padding (lines 2222-2229)
+   - Reduced padding from 60px to 10px for better scroll behavior
+   - Strengthened send/receive scroll with double-scheduling (lines 1930-1938, 1126-1134)
+   - Lowered scrollEventThrottle from 200ms to 16ms for responsiveness
+
+### Previous Session (October 21, 2025)
 1. **Context System Overhaul**: Eliminated complex async context service causing greeting loops
 2. **Mobile Fixes**: Simplified detection logic, fixed send button responsiveness
 3. **Performance**: Reduced image payload by 80%, instant UI updates
@@ -140,11 +149,55 @@ npm run lint       # Linting
 - **Simplified**: Single Platform.OS checks, direct message array context, unified script registry
 - **Optimized**: Image compression maintained, history trimming for requests, batched DOM cleanup
 
+## 🔄 LATEST SESSION UPDATES (October 23, 2025)
+
+### Critical Production Fixes Applied
+1. **Module Loading Error Fixed**: 
+   - Changed dynamic imports to static for sessionManager and phoneNormalizer
+   - Location: Lines 35-36 in SimpleReflectionChat.tsx
+   - Impact: Resolved "Module 703 not found" error blocking chat initialization
+
+2. **Navigation Enhanced**:
+   - Added Chat as first tab with 💬 icon
+   - Location: Lines 58-66 in AppNavigator.tsx
+   - Impact: Chat now directly accessible from main navigation
+
+3. **Auth Timeout Extended**:
+   - Increased from 3s to 10s for slow networks
+   - Location: Line 38 in AuthContext.tsx
+   - Impact: Prevents premature "no user" states and login flicker
+
+4. **Demo Mode Compatibility**:
+   - Added .lt() method to demo stub for pagination
+   - Location: Lines 31-35 in supabase.ts
+   - Impact: Pull-to-refresh no longer crashes in demo mode
+
+5. **Native Image Picker Implemented**:
+   - Full expo-image-picker integration with permissions
+   - Location: Lines 109-141 in ImageUpload.tsx
+   - Impact: Real image selection on mobile devices
+
+6. **Prompt Service Resilience**:
+   - Fallback to 'default-prompt-v1' when no prompts available
+   - Location: Lines 307-313, 388-398 in promptService.ts
+   - Impact: No more crashes when prompt cache unavailable
+
+### Database Improvements
+- Created complete_cleanup.sql for full database reset
+- Added country_code columns for international phone support
+- Implemented country detection system with GPS/IP fallback
+
+### Known Issues Resolved
+✅ Empty chat with no greeting - Fixed greeting logic for existing users
+✅ Blank message display - Added null checks and metadata field
+✅ Cross-browser sync - Platform-agnostic deduplication
+✅ Window references on native - All wrapped in Platform.OS checks
+
 ## 🎯 NEXT SESSION PRIORITIES
-1. Consider deleting `src/services/conversationContext.ts` (no longer used)
-2. Disable DEBUG mode for production (line 165)
-3. Monitor performance on real devices
-4. Continue building on simplified architecture
+1. Verify Chrome browser compatibility after restart
+2. Consider deleting `src/services/conversationContext.ts` (no longer used)
+3. Disable DEBUG mode for production (line 167 in SimpleReflectionChat.tsx)
+4. Apply database cleanup script for production launch
 
 ## 🔒 PRODUCTION STATUS
 - **Security**: XSS prevention, input validation, double-confirmation for data deletion

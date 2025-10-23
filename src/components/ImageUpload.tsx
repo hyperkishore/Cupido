@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import {
   processImage,
@@ -106,12 +107,39 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     if (Platform.OS === 'web') return;
 
     try {
-      // This would use expo-image-picker in a real React Native environment
-      // For now, we'll show a placeholder implementation
-      Alert.alert(
-        'Image Upload',
-        'Native image picker integration would be implemented here using expo-image-picker'
-      );
+      // Request permission first
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant camera roll permissions to upload images.'
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        // Convert to File-like object for handleImageSelection
+        const imageFile = {
+          uri: asset.uri,
+          base64: asset.base64,
+          width: asset.width,
+          height: asset.height,
+          type: 'image/jpeg',
+          size: asset.base64 ? asset.base64.length * 0.75 : 0, // Approximate size
+        };
+        
+        handleImageSelection(imageFile as any);
+      }
     } catch (error) {
       console.error('❌ Native image picker failed:', error);
       if (onError) {

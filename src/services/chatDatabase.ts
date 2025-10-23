@@ -271,8 +271,7 @@ class ChatDatabaseService {
           .insert([{
             user_id: userId,
             title: 'Daily Reflection Chat',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            // Let DB handle timestamps via defaults
           }])
           .select();
 
@@ -359,11 +358,7 @@ class ChatDatabaseService {
         return null;
       }
 
-      // Update conversation timestamp
-      await supabase
-        .from('chat_conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
+      // DB trigger handles conversation timestamp update automatically
 
       return data;
     } catch (error) {

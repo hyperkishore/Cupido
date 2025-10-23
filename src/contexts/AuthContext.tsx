@@ -30,12 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('[AuthContext] Starting initialization...');
     const getSession = async () => {
       try {
-        // Add a timeout to prevent infinite loading
+        // Increased timeout to 10s for slow networks/storage
         const timeoutPromise = new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('[AuthContext] ⏱️  Timeout reached (3s) - proceeding without user');
+            console.warn('[AuthContext] ⏱️  Timeout reached (10s) - proceeding without user');
             resolve(null);
-          }, 3000);
+          }, 10000);
         });
 
         console.log('[AuthContext] Fetching current user...');

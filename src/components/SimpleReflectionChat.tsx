@@ -32,6 +32,8 @@ import { processImage, ImageProcessingResult } from '../utils/imageUtils';
 import { escapeHtml, sanitizeMessageContent } from '../utils/sanitizer';
 import { log } from '../utils/logger';
 import { validateChatMessage } from '../utils/validation';
+import { normalizePhoneNumber } from '../utils/phoneNormalizer';
+import { sessionManager } from '../services/sessionManager';
 // REMOVED: Complex context strategy - keeping it simple
 // import { conversationContext } from '../services/conversationContext';
 
@@ -44,6 +46,7 @@ interface Message {
   imageAttachments?: ImageAttachment[]; // New support for processed images
   isPending?: boolean; // For optimistic UI updates
   saveFailed?: boolean; // If database save failed
+  metadata?: any; // Database metadata from chat_messages table
 }
 
 // Natural conversation starters and responses
@@ -163,7 +166,7 @@ interface SimpleReflectionChatProps {
   onKeyboardToggle?: (isVisible: boolean) => void;
 }
 
-const DEBUG = false; // Set to true for verbose logging during development
+const DEBUG = true; // Set to true for verbose logging during development
 const DEFAULT_INPUT_AREA_HEIGHT = 70;
 
 // Toast notification function (simple console log for now)
@@ -242,6 +245,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   // Deduplication: Track recently processed test messages to prevent duplicates
   const processedTestMessagesRef = useRef<Set<string>>(new Set());
+  
+  // Realtime deduplication: Track locally inserted message IDs (platform-agnostic)
+  const localMessageIdsRef = useRef<Set<string>>(new Set());
+  
+  // Auto-scroll management: Only scroll when user is at bottom or just sent a message
+  const shouldAutoScrollRef = useRef(true);
 
   // Update refs when state changes
   useEffect(() => {
@@ -518,9 +527,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       if (authUser) {
         if (DEBUG) console.log('[initializeChat] Step 2a: Using authenticated user path...');
         
-        // Import normalizePhoneNumber at the top of the file
-        const { normalizePhoneNumber } = await import('../utils/phoneNormalizer');
-        
         // Normalize phone number if available, never fall back to ID
         const normalizedPhone = authUser.phoneNumber ? normalizePhoneNumber(authUser.phoneNumber) : null;
         
@@ -533,15 +539,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         sessionUserId = normalizedPhone;
         userName = authUser.displayName || `User ${normalizedPhone.slice(-6)}`;
         if (DEBUG) console.log('[initializeChat] 🔑 Authenticated user - sessionUserId:', sessionUserId, 'userName:', userName);
-
-        // Initialize session manager for single-window enforcement
-        const { sessionManager } = await import('../services/sessionManager');
-        await sessionManager.initialize(sessionUserId, () => {
-          // Force logout callback - another window has taken over
-          console.log('🚪 Another window is active, logging out...');
-          showToast('Logged in from another window', 'info');
-          signOut(); // Use the signOut function from auth context
-        });
 
         // Check if this user has a stored session
         const storedSessionId = await getStoredSessionUserId(sessionUserId);
@@ -594,6 +591,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       // CRITICAL: Update ref immediately for test compatibility (don't wait for useEffect)
       userIdRef.current = user.id;
       if (DEBUG) console.log('[initializeChat] ✅ User ID set in state AND ref:', user.id);
+
+      // Initialize session manager for single-window enforcement (AFTER getting user UUID)
+      if (authUser) {
+        await sessionManager.initialize(user.id, () => {
+          // Force logout callback - another window has taken over
+          console.log('🚪 Another window is active, logging out...');
+          showToast('Logged in from another window', 'info');
+          signOut(); // Use the signOut function from auth context
+        });
+        if (DEBUG) console.log('[initializeChat] ✅ Session manager initialized with UUID:', user.id);
+      }
 
       // Get or create conversation
       if (DEBUG) console.log('[initializeChat] Step 5: Creating/getting conversation...');
@@ -726,12 +734,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       }
       
       // Setup real-time subscription with deduplication
-      // Track locally inserted message IDs to prevent duplicates
-      const localMessageIds = new Set<string>();
+      // Clear previous IDs when initializing new chat
+      localMessageIdsRef.current.clear();
       
-      // Store reference globally for tracking
+      // Store reference globally for dev inspection (optional, web only)
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        (window as any).__localChatMessageIds = localMessageIds;
+        (window as any).__localChatMessageIds = localMessageIdsRef.current;
       }
 
       // Subscribe to real-time messages
@@ -739,7 +747,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         conversation.id,
         (newMessage) => {
           // Skip if we inserted this message locally
-          if (localMessageIds.has(newMessage.id)) {
+          if (localMessageIdsRef.current.has(newMessage.id)) {
             if (DEBUG) console.log('[Realtime] Skipping local message:', newMessage.id);
             return;
           }
@@ -1063,10 +1071,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
         // Track locally saved bot message ID
         if (savedBotMessage?.id) {
-          const localIds = (window as any).__localChatMessageIds;
-          if (localIds) {
-            localIds.add(savedBotMessage.id);
-          }
+          localMessageIdsRef.current.add(savedBotMessage.id);
         }
 
         if (!savedBotMessage) {
@@ -1118,9 +1123,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       
       // No need to maintain conversationHistory state - we build it from messages
       
-      // Ensure we scroll to bottom after bot response
+      // Force auto-scroll when receiving bot response
+      shouldAutoScrollRef.current = true;
+      
+      // Ensure we scroll to bottom after bot response with stronger scheduling
       requestAnimationFrame(() => {
         scrollToBottom(true);
+        // Double-ensure scroll happens after content size change
+        setTimeout(() => scrollToBottom(true), 50);
       });
 
     } catch (error) {
@@ -1199,6 +1209,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // CRITICAL FIX: Create thumbnail for metadata storage to prevent massive base64 in JSONB
   const createThumbnailForMetadata = async (imageData: any): Promise<{thumbnail: string, fullImageId: string}> => {
     try {
+      // Web-only thumbnail creation
+      if (Platform.OS !== 'web' || typeof window === 'undefined' || typeof document === 'undefined') {
+        // On native, return the original image data
+        const fullImageId = `img_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        return { thumbnail: imageData, fullImageId };
+      }
+      
       // Create small thumbnail for metadata storage (target: ~10KB max)
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -1874,23 +1891,25 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       }, targetOrigin);
     }
 
-    if ((window as any).__pendingMessages?.has(messageKey)) {
-      console.log('⚠️ Blocked duplicate: exact same message already being sent');
-      return;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if ((window as any).__pendingMessages?.has(messageKey)) {
+        console.log('⚠️ Blocked duplicate: exact same message already being sent');
+        return;
+      }
+
+      // Initialize pending messages set if needed
+      if (!(window as any).__pendingMessages) {
+        (window as any).__pendingMessages = new Set();
+      }
+
+      // Add to pending messages
+      (window as any).__pendingMessages.add(messageKey);
+
+      // Clear pending after message is processed (or 3s timeout for safety)
+      setTimeout(() => {
+        (window as any).__pendingMessages?.delete(messageKey);
+      }, 3000);
     }
-
-    // Initialize pending messages set if needed
-    if (!(window as any).__pendingMessages) {
-      (window as any).__pendingMessages = new Set();
-    }
-
-    // Add to pending messages
-    (window as any).__pendingMessages.add(messageKey);
-
-    // Clear pending after message is processed (or 3s timeout for safety)
-    setTimeout(() => {
-      (window as any).__pendingMessages?.delete(messageKey);
-    }, 3000);
 
     log.userAction('message_sent', { component: 'SimpleReflectionChat', messageLength: trimmedMessage.length });
 
@@ -1913,9 +1932,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     setIsSending(false);
     isSendingRef.current = false;
     
-    // Scroll to bottom after adding user message
+    // Force auto-scroll when user sends a message
+    shouldAutoScrollRef.current = true;
+    
+    // Scroll to bottom after adding user message with stronger scheduling
     requestAnimationFrame(() => {
       scrollToBottom(true);
+      // Double-ensure scroll happens after content size change
+      setTimeout(() => scrollToBottom(true), 50);
     });
 
     // Save user message to database in background (non-blocking)
@@ -1932,9 +1956,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         // Update the optimistic message with real database ID
         if (savedUserMessage) {
           // Track this message ID as locally created
-          const localIds = (window as any).__localChatMessageIds;
-          if (localIds && savedUserMessage.id) {
-            localIds.add(savedUserMessage.id);
+          if (savedUserMessage.id) {
+            localMessageIdsRef.current.add(savedUserMessage.id);
           }
           
           setMessages(prev => prev.map(msg => 
@@ -2019,21 +2042,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     // Base padding from input area (ChatInput has fixed height)
     let padding = DEFAULT_INPUT_AREA_HEIGHT;
     
-    // Add extra padding for different scenarios
+    // Add minimal extra padding for different scenarios
     if (Platform.OS === 'web') {
-      // Web needs more padding due to fixed positioning and render differences
-      padding += 50; // Extra 50px for web
-      
-      // Additional padding if we detect the scroll isn't reaching bottom
-      // This acts as a safety margin
-      padding += 10; // Safety margin
+      // Web needs a small buffer for scroll positioning
+      padding += 10; // Reduced from 60px to 10px for better auto-scroll
     } else {
       // Native platforms
-      padding += keyboardVisible ? 30 : tabBarHeight + 30;
+      padding += keyboardVisible ? 10 : tabBarHeight + 10; // Reduced padding
     }
     
     // Ensure minimum padding
-    return Math.max(padding, DEFAULT_INPUT_AREA_HEIGHT + 30);
+    return Math.max(padding, DEFAULT_INPUT_AREA_HEIGHT);
   };
   
   const messagesBottomPadding = calculateBottomPadding();
@@ -2206,8 +2225,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         onScroll={(event) => {
           // Track scroll position for new message indicator
           const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-          const atBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
+          // Account for padding in bottom detection
+          const scrollPosition = contentOffset.y + layoutMeasurement.height;
+          const contentBottom = contentSize.height - messagesBottomPadding;
+          const atBottom = scrollPosition >= contentBottom - 20; // 20px threshold
+          
           setIsAtBottom(atBottom);
+          // Update shouldAutoScrollRef based on user's scroll position
+          shouldAutoScrollRef.current = atBottom;
           
           // Clear new message indicator if scrolled to bottom
           if (atBottom && hasNewMessages) {
@@ -2217,7 +2242,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           // Show scroll button when not at bottom
           setShowScrollButton(!atBottom);
         }}
-        scrollEventThrottle={200}
+        scrollEventThrottle={16}
+        onContentSizeChange={(_, contentHeight) => {
+          // Auto-scroll when content size changes and we should auto-scroll
+          if (shouldAutoScrollRef.current) {
+            scrollToBottom(false);
+          }
+        }}
       />
 
       {/* New message indicator or scroll button */}
