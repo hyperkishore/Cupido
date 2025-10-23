@@ -11,10 +11,10 @@
 export function normalizePhoneNumber(phoneNumber: string | null | undefined): string | null {
   if (!phoneNumber) return null;
   
-  // Skip demo users and UUID-like identifiers
+  // Skip demo users and local identifiers (but NOT regular phone numbers with hyphens)
   if (phoneNumber.startsWith('demo_') || 
       phoneNumber.startsWith('local_') || 
-      phoneNumber.includes('-')) {
+      (phoneNumber.includes('-') && phoneNumber.length > 20)) { // Only reject UUID-like strings
     return null;
   }
   
