@@ -9,6 +9,7 @@ import { PromptScreen } from '../screens/PromptScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { DigestScreen } from '../screens/DigestScreen';
 import { MatchesScreen } from '../screens/MatchesScreen';
+import { PixelPerfectReflectScreen } from '../screens/PixelPerfectReflectScreen';
 import { DemoLoader } from '../components/DemoLoader';
 import { theme } from '../utils/theme';
 
@@ -53,6 +54,17 @@ export const AppNavigator: React.FC = () => {
         },
       }}
     >
+      <Tab.Screen
+        name="Chat"
+        component={PixelPerfectReflectScreen}
+        options={{
+          title: 'Chat',
+          tabBarLabel: 'Chat',
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="💬" color={color} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="Reflect"
         component={PromptScreen}

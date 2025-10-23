@@ -20,7 +20,19 @@ const createDemoClient = () => ({
         single: async () => ({ data: null, error: null }),
         maybeSingle: async () => ({ data: null, error: null })
       }),
-      maybeSingle: async () => ({ data: null, error: null })
+      maybeSingle: async () => ({ data: null, error: null }),
+      order: () => ({ 
+        limit: () => async ({ data: [], error: null }),
+        range: () => async ({ data: [], error: null })
+      }),
+      limit: () => async ({ data: [], error: null }),
+      in: () => async ({ data: [], error: null }),
+      range: () => async ({ data: [], error: null }),
+      lt: () => ({ 
+        order: () => ({ 
+          limit: () => async ({ data: [], error: null }) 
+        })
+      })
     }),
     insert: () => ({ 
       select: () => ({ 
@@ -35,10 +47,16 @@ const createDemoClient = () => ({
       }) 
     }),
     update: () => ({ eq: () => async ({ data: null, error: null }) }),
+    delete: () => ({ eq: () => async ({ data: null, error: null }) }),
   }),
   functions: {
     invoke: async () => ({ data: null, error: null }),
   },
+  channel: () => ({
+    on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+    subscribe: () => ({ unsubscribe: () => {} }),
+  }),
+  removeChannel: () => {},
 });
 
 export const supabase = DEMO_MODE ? createDemoClient() : createClient(supabaseUrl, supabaseKey, {

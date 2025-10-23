@@ -304,11 +304,13 @@ class PromptService {
         if (firstPrompt) return firstPrompt;
       }
 
-      // No cache available - this shouldn't happen if initialized properly
-      throw new Error('No prompts available');
+      // No cache available - return a default prompt ID
+      console.warn('[PromptService] No prompts in cache, using fallback default');
+      return 'default-prompt-v1';
     } catch (error) {
       console.error('[PromptService] Error getting selected prompt:', error);
-      throw error;
+      // Return fallback instead of throwing
+      return 'default-prompt-v1';
     }
   }
 
@@ -377,7 +379,26 @@ class PromptService {
   async getCurrentPromptInfo(): Promise<PromptInfo | null> {
     try {
       const promptId = await this.getSelectedPromptId();
-      return this.cache?.prompts[promptId] || null;
+      // If we have the prompt in cache, return it
+      if (this.cache?.prompts[promptId]) {
+        return this.cache.prompts[promptId];
+      }
+      
+      // Return a fallback prompt info for default
+      if (promptId === 'default-prompt-v1') {
+        return {
+          id: 'default-prompt-v1',
+          name: 'Default Assistant',
+          description: 'Standard conversation assistant',
+          version: '1.0.0',
+          isDefault: true,
+          isVisible: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as PromptInfo;
+      }
+      
+      return null;
     } catch (error) {
       console.error('[PromptService] Error getting prompt info:', error);
       return null;
