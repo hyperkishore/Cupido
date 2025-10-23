@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cupido",
     "slug": "Cupido",
-    "version": "1.2.26",
+    "version": "1.2.27",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
