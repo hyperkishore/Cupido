@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Fragment, useCallback } from 'react';
+import React, { useState, useRef, useEffect, Fragment, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -26,8 +26,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { userProfileService } from '../services/userProfileService';
 import { ImageUpload } from './ImageUpload';
 import { ImageMessage } from './ImageMessage';
+import { ChatInput } from './ChatInput';
 import { processImage, ImageProcessingResult } from '../utils/imageUtils';
-import { useMemoryManager } from '../utils/memoryManager';
+// import { useMemoryManager } from '../utils/memoryManager'; // Removed as part of simplification
 import { escapeHtml, sanitizeMessageContent } from '../utils/sanitizer';
 import { log } from '../utils/logger';
 import { validateChatMessage } from '../utils/validation';
@@ -122,7 +123,7 @@ const getStoredSessionUserId = async (authUserId: string): Promise<string | null
       }
       return null;
     } catch (error) {
-      log.warn('Failed to read session from web storage', { error: error.message });
+      log.warn('Failed to read session from web storage', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }
@@ -130,7 +131,7 @@ const getStoredSessionUserId = async (authUserId: string): Promise<string | null
   try {
     return await AsyncStorage.getItem(key);
   } catch (error) {
-    log.warn('Failed to read session from AsyncStorage', { error: error.message });
+    log.warn('Failed to read session from AsyncStorage', { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 };
@@ -146,7 +147,7 @@ const setStoredSessionUserId = async (authUserId: string, value: string) => {
         log.debug(`Saved session to localStorage: ${key}`, { key });
       }
     } catch (error) {
-      log.warn('Failed to persist session to web storage', { error: error.message });
+      log.warn('Failed to persist session to web storage', { error: error instanceof Error ? error.message : String(error) });
     }
     return;
   }
@@ -154,7 +155,7 @@ const setStoredSessionUserId = async (authUserId: string, value: string) => {
   try {
     await AsyncStorage.setItem(key, value);
   } catch (error) {
-    log.warn('Failed to persist session to AsyncStorage', { error: error.message });
+    log.warn('Failed to persist session to AsyncStorage', { error: error instanceof Error ? error.message : String(error) });
   }
 };
 
@@ -162,15 +163,15 @@ interface SimpleReflectionChatProps {
   onKeyboardToggle?: (isVisible: boolean) => void;
 }
 
-const DEBUG = true; // Set to true for verbose logging during development
+const DEBUG = false; // Set to true for verbose logging during development
 const DEFAULT_INPUT_AREA_HEIGHT = 70;
 
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const flatListRef = useRef<FlatList>(null);
-  const { user: authUser } = useAuth(); // Get authenticated user from context
-  const memoryManager = useMemoryManager();
+  const { user: authUser, signOut, loading: authLoading } = useAuth(); // Get authenticated user, signOut, and loading from context
+  // const memoryManager = useMemoryManager(); // Removed as part of simplification
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
@@ -180,9 +181,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   const MESSAGE_PAGE_SIZE = 50; // Load 50 messages at a time
   const MAX_MESSAGES_IN_MEMORY = 100; // Keep max 100 messages in memory
   const TRIM_TO_MESSAGES = 75; // When trimming, keep 75 most recent
-  const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [inputAreaHeight, setInputAreaHeight] = useState(DEFAULT_INPUT_AREA_HEIGHT);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   
   // Mobile browser detection (Platform.OS is always 'web' in browsers)
   const isMobileBrowser = Platform.OS === 'web' && typeof window !== 'undefined' && (
@@ -250,8 +252,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
   // Initialize chat with database - reinitialize when user changes
   useEffect(() => {
-    log.debug('[useEffect setupChat] Triggered', { authUserId: authUser?.id, component: 'SimpleReflectionChat' });
+    log.debug('[useEffect setupChat] Triggered', { authUserId: authUser?.id, authLoading, component: 'SimpleReflectionChat' });
     let unsubscribe: (() => void) | undefined;
+
+    // Don't initialize chat until auth is fully loaded
+    if (authLoading) {
+      log.debug('[setupChat] Auth still loading, waiting...', { component: 'SimpleReflectionChat' });
+      return;
+    }
 
     const setupChat = async () => {
       log.debug('[setupChat] Starting chat setup', { component: 'SimpleReflectionChat' });
@@ -271,8 +279,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     return () => {
       if (DEBUG) console.log('[useEffect setupChat] Cleanup - calling unsubscribe');
       unsubscribe?.();
+      
+      // Clean up session manager on unmount
+      import('../services/sessionManager').then(({ sessionManager }) => {
+        sessionManager.cleanup();
+      });
     };
-  }, [authUser?.id]); // Re-initialize when user changes
+  }, [authUser?.id, authLoading]); // Re-initialize when user changes or auth loading state changes
 
   // Forward console logs to parent dashboard
   useEffect(() => {
@@ -366,7 +379,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           processedTestMessagesRef.current.add(messageKey);
 
           // Clean up after 5 seconds (prevents memory leak for long test sessions)
-          memoryManager.setTimeout(() => {
+          setTimeout(() => {
             processedTestMessagesRef.current.delete(messageKey);
           }, 5000);
 
@@ -376,7 +389,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             message: validatedTestMessage.substring(0, 100) 
           });
           console.log('[TEST] Current state:', {
-            currentInputText: inputText,
             isSending,
             messageLength: validatedTestMessage?.length
           });
@@ -433,11 +445,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           log.debug(`[SIMULATOR] Received response from ${personaName || 'simulator'}`, { responseLength: simResponse.length, component: 'SimpleReflectionChat' });
           
           // Add the simulator response as an AI message
-          const newBotMessage: ChatMessageType = {
+          const newBotMessage: Message = {
             id: `${Date.now()}-simulator`,
             text: simResponse,
             isBot: true,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
           };
           
           setMessages(prev => [...prev, newBotMessage]);
@@ -454,7 +466,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                 { simulatorPersona: personaName }
               );
             } catch (error) {
-              log.error('[SIMULATOR] Error saving message', error, { component: 'SimpleReflectionChat' });
+              log.error('[SIMULATOR] Error saving message', error instanceof Error ? error : new Error(String(error)), { component: 'SimpleReflectionChat' });
             }
           }
           break;
@@ -491,10 +503,31 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
 
       if (authUser) {
         if (DEBUG) console.log('[initializeChat] Step 2a: Using authenticated user path...');
-        // Use authenticated user's phone number or ID
-        sessionUserId = authUser.phoneNumber || authUser.id;
-        userName = authUser.name || `User ${sessionUserId.slice(-6)}`;
+        
+        // Import normalizePhoneNumber at the top of the file
+        const { normalizePhoneNumber } = await import('../utils/phoneNormalizer');
+        
+        // Normalize phone number if available, never fall back to ID
+        const normalizedPhone = authUser.phoneNumber ? normalizePhoneNumber(authUser.phoneNumber) : null;
+        
+        if (!normalizedPhone) {
+          console.error('❌ No valid phone number available for authenticated user');
+          showToast('Phone number required for chat', 'error');
+          return;
+        }
+        
+        sessionUserId = normalizedPhone;
+        userName = authUser.displayName || `User ${normalizedPhone.slice(-6)}`;
         if (DEBUG) console.log('[initializeChat] 🔑 Authenticated user - sessionUserId:', sessionUserId, 'userName:', userName);
+
+        // Initialize session manager for single-window enforcement
+        const { sessionManager } = await import('../services/sessionManager');
+        await sessionManager.initialize(sessionUserId, () => {
+          // Force logout callback - another window has taken over
+          console.log('🚪 Another window is active, logging out...');
+          showToast('Logged in from another window', 'info');
+          signOut(); // Use the signOut function from auth context
+        });
 
         // Check if this user has a stored session
         const storedSessionId = await getStoredSessionUserId(sessionUserId);
@@ -580,13 +613,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             };
 
             // Check if this message has image attachments
-            if (msg.metadata?.hasImage) {
-              const storageStrategy = msg.metadata?.storageStrategy;
-              const inlineImage = msg.metadata?.inlineImage;
+            const metadata = msg.metadata as any;
+            if (metadata?.hasImage) {
+              const storageStrategy = metadata?.storageStrategy;
+              const inlineImage = metadata?.inlineImage;
 
               if (storageStrategy === 'inline' && inlineImage?.base64) {
                 baseMessage.imageAttachments = [{
-                  id: msg.metadata?.imageAttachmentId || `inline_${msg.id}`,
+                  id: metadata?.imageAttachmentId || `inline_${msg.id}`,
                   conversation_id: conversation.id,
                   user_id: user.id,
                   image_data: inlineImage.base64,
@@ -606,13 +640,13 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                   }
                 } as ImageAttachment];
 
-                if (!msg.metadata?.isDescriptiveText) {
+                if (!metadata?.isDescriptiveText) {
                   baseMessage.text = '';
                 }
               } else {
                 // Create placeholder for lazy loading - don't block chat initialization
                 baseMessage.imageAttachments = [{
-                  id: msg.metadata?.imageAttachmentId || `placeholder_${msg.id}`,
+                  id: metadata?.imageAttachmentId || `placeholder_${msg.id}`,
                   conversation_id: conversation.id,
                   user_id: user.id,
                   image_data: '', // Empty - will be loaded on demand
@@ -622,12 +656,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
                   metadata: { 
                     isPlaceholder: true, 
                     messageId: msg.id,
-                    attachmentId: msg.metadata?.imageAttachmentId 
+                    attachmentId: metadata?.imageAttachmentId 
                   }
                 } as ImageAttachment];
                 
                 // Hide message text for image messages unless it's descriptive
-                if (!msg.metadata?.isDescriptiveText) {
+                if (!metadata?.isDescriptiveText) {
                   baseMessage.text = '';
                 }
                 
@@ -723,40 +757,74 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     };
   }, [onKeyboardToggle]);
 
-  // Force scroll to bottom helper function with content offset adjustment
+  // Scroll to bottom helper
   const scrollToBottom = (animated: boolean = true) => {
     if (flatListRef.current && messages.length > 0) {
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        // Add a small offset to ensure the last message is visible above input
-        flatListRef.current?.scrollToEnd({ animated });
-        // Double-tap scroll for reliability (sometimes first one doesn't work)
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: false });
-        }, animated ? 300 : 100);
-      });
+      flatListRef.current.scrollToEnd({ animated });
     }
   };
 
-  // Auto-scroll to bottom when new messages arrive
+  // Handle new messages and auto-scroll
   useEffect(() => {
-    // Delay to ensure DOM has updated
-    const scrollTimeout = setTimeout(() => {
-      scrollToBottom(true);
-    }, 200);
+    // Don't interfere while loading older messages
+    if (isLoadingOlderMessages) {
+      return;
+    }
     
-    return () => clearTimeout(scrollTimeout);
-  }, [messages.length]); // Use length to trigger on any change
+    const prevCount = messagesRef.current.length;
+    const currentCount = messages.length;
+    
+    // Check if new messages were added (not prepended)
+    if (currentCount > prevCount && prevCount > 0) {
+      // New message arrived
+      if (isAtBottom) {
+        // Auto-scroll if at bottom
+        setTimeout(() => scrollToBottom(false), 100);
+      } else {
+        // Show new message indicator if not at bottom
+        setHasNewMessages(true);
+      }
+    }
+    
+    // Initial load - ensure we're at bottom
+    if (messages.length === 1 || prevCount === 0) {
+      setTimeout(() => scrollToBottom(false), 100);
+    }
+    
+    // Update ref for tracking
+    messagesRef.current = messages;
+  }, [messages.length, isLoadingOlderMessages, isAtBottom]);
 
-  // Scroll to bottom on initial load
+  // Scroll to bottom on initial load - more aggressive for web
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      // Longer delay for initial load to ensure rendering complete
-      const initialScrollTimeout = setTimeout(() => {
+      // Web needs multiple attempts for initial scroll
+      if (Platform.OS === 'web') {
+        // Immediate attempt
         scrollToBottom(false);
-      }, 500);
-      
-      return () => clearTimeout(initialScrollTimeout);
+        
+        // After short delay
+        const shortTimeout = setTimeout(() => {
+          scrollToBottom(false);
+        }, 250);
+        
+        // Final attempt after rendering settles
+        const longTimeout = setTimeout(() => {
+          scrollToBottom(false);
+        }, 800);
+        
+        return () => {
+          clearTimeout(shortTimeout);
+          clearTimeout(longTimeout);
+        };
+      } else {
+        // Native: single delayed scroll
+        const initialScrollTimeout = setTimeout(() => {
+          scrollToBottom(false);
+        }, 500);
+        
+        return () => clearTimeout(initialScrollTimeout);
+      }
     }
   }, [isLoading]);
   
@@ -770,16 +838,24 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       return () => clearTimeout(keyboardTimeout);
     }
   }, [keyboardVisible]);
+  
+  // Auto-scroll when typing indicator appears
+  useEffect(() => {
+    if (isTyping) {
+      // Immediately scroll to show typing indicator
+      requestAnimationFrame(() => {
+        scrollToBottom(true);
+      });
+    }
+  }, [isTyping]);
 
   // Simple cleanup on unmount
   useEffect(() => {
     return () => {
-      // Clean up any pending timeouts if memoryManager exists
-      if (memoryManager?.clearAll) {
-        memoryManager.clearAll();
-      }
+      // Clean up any pending timeouts
+      // Note: memoryManager was removed as part of simplification
     };
-  }, [memoryManager]);
+  }, []);
 
   // Message pagination and memory management
   const trimMessagesIfNeeded = (messagesList: Message[]): Message[] => {
@@ -967,10 +1043,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
               return prev;
             }
             if (DEBUG) console.log('✅ Adding bot message to UI');
-            // Scroll to bottom after bot message
-            requestAnimationFrame(() => {
-              scrollToBottom(true);
-            });
             return [...prev, botMessage];
           });
         }
@@ -1074,7 +1146,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       // Create small thumbnail for metadata storage (target: ~10KB max)
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const img = new Image();
+      const img = new (window as any).Image();
       
       return new Promise((resolve, reject) => {
         img.onload = () => {
@@ -1285,7 +1357,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         hasImage: true,
         storageStrategy: 'inline' as const,
         inlineImage: {
-          base64: imageData.base64,
+          base64: imageData.base64, // Store full image in metadata for inline storage
           mimeType: imageData.mimeType,
           width: imageData.width,
           height: imageData.height,
@@ -1327,8 +1399,6 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         throw new Error('Failed to save image attachment');
       }
 
-      const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
-
       if (storageStrategy === 'attachment' && imageAttachment) {
         const userMessage = await chatDatabase.saveMessage(
           currentConversation.id,
@@ -1346,26 +1416,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           });
         }
 
-        // PERFORMANCE: Create lazy-loaded attachment to reduce memory usage
-        const lazyAttachment = createLazyImageReference(imageAttachment.id, {
-          description: 'User uploaded an image', 
-          fileName: imageData.fileName,
-          originalSize: imageData.originalSize,
-          compressedSize: imageData.compressedSize,
-          width: imageData.width,
-          height: imageData.height,
-          mimeType: imageData.mimeType
-        });
-
+        // Use the actual image attachment with data
         const messageWithImage: Message = {
           id: messageId,
           text: '',
           isBot: false,
           timestamp: userMessage ? new Date(userMessage.created_at) : new Date(),
-          imageAttachments: [lazyAttachment] // Use lazy reference instead of full data
+          imageAttachments: [imageAttachment] // Use actual attachment with image data
         };
 
         setMessages(prev => [...prev, messageWithImage]);
+        
+        // Add placeholder AFTER the image is shown
+        const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
 
         setTimeout(() => {
           processImageInBackground(imageData, imageAttachment, placeholderId, {
@@ -1376,14 +1439,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         }, 100);
       } else {
         const inlineAttachmentId = `inline_${Date.now()}`;
-        // PERFORMANCE: Optimize inline storage for memory efficiency
-        const optimizedImageData = await optimizeImageForStorage(imageData);
+        // PERFORMANCE: For inline storage, just use the full image data directly
+        // The thumbnailData was only created when attachment succeeded
         
         const inlineAttachment: ImageAttachment = {
           id: inlineAttachmentId,
           conversation_id: currentConversation.id,
           user_id: userId,
-          image_data: optimizedImageData.data, // Optimized storage
+          image_data: imageData.base64, // Use full image for inline storage
           mime_type: imageData.mimeType,
           file_size: imageData.compressedSize,
           width: imageData.width,
@@ -1423,6 +1486,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         };
 
         setMessages(prev => [...prev, messageWithImage]);
+        
+        // Add placeholder AFTER the image is shown
+        const placeholderId = addPlaceholderMessage('📷 Got your photo—give me a moment to look closely...');
 
         setTimeout(() => {
           processImageInBackground(imageData, inlineAttachment, placeholderId, {
@@ -1553,7 +1619,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           console.log('✅ Saved descriptive message:', descriptiveMessage?.id);
 
           // Step 3: Generate the main AI response with trimmed context for better performance
-          setTypingMessage('generating response...');
+          setTypingMessage('Typing...');
           const conversationPrompt = "I just shared an image with you. What do you see? Tell me what interests you about it and ask me something about the image or the story behind it.";
           
           // Trim conversation history for image requests to improve performance and reduce payload
@@ -1661,14 +1727,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
-  const handleSend = async (messageOverride?: string) => {
-    const messageToSend = messageOverride ?? inputText;
+  const handleSend = async (messageText: string) => {
+    const messageToSend = messageText;
 
     if (DEBUG) console.log('[handleSend] Called with:', {
-      messageOverride: messageOverride ? messageOverride.substring(0, 50) : 'none',
-      inputText: inputText.substring(0, 50),
       messageToSend: messageToSend.substring(0, 50),
-      inputTextLength: inputText.length,
       isSending,
       trimmed: messageToSend.trim().length
     });
@@ -1740,8 +1803,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     if (DEBUG) console.log('[handleSend] ✅ Ready to send - activeConversation:', activeConversation.id);
 
     // Content-based duplicate prevention (simpler and more reliable than time-based)
-    const messageText = validatedMessage.trim();
-    const messageKey = `${activeConversation.id}_${messageText.toLowerCase()}`;
+    const trimmedMessage = validatedMessage.trim();
+    const messageKey = `${activeConversation.id}_${trimmedMessage.toLowerCase()}`;
     
     // Notify parent window (test dashboard) if in iframe
     if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
@@ -1749,7 +1812,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       window.parent.postMessage({
         type: 'cupido-message',
         sender: 'user',
-        message: messageText,
+        message: trimmedMessage,
         conversationId: activeConversation.id,
         timestamp: new Date().toISOString()
       }, targetOrigin);
@@ -1769,23 +1832,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     (window as any).__pendingMessages.add(messageKey);
 
     // Clear pending after message is processed (or 3s timeout for safety)
-    memoryManager.setTimeout(() => {
+    setTimeout(() => {
       (window as any).__pendingMessages?.delete(messageKey);
     }, 3000);
 
-    log.userAction('message_sent', { component: 'SimpleReflectionChat', messageLength: messageText.length });
+    log.userAction('message_sent', { component: 'SimpleReflectionChat', messageLength: trimmedMessage.length });
 
-    // Only clear input if we used the actual inputText (not an override)
-    if (!messageOverride) {
-      setInputText('');
-    }
     setIsSending(true);
     isSendingRef.current = true; // Update ref immediately for test compatibility
 
     // OPTIMISTIC UI: Show message immediately
     const optimisticUserMessage: Message = {
       id: `temp_user_${Date.now()}`,
-      text: messageText,
+      text: trimmedMessage,
       isBot: false,
       timestamp: new Date(),
       isPending: true, // Mark as pending save
@@ -1807,11 +1866,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     if (activeConversation) {
       chatDatabase.saveMessage(
         activeConversation.id,
-        messageText,
+        trimmedMessage,
         false, // is_bot = false for user
         undefined, // no AI model for user messages
         { 
-          message_length: messageText.length
+          message_length: trimmedMessage.length
         }
       ).then(savedUserMessage => {
         // Update the optimistic message with real database ID
@@ -1870,7 +1929,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       // Generate response in background (completely non-blocking)
       // Don't await - let it run independently
       if (DEBUG) console.log('[MOBILE DEBUG] Starting generateResponse in background');
-      generateResponse(messageText, activeConversation.id)
+      generateResponse(trimmedMessage, activeConversation.id)
         .then(() => {
           if (DEBUG) console.log('[MOBILE DEBUG] generateResponse completed');
         })
@@ -1892,15 +1951,33 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
-  // Fixed positioning calculations
-  const inputBottomPosition = 0; // Always at the bottom
-  const effectiveInputHeight = Math.max(inputAreaHeight, DEFAULT_INPUT_AREA_HEIGHT);
-  // Don't add tab bar height when keyboard is visible (tabs are hidden)
-  // Add extra padding to prevent messages from hiding behind input
-  const messagesBottomPadding = effectiveInputHeight + (keyboardVisible ? 20 : tabBarHeight + 20);
+  // Calculate proper bottom padding for messages
+  // BETTER SOLUTION: Account for all factors affecting visible space
+  const calculateBottomPadding = () => {
+    // Base padding from input area (ChatInput has fixed height)
+    let padding = DEFAULT_INPUT_AREA_HEIGHT;
+    
+    // Add extra padding for different scenarios
+    if (Platform.OS === 'web') {
+      // Web needs more padding due to fixed positioning and render differences
+      padding += 50; // Extra 50px for web
+      
+      // Additional padding if we detect the scroll isn't reaching bottom
+      // This acts as a safety margin
+      padding += 10; // Safety margin
+    } else {
+      // Native platforms
+      padding += keyboardVisible ? 30 : tabBarHeight + 30;
+    }
+    
+    // Ensure minimum padding
+    return Math.max(padding, DEFAULT_INPUT_AREA_HEIGHT + 30);
+  };
+  
+  const messagesBottomPadding = calculateBottomPadding();
 
-  // Render function for FlatList virtualization
-  const renderMessage = ({ item: message, index }: { item: Message; index: number }) => {
+  // Render function for FlatList virtualization - memoized to prevent re-renders
+  const renderMessage = useCallback(({ item: message, index }: { item: Message; index: number }) => {
     // Check if message has new image attachments
     if (message.imageAttachments && message.imageAttachments.length > 0) {
       return (
@@ -2008,7 +2085,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         </Text>
       </View>
     );
-  };
+  }, []);
 
   return (
     <KeyboardAvoidingView 
@@ -2025,16 +2102,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
-          { paddingBottom: messagesBottomPadding }
+          { paddingBottom: messagesBottomPadding } // paddingBottom for normal list
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         testID="messages-scroll-view"
-        inverted={false} // Keep normal order since we want to load older messages at top
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-          autoscrollToTopThreshold: 10
-        }}
+        inverted={false} // Back to normal non-inverted list
         // Add keyboard avoiding behavior
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
@@ -2048,7 +2121,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         // Pagination for loading older messages (pull-to-refresh)
         refreshing={isLoadingOlderMessages}
         onRefresh={hasMoreMessages ? loadOlderMessages : undefined}
-        // Header for loading indicator
+        // ListHeaderComponent appears at top (for older messages)
         ListHeaderComponent={
           isLoadingOlderMessages ? (
             <View style={styles.loadingContainer}>
@@ -2060,7 +2133,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             </View>
           ) : null
         }
-        // Footer for typing indicator
+        // ListFooterComponent appears at bottom (for typing indicator)
         ListFooterComponent={
           isTyping ? (
             <View style={styles.typingContainer} testID="typing-indicator">
@@ -2068,89 +2141,53 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             </View>
           ) : null
         }
+        onScroll={(event) => {
+          // Track scroll position for new message indicator
+          const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+          const atBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 50;
+          setIsAtBottom(atBottom);
+          
+          // Clear new message indicator if scrolled to bottom
+          if (atBottom && hasNewMessages) {
+            setHasNewMessages(false);
+          }
+          
+          // Show scroll button when not at bottom
+          setShowScrollButton(!atBottom);
+        }}
+        scrollEventThrottle={200}
       />
 
-      {/* Fixed input area */}
-      <View
-        testID="input-wrapper"
-        style={[
-          styles.inputWrapper,
-          {
-            bottom: inputBottomPosition,
-            paddingBottom: Math.max(insets.bottom, 12),
-          }
-        ]}
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          if (Math.abs(height - inputAreaHeight) > 1) {
-            setInputAreaHeight(height);
-          }
-        }}
-      >
-        <View style={styles.inputContainer} testID="input-container">
-          <ImageUpload
-            onImageSelected={handleImageSelected}
-            onError={(error) => Alert.alert('Image Error', error)}
-            disabled={isSending}
-            style={styles.imageUploadButton}
-          />
-          <TextInput
-            testID="chat-input"
-            style={styles.textInput}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Share your thoughts..."
-            placeholderTextColor="#999"
-            multiline
-            maxLength={10000}
-            returnKeyType={Platform.OS === 'web' ? 'send' : 'default'}
-            blurOnSubmit={false}
-            onSubmitEditing={Platform.OS === 'web' ? () => handleSend() : undefined}
-            onKeyPress={(e: any) => {
-              // Handle Enter key on web (without Shift)
-              if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
-                // Don't send if composing (IME) or if it's a repeated event
-                if (e.nativeEvent.isComposing || e.nativeEvent.repeat) {
-                  console.log('⚠️ Blocked Enter: composing or repeat event');
-                  return;
-                }
-                e.preventDefault();
-                // Prevent double-trigger from Enter key
-                if ((window as any).__lastEnterPress && Date.now() - (window as any).__lastEnterPress < 100) {
-                  console.log('⚠️ Blocked Enter: too soon after last Enter');
-                  return;
-                }
-                (window as any).__lastEnterPress = Date.now();
+      {/* New message indicator or scroll button */}
+      {(showScrollButton || hasNewMessages) && (
+        <Pressable 
+          style={[
+            styles.scrollToBottomButton,
+            hasNewMessages && styles.newMessageButton
+          ]}
+          onPress={() => {
+            scrollToBottom(true);
+            setHasNewMessages(false);
+          }}
+        >
+          {hasNewMessages ? (
+            <View style={styles.newMessageContent}>
+              <Text style={styles.newMessageText}>New message</Text>
+              <Feather name="chevron-down" size={16} color="#FFF" />
+            </View>
+          ) : (
+            <Feather name="arrow-down" size={20} color="#FFF" />
+          )}
+        </Pressable>
+      )}
 
-                // Only send if not already sending and has text
-                if (!isSending && inputText.trim()) {
-                  console.log('⌨️ Enter key triggering send');
-                  handleSend();
-                } else {
-                  console.log('⚠️ Blocked Enter: isSending or no text');
-                }
-              }
-            }}
-          />
-          <Pressable
-            testID="send-button"
-            style={({ pressed }) => [
-              styles.sendButton,
-              (!inputText.trim() || isSending) && styles.sendButtonDisabled,
-              pressed && styles.sendButtonPressed
-            ]}
-            onPress={() => handleSend()}
-            disabled={!inputText.trim() || isSending}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Feather
-              name="send"
-              size={20}
-              color={(inputText.trim() && !isSending) ? '#007AFF' : '#C0C0C0'}
-            />
-          </Pressable>
-        </View>
-      </View>
+      {/* Separate ChatInput component - only re-renders on typing */}
+      <ChatInput
+        onSendMessage={handleSend}
+        onImageSelected={handleImageSelected}
+        isSending={isSending}
+        placeholder="Share your thoughts..."
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -2320,5 +2357,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  scrollToBottomButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 25,
+    minWidth: 50,
+    height: 50,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  newMessageButton: {
+    backgroundColor: '#34C759',
+    minWidth: 120,
+  },
+  newMessageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  newMessageText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
