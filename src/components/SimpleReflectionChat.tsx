@@ -166,6 +166,20 @@ interface SimpleReflectionChatProps {
 const DEBUG = false; // Set to true for verbose logging during development
 const DEFAULT_INPUT_AREA_HEIGHT = 70;
 
+// Toast notification function (simple console log for now)
+const showToast = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
+  const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+  console.log(`${prefix} ${message}`);
+  
+  // In web, could use a toast library or show an alert
+  if (Platform.OS === 'web' && type === 'error') {
+    // For critical errors, show alert on web
+    if (typeof window !== 'undefined') {
+      window.alert(message);
+    }
+  }
+};
+
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -711,13 +725,47 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         }
       }
       
-      // Setup real-time subscription - but don't add messages we create locally
-      // This is mainly for multi-device sync or admin messages
-      // IMPORTANT: We'll disable the subscription for now to prevent duplicates
-      const unsubscribe = () => {}; // Disabled subscription to prevent duplicates
+      // Setup real-time subscription with deduplication
+      // Track locally inserted message IDs to prevent duplicates
+      const localMessageIds = new Set<string>();
+      
+      // Store reference globally for tracking
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        (window as any).__localChatMessageIds = localMessageIds;
+      }
 
-      // Store reference to local message IDs for this session
-      (window as any).__localChatMessageIds = new Set<string>();
+      // Subscribe to real-time messages
+      const unsubscribe = chatDatabase.subscribeToMessages(
+        conversation.id,
+        (newMessage) => {
+          // Skip if we inserted this message locally
+          if (localMessageIds.has(newMessage.id)) {
+            if (DEBUG) console.log('[Realtime] Skipping local message:', newMessage.id);
+            return;
+          }
+          
+          // Add to messages if not already present (additional safety check)
+          setMessages(prev => {
+            const exists = prev.some(m => m.id === newMessage.id);
+            if (exists) {
+              if (DEBUG) console.log('[Realtime] Message already exists:', newMessage.id);
+              return prev;
+            }
+            
+            // Add new message from another window/device
+            const message: Message = {
+              id: newMessage.id,
+              text: newMessage.content,
+              isBot: newMessage.is_bot,
+              timestamp: new Date(newMessage.created_at),
+              metadata: newMessage.metadata
+            };
+            
+            console.log('📨 New message from another window:', message.text?.substring(0, 50));
+            return [...prev, message];
+          });
+        }
+      );
 
       if (DEBUG) console.log('[initializeChat] ✅ Initialization complete - returning unsubscribe function');
       return unsubscribe;
@@ -1012,6 +1060,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
             shouldAskQuestion: aiResponse.shouldAskQuestion
           }
         );
+
+        // Track locally saved bot message ID
+        if (savedBotMessage?.id) {
+          const localIds = (window as any).__localChatMessageIds;
+          if (localIds) {
+            localIds.add(savedBotMessage.id);
+          }
+        }
 
         if (!savedBotMessage) {
           console.error('❌ Failed to save AI message to database');
@@ -1875,6 +1931,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       ).then(savedUserMessage => {
         // Update the optimistic message with real database ID
         if (savedUserMessage) {
+          // Track this message ID as locally created
+          const localIds = (window as any).__localChatMessageIds;
+          if (localIds && savedUserMessage.id) {
+            localIds.add(savedUserMessage.id);
+          }
+          
           setMessages(prev => prev.map(msg => 
             msg.id === optimisticUserMessage.id 
               ? { ...msg, id: savedUserMessage.id, isPending: false }

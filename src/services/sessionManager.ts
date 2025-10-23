@@ -61,7 +61,13 @@ export class SessionManager {
         });
 
       if (error) {
-        console.error('Failed to claim session:', error);
+        // If table doesn't exist, log but don't crash
+        if (error.message?.includes('active_sessions') || error.code === '42P01') {
+          console.warn('⚠️ active_sessions table not found. Single-window enforcement disabled.');
+          console.warn('Run the migration in supabase/migrations/create_active_sessions.sql');
+        } else {
+          console.error('Failed to claim session:', error);
+        }
       }
     } catch (error) {
       console.error('Session claim error:', error);

@@ -1,41 +1,41 @@
 # Repository Guidelines
 
-Cupido is an Expo-driven React Native app. Use this guide to navigate, build, and contribute with confidence.
+Cupido is an Expo-driven React Native app. This guide orients code reviewers and architecture planners.
+
+## Agent Role: Review & Architecture Planning
+- Operate as a code reviewer and expert architect.
+- Do not modify repository files or create commits; provide suggestions, rationales, and phased plans.
+- Reference concrete paths and lines in feedback (e.g., `src/services/foo.ts:42`).
+- Prefer structured outputs: review checklists, RFC-style proposals, and roadmaps.
 
 ## Project Structure & Module Organization
 - Source in `src/`: `components/`, `screens/`, `services/`, `contexts/`.
-- Shared code in `src/utils/` and `src/types/`.
-- Assets and mock data in `assets/` and `data/`.
+- Shared in `src/utils/` and `src/types/`.
+- Assets/mock data in `assets/` and `data/`.
 - Automation in `scripts/`; examples/manual flows in `design_examples/` and `MANUAL_TEST_INSTRUCTIONS.md`.
-- Web bundles in `dist/` (delete stale bundles before check-in).
-- Server/integration entry points: `index.ts`, `server.js`.
+- Web build output in `dist/`.
+- Integration entry points: `index.ts`, `server.js`.
 
 ## Build, Test, and Development Commands
 - Install deps: `npm install`.
-- Start dev server: `npm run start` (Expo). Platform targets: `npm run web`, `npm run ios`.
-- Build web bundle: `npm run build`; production: `npm run build:production` (outputs to `dist/`).
-- Lint & fix: `npm run lint`.
-- Type check: `npm run type-check`.
-- Unit tests: `npm run test:unit`.
+- Start dev server: `npm run start` (Expo). Targets: `npm run web`, `npm run ios`.
+- Build web bundle: `npm run build` or `npm run build:production` (outputs to `dist/`).
+- Lint: `npm run lint` (ESLint across TypeScript sources).
+- Type check: `npm run type-check` (`tsc --noEmit`).
+- Unit tests: `npm run test:unit` (Node-based service tests in `tests/`).
 
-## Coding Style & Naming Conventions
-- TypeScript + functional React. 2-space indent, single quotes, trailing commas.
-- Names: Components/Screens `PascalCase`, hooks `useCamelCase`, helpers `camelCase`.
-- Co-locate styles with `StyleSheet.create` in the same file unless shared.
-- Run lint before pushing; do not bypass existing ESLint suppressions without comment.
+## Review Criteria: Style & Naming
+- TypeScript + functional React; 2-space indent, single quotes, trailing commas on multiline.
+- Names: Components/Screens `PascalCase`; hooks `useCamelCase`; helpers `camelCase`.
+- Prefer co-located styles via `StyleSheet.create` unless shared.
 
-## Testing Guidelines
-- Unit tests live in `tests/` with Node assertions; custom mocks in `tests/setup/`.
-- Name tests `<feature>.test.js`; add/extend when adding logic.
-- Run `npm run test:unit` locally; aim to cover new branches and error paths.
-- For UI-only changes, document manual validation in the PR and add a screenshot or story when helpful.
-
-## Commit & Pull Request Guidelines
-- Commits: concise, imperative (e.g., `feat: improve reflection prompts`), group related changes.
-- PRs: describe problem, solution, and follow-ups; link Supabase schema/config updates when relevant.
-- Include screenshots/recordings for UI tweaks; confirm `lint`, `type-check`, and `test:unit` pass.
+## Testing Guidelines (for review)
+- Unit tests in `tests/`; custom mocks in `tests/setup/`.
+- Test files named `<feature>.test.js`.
+- Expect coverage for new logic, edge cases, and error paths.
+- For UI flows, look for documented manual validation in `MANUAL_TEST_INSTRUCTIONS.md` or assets in `design_examples/`.
 
 ## Security & Configuration Tips
-- Never commit secrets; prefer `.env` and local Expo config.
-- Verify `dist/` contains only intended build artifacts; remove leftovers before pushing.
+- Avoid storing secrets in the repo; use `.env` and local Expo config.
+- Flag unexpected artifacts in `dist/`; ensure only intended build outputs exist.
 

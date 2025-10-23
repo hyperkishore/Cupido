@@ -133,26 +133,43 @@ class ChatDatabaseService {
 
       // Create new user if not found (PGRST116 = no rows returned, which is expected)
       if (!existingUser && (!fetchError || fetchError.code === 'PGRST116')) {
-        console.log(`📝 Creating new ${isDemo ? 'DEMO' : ''} user with phone: ${phoneNumber}`);
+        console.log(`📝 Creating/updating user with phone: ${phoneNumber}`);
 
-        // First, try to insert the user
-        const { data: insertData, error: insertError } = await supabase
+        // Use UPSERT to handle race conditions and ensure no duplicates
+        const { data: upsertData, error: upsertError } = await supabase
           .from('profiles')
-          .insert([{
+          .upsert({
             phone_number: phoneNumber,
             name: name || `User ${phoneNumber.slice(-4)}`,
-            created_at: new Date().toISOString(),
             last_active: new Date().toISOString()
-          }])
-          .select();
+            // Note: Don't set created_at in upsert - let DB handle it on first insert
+          }, {
+            onConflict: 'phone_number',  // Update if phone exists
+            ignoreDuplicates: false       // We want to update last_active
+          })
+          .select()
+          .single();
 
-        if (insertError) {
-          console.error('Error creating user:', insertError);
+        if (upsertError) {
+          console.error('Error upserting user:', upsertError);
+          
+          // Fallback: Try to fetch if upsert failed (maybe constraint issue)
+          const { data: fallbackUser } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('phone_number', phoneNumber)
+            .maybeSingle();
+            
+          if (fallbackUser) {
+            console.log('✅ Found user via fallback after upsert error');
+            return fallbackUser;
+          }
+          
           return null;
         }
 
-        // Check if we got data back from insert
-        const newUser = insertData?.[0];
+        // Check if we got data back from upsert
+        const newUser = upsertData;
 
         if (!newUser) {
           console.error('❌ User creation succeeded but returned null/empty data');
@@ -294,8 +311,8 @@ class ChatDatabaseService {
           content,
           is_bot: isBot,
           ai_model: aiModel,
-          metadata,
-          created_at: new Date().toISOString(),
+          metadata
+          // Don't set created_at - let database handle it with DEFAULT NOW()
         })
         .select()
         .single();
