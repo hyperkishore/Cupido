@@ -11,14 +11,13 @@
 export function normalizePhoneNumber(phoneNumber: string | null | undefined): string | null {
   if (!phoneNumber) return null;
   
-  // Skip demo users and local identifiers (but NOT regular phone numbers with hyphens)
+  // Skip demo users and local identifiers
   if (phoneNumber.startsWith('demo_') || 
-      phoneNumber.startsWith('local_') || 
-      (phoneNumber.includes('-') && phoneNumber.length > 20)) { // Only reject UUID-like strings
+      phoneNumber.startsWith('local_')) {
     return null;
   }
   
-  // Remove all non-digit characters
+  // First, remove all non-digit characters (including hyphens, spaces, parentheses)
   let normalized = phoneNumber.replace(/\D/g, '');
   
   // Handle US phone numbers
@@ -47,8 +46,7 @@ export function isValidPhoneNumber(phoneNumber: string | null | undefined): bool
   
   // Skip demo/local identifiers
   if (phoneNumber.startsWith('demo_') || 
-      phoneNumber.startsWith('local_') || 
-      phoneNumber.includes('-')) {
+      phoneNumber.startsWith('local_')) {
     return false;
   }
   

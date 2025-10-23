@@ -108,15 +108,46 @@ class ChatDatabaseService {
   // Get or create user profile
   async getOrCreateUser(phoneNumber: string, name?: string, isDemo?: boolean): Promise<UserProfile | null> {
     try {
-      console.log(`👤 Looking for user with phone: ${phoneNumber}${isDemo ? ' (Demo User)' : ''}`);
-      console.log('🔍 Query parameters:', { phoneNumber, name, isDemo });
+      // Import normalizer for consistency
+      const { normalizePhoneNumber } = await import('../utils/phoneNormalizer');
+      
+      // Normalize the phone number for database operations
+      // This handles both +E.164 and legacy formats
+      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+      const dbPhone = normalizedPhone || phoneNumber; // Fallback for demo users
+      
+      console.log(`👤 Looking for user with phone: ${dbPhone}${isDemo ? ' (Demo User)' : ''}`);
+      console.log('🔍 Query parameters:', { original: phoneNumber, normalized: dbPhone, name, isDemo });
 
-      // First try to get existing user
-      const { data: existingUser, error: fetchError } = await supabase
+      // Try BOTH normalized and original to handle legacy data
+      // First try normalized
+      let { data: existingUser, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('phone_number', phoneNumber)
-        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
+        .eq('phone_number', dbPhone)
+        .maybeSingle();
+      
+      // If not found with normalized, try original (for legacy profiles)
+      if (!existingUser && normalizedPhone && normalizedPhone !== phoneNumber) {
+        console.log('🔍 Trying original phone format for legacy profiles...');
+        const legacyResult = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('phone_number', phoneNumber)
+          .maybeSingle();
+        
+        if (legacyResult.data) {
+          existingUser = legacyResult.data;
+          fetchError = null;
+          console.log('✅ Found legacy profile, will update to normalized format');
+          
+          // Update the legacy profile to use normalized phone
+          await supabase
+            .from('profiles')
+            .update({ phone_number: dbPhone })
+            .eq('id', existingUser.id);
+        }
+      }
       
       console.log('📊 Query result:', { existingUser, fetchError });
 
@@ -133,13 +164,13 @@ class ChatDatabaseService {
 
       // Create new user if not found (PGRST116 = no rows returned, which is expected)
       if (!existingUser && (!fetchError || fetchError.code === 'PGRST116')) {
-        console.log(`📝 Creating/updating user with phone: ${phoneNumber}`);
+        console.log(`📝 Creating/updating user with phone: ${dbPhone}`);
 
         // Use UPSERT to handle race conditions and ensure no duplicates
         const { data: upsertData, error: upsertError } = await supabase
           .from('profiles')
           .upsert({
-            phone_number: phoneNumber,
+            phone_number: dbPhone,
             name: name || `User ${phoneNumber.slice(-4)}`,
             last_active: new Date().toISOString()
             // Note: Don't set created_at in upsert - let DB handle it on first insert
@@ -157,7 +188,7 @@ class ChatDatabaseService {
           const { data: fallbackUser } = await supabase
             .from('profiles')
             .select('*')
-            .eq('phone_number', phoneNumber)
+            .eq('phone_number', dbPhone)
             .maybeSingle();
             
           if (fallbackUser) {
@@ -179,7 +210,7 @@ class ChatDatabaseService {
           const { data: fetchedUser, error: refetchError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('phone_number', phoneNumber)
+            .eq('phone_number', dbPhone)
             .maybeSingle();
 
           if (refetchError) {
