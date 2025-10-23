@@ -15,8 +15,25 @@ const createDemoClient = () => ({
     getUser: async () => ({ data: { user: null }, error: null }),
   },
   from: () => ({
-    select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }),
-    insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
+    select: () => ({ 
+      eq: () => ({ 
+        single: async () => ({ data: null, error: null }),
+        maybeSingle: async () => ({ data: null, error: null })
+      }),
+      maybeSingle: async () => ({ data: null, error: null })
+    }),
+    insert: () => ({ 
+      select: () => ({ 
+        single: async () => ({ data: null, error: null }),
+        maybeSingle: async () => ({ data: null, error: null })
+      }) 
+    }),
+    upsert: () => ({ 
+      select: () => ({ 
+        single: async () => ({ data: null, error: null }),
+        maybeSingle: async () => ({ data: null, error: null })
+      }) 
+    }),
     update: () => ({ eq: () => async ({ data: null, error: null }) }),
   }),
   functions: {
