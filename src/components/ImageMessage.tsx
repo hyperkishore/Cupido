@@ -98,7 +98,12 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
       return inlineImage.thumbnail; // Use compressed thumbnail for list view
     }
     
-    // Fallback to full image data if available
+    // Check if image_data is already a data URL
+    if (displayImage.image_data?.startsWith('data:')) {
+      return displayImage.image_data;
+    }
+    
+    // Fallback to creating data URL from base64
     return displayImage.image_data ? 
       createDataUrl(displayImage.image_data, displayImage.mime_type) : null;
   };
@@ -222,14 +227,22 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
       );
     }
 
-    // Show loading placeholder for lazy loading or missing image data
-    if (imageLoading || !imageDataUrl) {
+    // Show loading placeholder only while actually loading
+    if (imageLoading && isPlaceholder) {
       return (
         <View style={[styles.imagePlaceholder, { width: displayWidth, height: displayHeight }]}>
           <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.loadingText}>
-            {isPlaceholder ? 'Loading image...' : 'Processing...'}
-          </Text>
+          <Text style={styles.loadingText}>Loading image...</Text>
+        </View>
+      );
+    }
+    
+    // If no image data available, show error state
+    if (!imageDataUrl) {
+      return (
+        <View style={[styles.imagePlaceholder, { width: displayWidth, height: displayHeight }]}>
+          <Feather name="image" size={24} color="#C7C7CC" />
+          <Text style={styles.errorText}>Image unavailable</Text>
         </View>
       );
     }
@@ -251,6 +264,14 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
           <View style={styles.imageOverlay}>
             <Feather name="maximize-2" size={16} color="white" />
           </View>
+          {/* Timestamp overlay on bottom-right of image */}
+          {timestamp && (
+            <View style={styles.timestampOverlay}>
+              <Text style={styles.timestampOverlayText}>
+                {formatTimestamp(timestamp)}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -336,20 +357,14 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
         
         {renderMetadata()}
         
-        <View style={styles.messageFooter}>
-          {timestamp && (
-            <Text style={styles.timestamp}>
-              {formatTimestamp(timestamp)}
-            </Text>
-          )}
-          
-          {imageAttachment.ai_analysis && (
+        {imageAttachment.ai_analysis && (
+          <View style={styles.messageFooter}>
             <View style={styles.aiIndicator}>
               <Feather name="eye" size={12} color="#007AFF" />
               <Text style={styles.aiText}>Analyzed</Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
       
       {renderFullScreenModal()}
@@ -395,6 +410,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 12,
     padding: 4,
+  },
+  timestampOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  timestampOverlayText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '500',
   },
   imagePlaceholder: {
     backgroundColor: '#E5E5EA',

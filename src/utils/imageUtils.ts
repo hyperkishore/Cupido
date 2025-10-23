@@ -18,10 +18,12 @@ export interface ImageValidationError {
 // Configuration constants
 export const IMAGE_CONFIG = {
   MAX_FILE_SIZE: 2 * 1024 * 1024, // 2MB
-  MAX_DIMENSION: 2048, // 2048px max width/height
-  QUALITY: 0.8, // 80% quality for compression
+  MAX_DIMENSION: 1024, // 1024px max width/height (reduced from 2048)
+  QUALITY: 0.6, // 60% quality for compression (reduced from 80%)
   SUPPORTED_FORMATS: ['image/jpeg', 'image/png', 'image/webp'] as const,
-  COMPRESSION_THRESHOLD: 500 * 1024, // Compress if > 500KB
+  COMPRESSION_THRESHOLD: 100 * 1024, // Compress if > 100KB (reduced from 500KB)
+  DISPLAY_MAX_SIZE: 100 * 1024, // 100KB target for display
+  UPLOAD_MAX_SIZE: 500 * 1024, // 500KB target for upload
 };
 
 /**
@@ -84,16 +86,35 @@ export async function processImage(file: File): Promise<ImageProcessingResult> {
           // Draw and compress image
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Determine if compression is needed
-          const shouldCompress = file.size > IMAGE_CONFIG.COMPRESSION_THRESHOLD;
-          const quality = shouldCompress ? IMAGE_CONFIG.QUALITY : 1.0;
+          // Adaptive compression - try different quality levels to hit target size
+          let quality = IMAGE_CONFIG.QUALITY;
+          let base64 = '';
+          let compressedSize = file.size;
           
-          // Convert to base64
-          const compressedDataUrl = canvas.toDataURL(file.type, quality);
-          const base64 = compressedDataUrl.split(',')[1];
+          // Try progressively lower quality to achieve target size
+          const targetSize = IMAGE_CONFIG.UPLOAD_MAX_SIZE;
+          for (let q = quality; q >= 0.3; q -= 0.1) {
+            const testDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/jpeg' : file.type, q);
+            base64 = testDataUrl.split(',')[1];
+            compressedSize = Math.round(base64.length * 0.75);
+            
+            if (compressedSize <= targetSize) {
+              quality = q;
+              break;
+            }
+          }
           
-          // Calculate compressed size
-          const compressedSize = Math.round(base64.length * 0.75); // Approximate size
+          // If still too large, reduce dimensions further
+          if (compressedSize > targetSize && width > 512) {
+            const scale = 512 / width;
+            canvas.width = Math.round(width * scale);
+            canvas.height = Math.round(height * scale);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const smallDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/jpeg' : file.type, quality);
+            base64 = smallDataUrl.split(',')[1];
+            compressedSize = Math.round(base64.length * 0.75);
+          }
           
           resolve({
             base64,
@@ -199,8 +220,9 @@ export async function generateThumbnail(
       // Draw thumbnail
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Convert to base64
-      const thumbnailDataUrl = canvas.toDataURL(mimeType, 0.7);
+      // Aggressive compression for thumbnails - target ~100KB
+      // Use JPEG for better compression even if original was PNG
+      const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.5);
       resolve(thumbnailDataUrl.split(',')[1]);
     };
     
