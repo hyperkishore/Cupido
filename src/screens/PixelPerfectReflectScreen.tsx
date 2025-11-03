@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert, Platform } from 'react-native';
 import { SimpleReflectionChat } from '../components/SimpleReflectionChat';
 import { useNavigation } from '@react-navigation/native';
 import { userProfileService } from '../services/userProfileService';
+import { isSupabaseConfigured } from '../services/supabase';
+import { DEMO_MODE } from '../config/demo';
 
 export const PixelPerfectReflectScreen = () => {
   const navigation = useNavigation();
@@ -10,6 +12,19 @@ export const PixelPerfectReflectScreen = () => {
   const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
+    // FIXED: Show UI warning if Supabase not configured
+    if (!DEMO_MODE && !isSupabaseConfigured()) {
+      if (Platform.OS === 'web') {
+        console.warn('⚠️ Supabase not configured. Backend features disabled. Consider switching to Demo mode.');
+      } else {
+        Alert.alert(
+          'Configuration Required',
+          'Supabase is not configured. Backend features will not work. Please check your environment settings.',
+          [{ text: 'OK' }]
+        );
+      }
+    }
+    
     // Load user profile
     const loadProfile = async () => {
       await userProfileService.initialize();
