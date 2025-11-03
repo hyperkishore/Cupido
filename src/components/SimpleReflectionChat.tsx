@@ -251,6 +251,10 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   
   // Auto-scroll management: Only scroll when user is at bottom or just sent a message
   const shouldAutoScrollRef = useRef(true);
+  
+  // FIXED: Add guard to prevent race condition during scroll animation
+  const isScrollingRef = useRef(false);
+  const scrollAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update refs when state changes
   useEffect(() => {
@@ -816,7 +820,21 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // Scroll to bottom helper
   const scrollToBottom = (animated: boolean = true) => {
     if (flatListRef.current && messages.length > 0) {
+      // FIXED: Set guard to prevent onScroll from overwriting shouldAutoScrollRef
+      isScrollingRef.current = true;
+      
+      // Clear any existing timeout
+      if (scrollAnimationTimeoutRef.current) {
+        clearTimeout(scrollAnimationTimeoutRef.current);
+      }
+      
       flatListRef.current.scrollToEnd({ animated });
+      
+      // Reset guard after animation completes (estimate 300ms for animation)
+      scrollAnimationTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+        scrollAnimationTimeoutRef.current = null;
+      }, animated ? 300 : 50);
     }
   };
 
@@ -924,6 +942,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       trimTo: TRIM_TO_MESSAGES 
     });
     
+    // FIXED: Before trimming, check if we should maintain scroll position
+    const wasAtBottom = shouldAutoScrollRef.current;
+    
     // Keep the most recent messages and preserve any pending saves
     const pendingMessages = messagesList.filter(msg => msg.isPending);
     const savedMessages = messagesList.filter(msg => !msg.isPending);
@@ -936,6 +957,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     
     if (DEBUG) {
       log.perf('Message trimming completed', performance.now(), { before: messagesList.length, after: trimmed.length });
+    }
+    
+    // FIXED: If we were at bottom before trim, stay at bottom after
+    if (wasAtBottom) {
+      // Schedule scroll to bottom after React processes the state change
+      requestAnimationFrame(() => {
+        scrollToBottom(false);
+      });
     }
     
     return trimmed;
@@ -2036,26 +2065,11 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   };
 
-  // Calculate proper bottom padding for messages
-  // BETTER SOLUTION: Account for all factors affecting visible space
-  const calculateBottomPadding = () => {
-    // Base padding from input area (ChatInput has fixed height)
-    let padding = DEFAULT_INPUT_AREA_HEIGHT;
-    
-    // Add minimal extra padding for different scenarios
-    if (Platform.OS === 'web') {
-      // Web needs a small buffer for scroll positioning
-      padding += 10; // Reduced from 60px to 10px for better auto-scroll
-    } else {
-      // Native platforms
-      padding += keyboardVisible ? 10 : tabBarHeight + 10; // Reduced padding
-    }
-    
-    // Ensure minimum padding
-    return Math.max(padding, DEFAULT_INPUT_AREA_HEIGHT);
-  };
-  
-  const messagesBottomPadding = calculateBottomPadding();
+  // FIXED: Use constant padding to prevent scroll position shifts
+  // Since ChatInput is not overlayed (it's a sibling), we need minimal padding
+  const messagesBottomPadding = Platform.OS === 'web' 
+    ? 10  // Minimal padding for web
+    : 20; // Small padding for native to account for safe areas
 
   // Render function for FlatList virtualization - memoized to prevent re-renders
   const renderMessage = useCallback(({ item: message, index }: { item: Message; index: number }) => {
@@ -2231,8 +2245,12 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           const atBottom = scrollPosition >= contentBottom - 20; // 20px threshold
           
           setIsAtBottom(atBottom);
-          // Update shouldAutoScrollRef based on user's scroll position
-          shouldAutoScrollRef.current = atBottom;
+          
+          // FIXED: Only update shouldAutoScrollRef if we're not in a scroll animation
+          // This prevents the race condition where onScroll fires during scrollToEnd animation
+          if (!isScrollingRef.current) {
+            shouldAutoScrollRef.current = atBottom;
+          }
           
           // Clear new message indicator if scrolled to bottom
           if (atBottom && hasNewMessages) {
