@@ -30,19 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('[AuthContext] Starting initialization...');
     const getSession = async () => {
       try {
-        // Increased timeout to 10s for slow networks/storage
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => {
-            console.warn('[AuthContext] ⏱️  Timeout reached (10s) - proceeding without user');
-            resolve(null);
-          }, 10000);
-        });
-
         console.log('[AuthContext] Fetching current user...');
-        const userPromise = AuthService.getCurrentUser(mode);
-
-        // Race between the user fetch and timeout
-        const currentUser = await Promise.race([userPromise, timeoutPromise]);
+        
+        // FIXED: Remove Promise.race - don't null user on timeout
+        // Instead, show loading state until auth resolves
+        const currentUser = await AuthService.getCurrentUser(mode).catch(() => null);
+        
         console.log('[AuthContext] Result:', currentUser ? 'User loaded' : 'No user');
         setUser(currentUser);
       } catch (error) {

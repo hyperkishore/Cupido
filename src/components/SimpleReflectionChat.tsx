@@ -544,17 +544,17 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       if (authUser) {
         if (DEBUG) console.log('[initializeChat] Step 2a: Using authenticated user path...');
         
-        // Normalize phone number if available, never fall back to ID
+        // FIXED: Fallback to user.id (UUID) if phone number is missing
         const normalizedPhone = authUser.phoneNumber ? normalizePhoneNumber(authUser.phoneNumber) : null;
         
         if (!normalizedPhone) {
-          console.error('❌ No valid phone number available for authenticated user');
-          showToast('Phone number required for chat', 'error');
-          return;
+          // Use UUID as fallback for chat identity
+          console.warn('⚠️ No phone number available, using UUID for chat identity');
+          sessionUserId = user.id; // Fallback to UUID
+        } else {
+          sessionUserId = normalizedPhone;
         }
-        
-        sessionUserId = normalizedPhone;
-        userName = authUser.displayName || `User ${normalizedPhone.slice(-6)}`;
+        userName = authUser.displayName || `User ${sessionUserId.slice(-6)}`;
         if (DEBUG) console.log('[initializeChat] 🔑 Authenticated user - sessionUserId:', sessionUserId, 'userName:', userName);
 
         // Check if this user has a stored session

@@ -39,7 +39,13 @@ const getDatabase = async () => {
 
 export const LocalUserRepository = {
   async upsertUser(phoneNumber: string): Promise<User> {
-    const normalized = phoneNumber.trim();
+    // FIXED: Properly normalize phone by stripping non-digits
+    const normalized = phoneNumber.replace(/\D/g, ''); // Remove all non-digits
+    
+    if (!normalized) {
+      throw new Error('Invalid phone number');
+    }
+    
     const now = new Date().toISOString();
 
     if (isWeb) {
