@@ -61,19 +61,48 @@ export function validateImageFile(file: File): ImageValidationError | null {
  * Compresses and processes an image file
  */
 export async function processImage(file: File | any): Promise<ImageProcessingResult> {
-  // FIXED: Handle native image objects from expo-image-picker
+  // FIXED: Handle native image objects from expo-image-picker with compression
   if (file.base64 && file.width && file.height && !file.name) {
     // This is a native image object from expo-image-picker
-    const base64 = file.base64;
-    const compressedSize = Math.round(base64.length * 0.75);
+    let base64 = file.base64;
+    let width = file.width;
+    let height = file.height;
+    let compressedSize = Math.round(base64.length * 0.75);
+    const originalSize = file.size || compressedSize;
+    
+    // Try to use expo-image-manipulator for native compression if available
+    if (Platform.OS !== 'web' && file.uri) {
+      try {
+        const ImageManipulator = await import('expo-image-manipulator').catch(() => null);
+        if (ImageManipulator) {
+          const { width: maxDim, height: maxHeight } = calculateDimensions(width, height);
+          
+          // Compress the image using expo-image-manipulator
+          const manipResult = await ImageManipulator.manipulateAsync(
+            file.uri,
+            [{ resize: { width: maxDim, height: maxHeight } }],
+            { compress: IMAGE_CONFIG.QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
+          
+          if (manipResult.base64) {
+            base64 = manipResult.base64;
+            width = manipResult.width;
+            height = manipResult.height;
+            compressedSize = Math.round(base64.length * 0.75);
+          }
+        }
+      } catch (error) {
+        console.log('Native compression not available, using original image');
+      }
+    }
     
     return {
       base64,
       mimeType: file.type || 'image/jpeg',
-      originalSize: file.size || compressedSize,
+      originalSize,
       compressedSize,
-      width: file.width,
-      height: file.height,
+      width,
+      height,
       fileName: file.uri ? file.uri.split('/').pop() || 'image.jpg' : 'image.jpg'
     };
   }
