@@ -2202,11 +2202,22 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     );
   }, []);
 
+  // FIXED: Calculate dynamic keyboard offset based on actual header/tab heights
+  const calculateKeyboardOffset = () => {
+    if (Platform.OS === 'ios') {
+      // Account for safe area, header, and tab bar
+      const headerHeight = 44; // Standard iOS header height
+      const offset = insets.top + headerHeight + (keyboardVisible ? 0 : tabBarHeight);
+      return offset;
+    }
+    return 0; // Android handles this better automatically
+  };
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? (keyboardVisible ? 0 : 90) : 0}
+      keyboardVerticalOffset={calculateKeyboardOffset()}
     >
       {/* Messages area - Virtualized with FlatList for performance */}
       <FlatList
