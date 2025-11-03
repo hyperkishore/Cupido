@@ -60,7 +60,25 @@ export function validateImageFile(file: File): ImageValidationError | null {
 /**
  * Compresses and processes an image file
  */
-export async function processImage(file: File): Promise<ImageProcessingResult> {
+export async function processImage(file: File | any): Promise<ImageProcessingResult> {
+  // FIXED: Handle native image objects from expo-image-picker
+  if (file.base64 && file.width && file.height && !file.name) {
+    // This is a native image object from expo-image-picker
+    const base64 = file.base64;
+    const compressedSize = Math.round(base64.length * 0.75);
+    
+    return {
+      base64,
+      mimeType: file.type || 'image/jpeg',
+      originalSize: file.size || compressedSize,
+      compressedSize,
+      width: file.width,
+      height: file.height,
+      fileName: file.uri ? file.uri.split('/').pop() || 'image.jpg' : 'image.jpg'
+    };
+  }
+  
+  // Web path with FileReader
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     

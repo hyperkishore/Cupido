@@ -1,3 +1,7 @@
+// FIXED: Add WebSocket polyfills for React Native at the very top
+import 'react-native-url-polyfill/auto';
+import 'react-native-get-random-values';
+
 import React, { useState } from 'react';
 import { 
   View, 
