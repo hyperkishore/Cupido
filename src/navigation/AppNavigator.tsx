@@ -17,9 +17,10 @@ const Tab = createBottomTabNavigator();
 
 export const AppNavigator: React.FC = () => {
   const { user, loading } = useAuth();
-  const { mode } = useAppMode();
-
-  if (loading) {
+  const { mode, isLoading: modeLoading } = useAppMode(); // FIXED: Check mode loading state
+  
+  // FIXED: Wait for both auth and mode to finish loading to prevent flicker
+  if (loading || modeLoading) {
     return <DemoLoader />;
   }
 

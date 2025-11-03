@@ -5,6 +5,23 @@ import { DEMO_MODE } from '../config/demo';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'demo-url';
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'demo-key';
 
+// FIXED: Export validation helper for Supabase configuration
+export const isSupabaseConfigured = (): boolean => {
+  return !!(
+    process.env.EXPO_PUBLIC_SUPABASE_URL && 
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.EXPO_PUBLIC_SUPABASE_URL !== 'demo-url' &&
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY !== 'demo-key'
+  );
+};
+
+// FIXED: Log warning if Supabase is not configured properly (non-demo mode)
+if (!DEMO_MODE && !isSupabaseConfigured()) {
+  console.warn('⚠️ Supabase configuration missing!');
+  console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file');
+  console.warn('Backend features will not work without proper configuration');
+}
+
 // Create a minimal client for demo mode
 const createDemoClient = () => ({
   auth: {
