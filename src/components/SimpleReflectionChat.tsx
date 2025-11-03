@@ -185,7 +185,17 @@ const showToast = (message: string, type: 'info' | 'error' | 'success' = 'info')
 
 export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKeyboardToggle }) => {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  
+  // FIXED: Guard against useBottomTabBarHeight throwing if used outside tab navigator
+  let tabBarHeight = 0;
+  try {
+    tabBarHeight = useBottomTabBarHeight();
+  } catch (error) {
+    // Not in a tab navigator context, use default
+    tabBarHeight = Platform.OS === 'ios' ? 50 : 56; // Default tab bar heights
+    console.log('Not in tab navigator context, using default tab bar height:', tabBarHeight);
+  }
+  
   const flatListRef = useRef<FlatList>(null);
   const { user: authUser, signOut, loading: authLoading } = useAuth(); // Get authenticated user, signOut, and loading from context
   // const memoryManager = useMemoryManager(); // Removed as part of simplification
@@ -255,6 +265,9 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // FIXED: Add guard to prevent race condition during scroll animation
   const isScrollingRef = useRef(false);
   const scrollAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // FIXED: Add platform-agnostic duplicate send prevention
+  const pendingMessagesRef = useRef<Set<string>>(new Set());
 
   // Update refs when state changes
   useEffect(() => {
@@ -1908,6 +1921,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     const trimmedMessage = validatedMessage.trim();
     const messageKey = `${activeConversation.id}_${trimmedMessage.toLowerCase()}`;
     
+    // FIXED: Platform-agnostic duplicate prevention (works on both web and native)
+    if (pendingMessagesRef.current.has(messageKey)) {
+      console.log('⚠️ Blocked duplicate: exact same message already being sent');
+      return;
+    }
+    
+    // Add to pending messages
+    pendingMessagesRef.current.add(messageKey);
+    
+    // Clear pending after message is processed (or 3s timeout for safety)
+    setTimeout(() => {
+      pendingMessagesRef.current.delete(messageKey);
+    }, 3000);
+    
     // Notify parent window (test dashboard) if in iframe
     if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
       const targetOrigin = window.location.origin;
@@ -1920,21 +1947,14 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
       }, targetOrigin);
     }
 
+    // Also maintain web-specific tracking for backwards compatibility with test dashboard
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      if ((window as any).__pendingMessages?.has(messageKey)) {
-        console.log('⚠️ Blocked duplicate: exact same message already being sent');
-        return;
-      }
-
       // Initialize pending messages set if needed
       if (!(window as any).__pendingMessages) {
         (window as any).__pendingMessages = new Set();
       }
-
-      // Add to pending messages
+      // Add to window for test dashboard visibility
       (window as any).__pendingMessages.add(messageKey);
-
-      // Clear pending after message is processed (or 3s timeout for safety)
       setTimeout(() => {
         (window as any).__pendingMessages?.delete(messageKey);
       }, 3000);

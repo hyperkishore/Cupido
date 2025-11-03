@@ -80,11 +80,16 @@ User message: "${message}"
 
 JSON:`;
 
+      // FIXED: Use dynamic proxy URL from chatAiService instead of hardcoded localhost
+      // This ensures it works on mobile devices and various network configurations
+      const { chatAiService } = await import('./chatAiService');
+      const proxyUrl = chatAiService.getProxyUrl();
+      
       // Call Claude API via the proxy with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch(`${proxyUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

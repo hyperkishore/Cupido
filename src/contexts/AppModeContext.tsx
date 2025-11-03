@@ -7,6 +7,7 @@ export type AppMode = 'demo' | 'local';
 interface ModeContextValue {
   mode: AppMode;
   setMode: (mode: AppMode) => void;
+  isLoading: boolean; // FIXED: Add loading state to interface
 }
 
 const ModeContext = createContext<ModeContextValue | undefined>(undefined);
@@ -14,7 +15,9 @@ const ModeContext = createContext<ModeContextValue | undefined>(undefined);
 const STORAGE_KEY = 'cupido_app_mode';
 
 export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // FIXED: Add loading state to prevent race condition/flicker
   const [mode, setModeState] = useState<AppMode>('local');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadMode = async () => {
@@ -26,6 +29,8 @@ export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.warn('Failed to read mode from storage', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -42,7 +47,7 @@ export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = useMemo(() => ({ mode, setMode }), [mode]);
+  const value = useMemo(() => ({ mode, setMode, isLoading }), [mode, isLoading]);
 
   return <ModeContext.Provider value={value}>{children}</ModeContext.Provider>;
 };

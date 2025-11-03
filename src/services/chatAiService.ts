@@ -22,6 +22,11 @@ class ChatAiService {
   private baseUrl: string;
   private provider: 'anthropic' | 'openai';
   private proxyUrl: string;
+  
+  // FIXED: Add public getter for proxy URL so other services can use it
+  public getProxyUrl(): string {
+    return this.proxyUrl;
+  }
 
   constructor() {
     // Using proxy server - no need for API key in frontend
