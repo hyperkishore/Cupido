@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        #output { border: 1px solid #ccc; padding: 10px; margin: 10px 0; min-height: 100px; }
+        button { padding: 10px 20px; margin: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Chat API Test</h1>
+    
+    <button onclick="testDirectAPI()">Test Direct API (port 3001)</button>
+    <button onclick="testProxyAPI()">Test via Proxy (port 8081)</button>
+    <button onclick="checkURLResolution()">Check URL Resolution</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        async function testDirectAPI() {
+            log('Testing direct API at localhost:3001...');
+            try {
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Hello from test' }],
+                        modelType: 'sonnet'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ Direct API works! Response: "${data.message.substring(0, 50)}..."`);
+            } catch (error) {
+                log(`❌ Direct API failed: ${error.message}`, true);
+            }
+        }
+        
+        async function testProxyAPI() {
+            log('Testing proxy API via port 8081...');
+            try {
+                // Check if the app is running on 8081
+                const appResponse = await fetch('http://localhost:8081/');
+                if (!appResponse.ok) {
+                    throw new Error('App not running on port 8081');
+                }
+                
+                // Now test the API through the proxy
+                const response = await fetch('http://localhost:8081/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Hello from proxy test' }],
+                        modelType: 'sonnet'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ Proxy API works! Response: "${data.message.substring(0, 50)}..."`);
+            } catch (error) {
+                log(`❌ Proxy API failed: ${error.message}`, true);
+            }
+        }
+        
+        function checkURLResolution() {
+            log('Checking URL resolution logic...');
+            
+            const hostname = window.location.hostname;
+            log(`Current hostname: ${hostname}`);
+            log(`Current protocol: ${window.location.protocol}`);
+            log(`Current port: ${window.location.port || 'default'}`);
+            
+            // Simulate the apiResolver logic
+            let apiUrl;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                apiUrl = `http://localhost:3001/api/chat`;
+            } else if (hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+                apiUrl = `http://${hostname}:3001/api/chat`;
+            } else {
+                apiUrl = `http://${hostname}:3001/api/chat`;
+            }
+            
+            log(`Resolved API URL would be: ${apiUrl}`);
+            
+            // Also check environment variables
+            log(`EXPO_PUBLIC_AI_PROXY_URL: ${process?.env?.EXPO_PUBLIC_AI_PROXY_URL || 'not set'}`);
+        }
+    </script>
+</body>
+</html>

@@ -72,15 +72,10 @@ class PromptService {
         console.log('✅ Prompt Service initialized');
       } catch (error) {
         console.error('❌ Error during initialization:', error);
-        // If we have no cache, this is a critical first-launch failure
+        // If we have no cache, load from local prompts.json file as fallback
         if (!this.cache || Object.keys(this.cache.prompts).length === 0) {
-          console.error('❌ First-time initialization failed - no prompts available');
-          // Don't throw error, instead set empty cache to prevent crashes
-          this.cache = {
-            prompts: {},
-            versions: {},
-            timestamp: Date.now()
-          };
+          console.warn('⚠️ No cached prompts and API failed - loading from local prompts.json');
+          await this.loadFromLocalFile();
         } else {
           // If we have cache, we can continue with stale data
           console.warn('⚠️ Using cached prompts - API fetch failed');
@@ -117,6 +112,126 @@ class PromptService {
       console.log('💾 Saved prompts to cache');
     } catch (error) {
       console.error('[PromptService] Error saving to cache:', error);
+    }
+  }
+
+  /**
+   * Load prompts from local prompts.json file as fallback
+   */
+  private async loadFromLocalFile(): Promise<void> {
+    try {
+      console.log('📂 Loading prompts from local prompts.json file...');
+      
+      // Import the prompts.json file - use a try-catch for the require
+      let localPrompts;
+      try {
+        localPrompts = require('../../config/prompts.json');
+      } catch (requireError) {
+        // If require fails (in web), use the hardcoded Critical Rules prompt
+        console.log('📝 Using hardcoded Critical Rules prompt');
+        localPrompts = {
+          version: "2.0.0",
+          active_prompt_id: "critical_rules",
+          prompts: {
+            critical_rules: {
+              name: "Critical Rules",
+              description: "Short responses (2-3 sentences), profile building focus",
+              tags: ["cupido", "profile", "conversation"],
+              active_version: "v1",
+              versions: {
+                v1: {
+                  system_prompt: `You are Cupido, helping someone build a meaningful dating profile while discovering themselves. Balance learning their basics with exploring who they are.
+
+⚠️ CRITICAL RULES - MUST FOLLOW:
+1. Keep responses to 2-3 SHORT sentences (under 60 words total)
+2. End with EXACTLY ONE simple question
+3. NEVER ask multiple questions or use multiple question marks
+4. Be conversational and curious about their actual life
+5. When they mention companies/organizations: Share what you know if familiar, then ask for their perspective
+
+PROFILE BASICS TO LEARN (prioritize early):
+- Name (use it once learned!)
+- Age/Birthday
+- Location (current city, hometown, where they grew up)
+- Work/Career/Studies
+- Education background
+- Family (siblings, parents, closeness)
+- Relationship history
+- Hobbies and interests
+- What they're looking for in dating
+
+CONVERSATION STRATEGY:
+First few exchanges - Get the basics naturally:
+- "Hey! I'm Cupido. What's your name?"
+- "Nice to meet you [name]! Where are you based?"
+- "[City] - nice! Is that where you're originally from?"
+
+REMEMBER:
+- You're building a dating profile AND facilitating discovery
+- Get the basics early - don't wait too long
+- Every fact has a story - explore both
+- Use their name once you know it
+- Keep responses SHORT but warm`
+                }
+              }
+            }
+          }
+        };
+      }
+      
+      if (!localPrompts || !localPrompts.prompts) {
+        throw new Error('Invalid prompts.json structure');
+      }
+
+      // Convert local format to cache format
+      const prompts: any = {};
+      const versions: any = {};
+      
+      Object.entries(localPrompts.prompts).forEach(([promptId, promptData]: [string, any]) => {
+        const activeVersion = promptData.active_version || 'v1';
+        const versionData = promptData.versions[activeVersion];
+        
+        if (versionData) {
+          prompts[promptId] = {
+            id: promptId,
+            name: promptData.name,
+            description: promptData.description,
+            systemPrompt: versionData.system_prompt,
+            tags: promptData.tags || [],
+            isDefault: promptId === localPrompts.active_prompt_id,
+            isActive: true,
+            activeVersion: activeVersion
+          };
+          versions[promptId] = activeVersion;
+        }
+      });
+
+      this.cache = {
+        prompts,
+        versions,
+        timestamp: Date.now()
+      };
+
+      // Save to cache for next time
+      await this.saveToCache(this.cache);
+      
+      console.log('✅ Loaded', Object.keys(prompts).length, 'prompts from local file');
+      console.log('📋 Active prompt:', localPrompts.active_prompt_id);
+      
+      // Ensure critical_rules is set as the selected prompt
+      if (localPrompts.active_prompt_id) {
+        await AsyncStorage.setItem(SELECTED_PROMPT_KEY, localPrompts.active_prompt_id);
+        console.log('✅ Set active prompt to:', localPrompts.active_prompt_id);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to load from local prompts.json:', error);
+      // Set minimal cache to prevent crashes
+      this.cache = {
+        prompts: {},
+        versions: {},
+        timestamp: Date.now()
+      };
     }
   }
 

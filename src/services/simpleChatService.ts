@@ -9,6 +9,10 @@ function resolveProxyUrl(): string {
 
   if (envProxyUrl) {
     debugLog('Using environment proxy URL:', envProxyUrl);
+    // FIXED: Check if URL already ends with /api/chat
+    if (envProxyUrl.endsWith('/api/chat')) {
+      return envProxyUrl;
+    }
     return `${envProxyUrl}/api/chat`;
   }
 

@@ -76,13 +76,35 @@ const createDemoClient = () => ({
   removeChannel: () => {},
 });
 
-export const supabase = DEMO_MODE ? createDemoClient() : createClient(supabaseUrl, supabaseKey, {
+// FIXED: Create a dynamic client that can switch between demo and real modes
+let supabaseClient = DEMO_MODE ? createDemoClient() : createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
+
+// Export a getter function instead of a const
+export const getSupabase = () => supabaseClient;
+
+// For backward compatibility, export as 'supabase' too
+export const supabase = new Proxy({}, {
+  get(target, prop) {
+    return supabaseClient[prop];
+  }
+});
+
+// Function to update the client when mode changes
+export const updateSupabaseClient = (isDemo: boolean) => {
+  supabaseClient = isDemo ? createDemoClient() : createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+};
 
 export type Database = {
   public: {

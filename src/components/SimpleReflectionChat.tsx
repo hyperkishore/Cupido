@@ -550,7 +550,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         if (!normalizedPhone) {
           // Use UUID as fallback for chat identity
           console.warn('⚠️ No phone number available, using UUID for chat identity');
-          sessionUserId = user.id; // Fallback to UUID
+          sessionUserId = authUser.id; // Fallback to UUID - FIXED: use authUser, not user
         } else {
           sessionUserId = normalizedPhone;
         }
