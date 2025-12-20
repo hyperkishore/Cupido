@@ -118,6 +118,30 @@ class ChatDatabaseService {
       
       console.log(`👤 Looking for user with phone: ${dbPhone}${isDemo ? ' (Demo User)' : ''}`);
       console.log('🔍 Query parameters:', { original: phoneNumber, normalized: dbPhone, name, isDemo });
+      console.log(`🎮 DEMO_MODE global flag: ${DEMO_MODE}`);
+
+      // In demo mode or when isDemo is true, return a mock user profile
+      if (isDemo || DEMO_MODE) {
+        console.log('📱 Demo mode active - using local user profile');
+        const demoUser: UserProfile = {
+          id: 'demo_' + (phoneNumber || Date.now()),
+          phone_number: phoneNumber,
+          name: name || 'Demo User',
+          last_active: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          reflection_count: 0,
+          ai_tokens_used: 0,
+          last_reflection_date: null,
+          subscription_status: 'demo',
+          subscription_end_date: null,
+          total_reflections: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          country_code: null
+        };
+        return demoUser;
+      }
 
       // Try BOTH normalized and original to handle legacy data
       // First try normalized
@@ -246,6 +270,25 @@ class ChatDatabaseService {
   async getOrCreateConversation(userId: string): Promise<ChatConversation | null> {
     try {
       console.log(`🔍 Looking for conversation for user: ${userId}`);
+      console.log(`🎮 DEMO_MODE: ${DEMO_MODE}`);
+
+      // In demo mode, return a mock conversation
+      if (DEMO_MODE || userId.startsWith('demo_')) {
+        console.log('📱 Demo mode active - using local conversation');
+        const demoConversation: ChatConversation = {
+          id: 'demo_conv_' + userId,
+          user_id: userId,
+          title: 'Demo Conversation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          conversation_summary: '',
+          summary_token_count: 0,
+          total_messages: 0,
+          total_tokens: 0,
+          last_summary_update: new Date().toISOString()
+        };
+        return demoConversation;
+      }
 
       // First try to get existing conversation
       const { data: existingConv, error: fetchError } = await supabase
@@ -334,6 +377,22 @@ class ChatDatabaseService {
     metadata?: any
   ): Promise<ChatMessage | null> {
     try {
+      // In demo mode, return a mock message without saving
+      if (DEMO_MODE || conversationId.startsWith('demo_')) {
+        console.log('📱 Demo mode - returning mock message');
+        const demoMessage: ChatMessage = {
+          id: 'demo_msg_' + Date.now(),
+          conversation_id: conversationId,
+          content,
+          is_bot: isBot,
+          ai_model: aiModel,
+          metadata,
+          created_at: new Date().toISOString(),
+          estimated_tokens: Math.ceil(content.length / 4)
+        };
+        return demoMessage;
+      }
+
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({

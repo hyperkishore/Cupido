@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setDemoMode } from '../config/demo';
+import { updateSupabaseClient } from '../services/supabase';
 
 export type AppMode = 'demo' | 'local';
 
@@ -26,6 +27,8 @@ export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (stored === 'demo' || stored === 'local') {
           setModeState(stored);
           setDemoMode(stored === 'demo');
+          // Update Supabase client to match the mode
+          updateSupabaseClient(stored === 'demo');
         }
       } catch (error) {
         console.warn('Failed to read mode from storage', error);
@@ -40,6 +43,8 @@ export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setMode = async (nextMode: AppMode) => {
     setModeState(nextMode);
     setDemoMode(nextMode === 'demo');
+    // Update Supabase client when mode changes
+    updateSupabaseClient(nextMode === 'demo');
     try {
       await AsyncStorage.setItem(STORAGE_KEY, nextMode);
     } catch (error) {

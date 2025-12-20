@@ -24,6 +24,7 @@ export const PromptSelectorModal: React.FC<PromptSelectorModalProps> = ({
 }) => {
   const [prompts, setPrompts] = useState<PromptInfo[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>('');
+  const [selectedPromptName, setSelectedPromptName] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,12 +36,25 @@ export const PromptSelectorModal: React.FC<PromptSelectorModalProps> = ({
   const loadPrompts = async () => {
     try {
       setLoading(true);
-      // Only show cupido-tagged prompts in the main app selector
-      const cupidoPrompts = promptService.getCupidoPrompts();
+      
+      // Get the current selected prompt ID first
       const currentId = await promptService.getSelectedPromptId();
-
-      setPrompts(cupidoPrompts);
       setSelectedPromptId(currentId);
+      
+      // Initialize the prompt service if needed (this loads prompts from API/cache)
+      await promptService.initialize();
+      
+      // Now get all cupido-tagged prompts
+      const cupidoPrompts = promptService.getCupidoPrompts();
+      setPrompts(cupidoPrompts);
+      
+      // Find and set the current prompt's name
+      const currentPrompt = cupidoPrompts.find(p => p.id === currentId) || promptService.getSelectedPrompt();
+      if (currentPrompt) {
+        setSelectedPromptName(currentPrompt.name || currentId);
+      } else {
+        setSelectedPromptName(currentId);
+      }
     } catch (error) {
       console.error('[PromptSelector] Error loading prompts:', error);
     } finally {
@@ -55,6 +69,7 @@ export const PromptSelectorModal: React.FC<PromptSelectorModalProps> = ({
 
       if (promptName) {
         setSelectedPromptId(promptId);
+        setSelectedPromptName(promptName);
         console.log('[PromptSelector] ✅ Switched to:', promptName);
 
         if (onPromptSelected) {
@@ -102,9 +117,9 @@ export const PromptSelectorModal: React.FC<PromptSelectorModalProps> = ({
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerTitle}>Select AI Prompt</Text>
-                {prompts.length > 0 && selectedPromptId && (
+                {selectedPromptName && (
                   <Text style={styles.headerSubtitle}>
-                    Current: {prompts.find(p => p.id === selectedPromptId)?.name}
+                    Current: {selectedPromptName}
                   </Text>
                 )}
               </View>

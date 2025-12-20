@@ -543,9 +543,14 @@ REMEMBER:
    * @param includeHidden If true, includes hidden prompts
    */
   getCupidoPrompts(includeHidden: boolean = false): PromptInfo[] {
-    return this.getAllPrompts(includeHidden).filter(p =>
+    const allPrompts = this.getAllPrompts(includeHidden);
+    console.log('[PromptService] getCupidoPrompts - All prompts:', allPrompts.length);
+    console.log('[PromptService] getCupidoPrompts - Prompts:', allPrompts.map(p => ({ id: p.id, tags: p.tags })));
+    const cupidoPrompts = allPrompts.filter(p =>
       p.tags?.includes('cupido')
     );
+    console.log('[PromptService] getCupidoPrompts - Filtered cupido prompts:', cupidoPrompts.length);
+    return cupidoPrompts;
   }
 
   /**
