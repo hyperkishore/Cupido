@@ -690,12 +690,16 @@ class ReflectionsRepository {
           ELSE 1
         END,
         longest_streak = CASE
-          WHEN current_streak + 1 > longest_streak THEN current_streak + 1
-          ELSE longest_streak
+          -- FIXED: Use the computed current_streak value, not +1 unconditionally
+          WHEN date(last_reflection_date) = date(?) THEN longest_streak -- Same day, no change
+          WHEN date(last_reflection_date, '+1 day') = date(?) THEN 
+            CASE WHEN current_streak + 1 > longest_streak THEN current_streak + 1 ELSE longest_streak END
+          ELSE 
+            CASE WHEN 1 > longest_streak THEN 1 ELSE longest_streak END -- Reset to 1
         END,
         last_reflection_date = ?
       WHERE user_id = ?;`,
-      [completedAt, completedAt, completedAt, userId]
+      [completedAt, completedAt, completedAt, completedAt, completedAt, userId]
     );
   }
 

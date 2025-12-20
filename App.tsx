@@ -30,6 +30,7 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { CalmLoadingScreen } from './src/components/CalmLoadingScreen';
 import { TestBridge } from './src/components/TestBridge';
+import { promptService } from './src/services/promptService';
 
 const Tab = createBottomTabNavigator();
 
@@ -183,6 +184,14 @@ const Root = () => {
   }, [loading, user]);
 
   React.useEffect(() => {
+    console.log('[Root] Initializing promptService...');
+    // Initialize prompt service
+    promptService.initialize().catch(error => {
+      console.error('[Root] Failed to initialize promptService:', error);
+    });
+  }, []);
+
+  React.useEffect(() => {
     console.log('[Root] Setting 5s timeout for loading screen...');
     // Set a timeout for loading state
     const timer = setTimeout(() => {
@@ -200,7 +209,8 @@ const Root = () => {
     return <CalmLoadingScreen message="Loading your reflection space" />;
   }
 
-  if (loadingTimeout) {
+  // FIXED: Check both loading and loadingTimeout to allow recovery
+  if (loading && loadingTimeout) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <View style={styles.loadingContent}>

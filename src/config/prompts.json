@@ -5,6 +5,7 @@
     "critical_rules": {
       "name": "Critical Rules",
       "description": "Short responses (2-3 sentences), profile building focus with specific conversation strategy",
+      "tags": ["cupido", "profile", "conversation"],
       "active_version": "v1",
       "versions": {
         "v1": {
@@ -17,6 +18,7 @@
     "self_discovery": {
       "name": "Self Discovery Journey",
       "description": "Endless spiral approach - deep philosophical exploration without completion, inspired by 'So Much Closer'",
+      "tags": ["cupido", "self-discovery", "conversation"],
       "active_version": "v1",
       "versions": {
         "v1": {
@@ -29,6 +31,7 @@
     "simple_companion": {
       "name": "Simple Companion",
       "description": "Minimal prompt for natural conversation testing - no rules or structure",
+      "tags": ["cupido", "simple", "conversation"],
       "active_version": "v1",
       "versions": {
         "v1": {

@@ -77,6 +77,34 @@ class MatchingService {
   private currentUserProfile: UserProfile | null = null;
   private matches: Match[] = [];
 
+  private getCurrentUserId(): string {
+    // Try to get user ID from various sources
+    try {
+      // Check if we have auth context (would need to be passed in)
+      if (typeof window !== 'undefined' && (window as any).__currentUserId) {
+        return (window as any).__currentUserId;
+      }
+      
+      // Check AsyncStorage for user session
+      const storedSession = localStorage.getItem('user_session');
+      if (storedSession) {
+        const session = JSON.parse(storedSession);
+        if (session.userId) return session.userId;
+      }
+      
+      // Generate and store a unique ID as fallback
+      let userId = localStorage.getItem('matching_user_id');
+      if (!userId) {
+        userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem('matching_user_id', userId);
+      }
+      return userId;
+    } catch {
+      // Fallback for non-web environments
+      return `user_${Date.now()}`;
+    }
+  }
+
   async initialize(): Promise<void> {
     try {
       // Load user profiles
@@ -99,7 +127,8 @@ class MatchingService {
   }
 
   private async initializeCurrentUserProfile(): Promise<void> {
-    const currentUserId = 'current_user'; // In real app, this would be from auth
+    // FIXED: Use actual user ID from auth or generate unique ID
+    const currentUserId = this.getCurrentUserId();
     
     if (this.userProfiles[currentUserId]) {
       this.currentUserProfile = this.userProfiles[currentUserId];

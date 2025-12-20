@@ -916,9 +916,18 @@ app.post('/api/prompts/import', async (req, res) => {
           .eq('is_active', true)
           .maybeSingle();
 
-        if (existing) {
+        if (existing && !req.query.force) {
           console.log(`⏭️  Skipping existing prompt: ${promptId}`);
           continue;
+        }
+
+        // If force flag is set, deactivate existing prompt
+        if (existing && req.query.force) {
+          await supabase
+            .from('prompt_versions')
+            .update({ is_active: false })
+            .eq('prompt_id', promptId);
+          console.log(`🔄 Deactivating existing prompt: ${promptId}`);
         }
 
         // Get the active version
@@ -942,7 +951,7 @@ app.post('/api/prompts/import', async (req, res) => {
             system_prompt: activeVersionData.system_prompt || activeVersionData,
             description: promptData.description || '',
             category: 'conversation',
-            tags: [],
+            tags: promptData.tags || ['cupido'],
             labels: ['production'],
             status: 'active',
             is_active: true,
@@ -1103,6 +1112,42 @@ app.get('/api/prompts', async (req, res) => {
       } catch (error) {
         console.error('Error fetching Supabase prompts:', error);
         // Continue with custom prompts even if Supabase fails
+      }
+    }
+    
+    // If no Supabase prompts were loaded, load from local prompts.json
+    if (allPrompts.length === 0) {
+      const localPromptsPath = path.join(__dirname, 'src', 'config', 'prompts.json');
+      if (fs.existsSync(localPromptsPath)) {
+        try {
+          console.log('📂 Loading prompts from local prompts.json (Supabase fallback)...');
+          const promptsData = JSON.parse(fs.readFileSync(localPromptsPath, 'utf8'));
+          
+          // Convert local prompts format to API format
+          for (const [promptId, promptData] of Object.entries(promptsData.prompts)) {
+            const activeVersion = promptData.active_version || 'v1';
+            const versionData = promptData.versions[activeVersion];
+            
+            if (versionData && !deletedPrompts.includes(promptId)) {
+              allPrompts.push({
+                prompt_id: promptId,
+                prompt_name: promptData.name,
+                active_version: activeVersion,
+                version_count: Object.keys(promptData.versions).length,
+                category: 'conversation',
+                description: promptData.description,
+                is_default: promptId === promptsData.active_prompt_id,
+                is_active: true,
+                tags: promptData.tags || ['cupido'],
+                system_prompt: versionData.system_prompt
+              });
+            }
+          }
+          
+          console.log(`✅ Loaded ${allPrompts.length} prompts from local file`);
+        } catch (error) {
+          console.error('❌ Error loading local prompts:', error);
+        }
       }
     }
 

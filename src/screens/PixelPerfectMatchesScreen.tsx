@@ -229,7 +229,7 @@ export const PixelPerfectMatchesScreen = () => {
                 {getMatchTypeDescription(compatibilityScore.matchType)}
               </Text>
               <Text style={styles.compatibilityText}>
-                {compatibilityScore.overallScore}% Compatible
+                {compatibilityScore.overallScore || compatibilityScore.overall}% Compatible
               </Text>
             </View>
           </View>
@@ -240,25 +240,25 @@ export const PixelPerfectMatchesScreen = () => {
             <Text style={styles.statLabel}>Personality Match</Text>
             <Text style={[
               styles.statValue,
-              compatibilityScore.breakdown.personalityMatch > 70 ? styles.statValueGreen : styles.statValueGray
+              (compatibilityScore.breakdown?.personalityMatch || compatibilityScore.personality || 0) > 70 ? styles.statValueGreen : styles.statValueGray
             ]}>
-              {Math.round(compatibilityScore.breakdown.personalityMatch)}%
+              {Math.round(compatibilityScore.breakdown?.personalityMatch || compatibilityScore.personality || 0)}%
             </Text>
           </View>
           <View style={styles.statColumn}>
             <Text style={styles.statLabel}>Values Alignment</Text>
             <Text style={[
               styles.statValue,
-              compatibilityScore.breakdown.valuesAlignment > 70 ? styles.statValueGreen : styles.statValueGray
+              (compatibilityScore.breakdown?.valuesAlignment || compatibilityScore.values || 0) > 70 ? styles.statValueGreen : styles.statValueGray
             ]}>
-              {Math.round(compatibilityScore.breakdown.valuesAlignment)}%
+              {Math.round(compatibilityScore.breakdown?.valuesAlignment || compatibilityScore.values || 0)}%
             </Text>
           </View>
         </View>
 
         <View style={styles.interestsSection}>
           <Text style={styles.interestsTitle}>Why we think you'll connect:</Text>
-          {compatibilityScore.reasoning.slice(0, 2).map((reason, index) => (
+          {(compatibilityScore.reasoning || compatibilityScore.strengths || []).slice(0, 2).map((reason, index) => (
             <Text key={index} style={styles.interestsText}>
               • {reason}
             </Text>
