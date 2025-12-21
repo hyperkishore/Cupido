@@ -884,11 +884,37 @@ app.get('/api/run-script/auto-init', (req, res) => {
 // ============================================
 
 const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
 
-// Initialize Supabase client
+// Initialize Supabase client with SSL fix for Node.js v22
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+  try {
+    // Create custom fetch with proper SSL handling
+    const nodeFetch = require('node-fetch');
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: false // Temporarily allow self-signed certs
+    });
+
+    const customFetch = (url, options = {}) => {
+      return nodeFetch(url, {
+        ...options,
+        agent: url.startsWith('https') ? httpsAgent : undefined
+      });
+    };
+
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { fetch: customFetch }
+    });
+    console.log('✅ Supabase initialized with node-fetch + SSL agent');
+  } catch (fetchError) {
+    console.warn('⚠️ node-fetch not available:', fetchError.message);
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+}
 
 // Import prompts from prompts.json
 app.post('/api/prompts/import', async (req, res) => {
@@ -1050,11 +1076,18 @@ app.get('/api/prompts', async (req, res) => {
     let supabasePromptIds = new Set();
     if (supabase) {
       try {
+        console.log('📡 Fetching prompts from Supabase...');
         // Get all prompt_ids (distinct)
         const { data: supabasePrompts, error: allPromptsError } = await supabase
           .from('prompt_versions')
           .select('prompt_id')
           .order('prompt_id');
+
+        console.log('📊 Supabase response:', {
+          hasData: !!supabasePrompts,
+          count: supabasePrompts?.length,
+          error: allPromptsError?.message || 'none'
+        });
 
         if (!allPromptsError && supabasePrompts) {
           // Get unique prompt IDs
@@ -1110,7 +1143,8 @@ app.get('/api/prompts', async (req, res) => {
           }).forEach(p => allPrompts.push(p));
         }
       } catch (error) {
-        console.error('Error fetching Supabase prompts:', error);
+        console.error('❌ Error fetching Supabase prompts:', error.message || error);
+        console.error('   Full error:', JSON.stringify(error, null, 2));
         // Continue with custom prompts even if Supabase fails
       }
     }

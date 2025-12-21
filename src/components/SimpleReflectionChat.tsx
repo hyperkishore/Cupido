@@ -246,6 +246,19 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
   // Simple conversation history limit - no complex context strategy needed
   const MAX_CONVERSATION_HISTORY = 20; // Keep last 20 messages (10 exchanges) for context
 
+  // Utility: Deduplicate messages by ID (prevents React key warnings)
+  const dedupeMessages = useCallback((msgs: Message[]): Message[] => {
+    const seen = new Set<string>();
+    return msgs.filter(msg => {
+      if (seen.has(msg.id)) {
+        if (DEBUG) console.log('⚠️ Filtered duplicate message:', msg.id);
+        return false;
+      }
+      seen.add(msg.id);
+      return true;
+    });
+  }, []);
+
   // Refs for test message handler to avoid race conditions
   const messagesRef = useRef<Message[]>([]);
   const isTypingRef = useRef(false);
@@ -712,7 +725,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
           })
         );
         
-        setMessages(uiMessages);
+        setMessages(dedupeMessages(uiMessages));
         setConversationCount(history.filter(msg => !msg.is_bot).length);
         
         // No longer need to maintain conversationHistory state
@@ -915,20 +928,20 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
     }
   }, [isLoading]);
   
-  // Scroll after keyboard appears/disappears
+  // Scroll after keyboard appears/disappears (only if user is at bottom)
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && shouldAutoScrollRef.current) {
       const keyboardTimeout = setTimeout(() => {
         scrollToBottom(true);
       }, 300);
-      
+
       return () => clearTimeout(keyboardTimeout);
     }
-  }, [keyboardVisible]);
-  
-  // Auto-scroll when typing indicator appears
+  }, [keyboardVisible, messages.length]);
+
+  // Auto-scroll when typing indicator appears (only if user is at bottom)
   useEffect(() => {
-    if (isTyping) {
+    if (isTyping && shouldAutoScrollRef.current) {
       // Immediately scroll to show typing indicator
       requestAnimationFrame(() => {
         scrollToBottom(true);
@@ -1015,8 +1028,8 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         timestamp: new Date(msg.created_at),
       }));
       
-      // Prepend older messages
-      setMessages(prev => [...uiOlderMessages, ...prev]);
+      // Prepend older messages (with deduplication)
+      setMessages(prev => dedupeMessages([...uiOlderMessages, ...prev]));
       
       // Check if we got less than requested (means we hit the end)
       if (olderMessages.length < MESSAGE_PAGE_SIZE) {
@@ -2224,7 +2237,7 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         style={styles.messagesContainer}
         contentContainerStyle={[
           styles.messagesContent,
