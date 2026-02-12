@@ -180,9 +180,17 @@ export default function App() {
 
 const Root = () => {
   const { user, loading } = useAuth();
-  const { mode } = useAppMode();
+  const { mode, setMode } = useAppMode();
   const { hasCompletedOnboarding } = useOnboarding();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Auto-enter demo mode on GitHub Pages after onboarding
+  React.useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname === 'hyperkishore.github.io' && hasCompletedOnboarding && mode !== 'demo') {
+      console.log('[Root] GitHub Pages detected — auto-entering demo mode');
+      setMode('demo');
+    }
+  }, [hasCompletedOnboarding, mode, setMode]);
 
   React.useEffect(() => {
     console.log('[Root] Loading state:', loading, 'User:', user ? 'exists' : 'null', 'Onboarding:', hasCompletedOnboarding);
