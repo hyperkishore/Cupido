@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupido Chat Interface Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Mobile Chat Container (Left Side) */
+        .mobile-container {
+            width: 375px;
+            height: 100vh;
+            background: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+            position: relative;
+        }
+
+        /* Chat Header */
+        .chat-header {
+            height: 60px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #F0F0F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .status-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #FFFFFF;
+        }
+
+        .message-container {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-container.user {
+            align-items: flex-end;
+        }
+
+        .message-container.bot {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .message-container.bot .message-bubble {
+            background: #F0F0F0;
+            color: #000;
+            border-top-left-radius: 4px;
+        }
+
+        .message-container.user .message-bubble {
+            background: #007AFF;
+            color: #FFF;
+            border-top-right-radius: 4px;
+        }
+
+        .message-text {
+            font-size: 16px;
+            line-height: 22px;
+            margin: 0;
+        }
+
+        .message-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .typing-indicator {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Input Area */
+        .input-wrapper {
+            height: 70px;
+            background: #FFFFFF;
+            border-top: 1px solid #F0F0F0;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .attach-button, .send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            background: #F8F8F8;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .attach-button:hover, .send-button:hover:not(:disabled) {
+            opacity: 0.8;
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .attach-button svg, .send-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .text-input {
+            flex: 1;
+            min-height: 44px;
+            max-height: 80px;
+            padding: 10px 16px;
+            background: #F8F8F8;
+            border: none;
+            border-radius: 22px;
+            font-size: 16px;
+            color: #000;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .text-input::placeholder {
+            color: #999;
+        }
+
+        #image-input {
+            display: none;
+        }
+
+        /* Debug Panel (Right Side) */
+        .debug-container {
+            flex: 1;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .debug-header {
+            height: 60px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .debug-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            padding: 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .btn-info {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            border-color: #007AFF;
+            background: #007AFF;
+            color: white;
+        }
+
+        /* Persona Selector */
+        .persona-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        /* Stats Display */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            padding: 8px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Console */
+        .console-container {
+            height: 300px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .console-header {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .console-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #f0f0f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+        }
+
+        .console-line {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .console-timestamp {
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .console-type {
+            color: #4CAF50;
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .console-type.error {
+            color: #f44336;
+        }
+
+        .console-type.system {
+            color: #2196F3;
+        }
+
+        .console-type.user {
+            color: #FF9800;
+        }
+
+        .console-message {
+            flex: 1;
+            word-wrap: break-word;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        /* Profile Fields Display */
+        .profile-display {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .profile-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+
+        .profile-field-name {
+            color: #666;
+        }
+
+        .profile-field-value {
+            color: #000;
+            font-weight: 500;
+        }
+
+        .profile-field-value.collected {
+            color: #4CAF50;
+        }
+
+        .profile-field-value.missing {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Chat Container -->
+    <div class="mobile-container">
+        <div class="chat-header">
+            <div class="chat-title">Cupido Chat</div>
+            <div class="status-badge" id="status-badge">Ready</div>
+        </div>
+
+        <div class="messages-container" id="messages-container">
+            <!-- Messages will be added here -->
+        </div>
+
+        <div class="typing-indicator" id="typing-indicator" style="display: none; padding: 0 16px;">
+            typing...
+        </div>
+
+        <div class="input-wrapper">
+            <div class="input-container">
+                <button class="attach-button" onclick="selectImage()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                <input type="file" id="image-input" accept="image/*" onchange="handleImageSelect(event)">
+                <textarea
+                    class="text-input"
+                    id="message-input"
+                    placeholder="Share your thoughts..."
+                    rows="1"
+                    onkeypress="handleKeyPress(event)"
+                ></textarea>
+                <button class="send-button" id="send-button" onclick="sendMessage()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#C0C0C0" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Container -->
+    <div class="debug-container">
+        <div class="debug-header">
+            <div class="debug-title">Simulator Controls</div>
+            <button class="btn btn-info" onclick="exportConversation()">Export Chat</button>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- Simulation Mode -->
+            <div class="control-section">
+                <h3>Simulation Mode</h3>
+                <div class="mode-selector">
+                    <div class="mode-btn active" id="mode-auto" onclick="setMode('auto')">Auto</div>
+                    <div class="mode-btn" id="mode-semi" onclick="setMode('semi')">Semi-Auto</div>
+                    <div class="mode-btn" id="mode-manual" onclick="setMode('manual')">Manual</div>
+                </div>
+            </div>
+
+            <!-- Persona Selection -->
+            <div class="control-section">
+                <h3>Active Persona</h3>
+                <select class="persona-select" id="persona-select" onchange="selectPersona()">
+                    <option value="sarah_tech">Sarah - Tech Professional</option>
+                    <option value="mike_creative">Mike - Creative Artist</option>
+                    <option value="emily_student">Emily - Grad Student</option>
+                    <option value="raj_entrepreneur">Raj - Entrepreneur</option>
+                    <option value="lisa_healthcare">Lisa - Healthcare Worker</option>
+                    <option value="david_teacher">David - Teacher</option>
+                </select>
+                <div id="persona-details" style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 12px; color: #666;">
+                    <!-- Persona details will be shown here -->
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="control-section">
+                <h3>Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" id="start-btn" onclick="startSimulation()">▶️ Start</button>
+                    <button class="btn btn-warning" id="pause-btn" onclick="pauseSimulation()" disabled>⏸ Pause</button>
+                    <button class="btn btn-success" id="continue-btn" onclick="continueSimulation()" disabled>Continue</button>
+                    <button class="btn btn-danger" id="stop-btn" onclick="stopSimulation()" disabled>⏹ Stop</button>
+                    <button class="btn btn-secondary" onclick="clearChat()">Clear Chat</button>
+                </div>
+            </div>
+
+            <!-- Simulation Settings -->
+            <div class="control-section">
+                <h3>Simulation Settings</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 13px; color: #666;">Max Messages</label>
+                        <input type="number" id="max-messages" value="20" min="5" max="100" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 13px; color: #666;">Response Delay (ms)</label>
+                        <input type="number" id="response-delay" value="2000" min="500" max="10000" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 13px; color: #666;">History Window</label>
+                        <input type="number" id="history-window" value="10" min="4" max="20" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;" title="Limit conversation history to prevent API errors">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 13px; color: #666;">Auto Images</label>
+                        <input type="checkbox" id="auto-images" checked>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="control-section">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Messages</div>
+                        <div class="stat-value" id="message-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">User Messages</div>
+                        <div class="stat-value" id="user-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Bot Messages</div>
+                        <div class="stat-value" id="bot-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Response Time</div>
+                        <div class="stat-value" id="response-time">0s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Collection -->
+            <div class="control-section">
+                <h3>Profile Collection (8 fields)</h3>
+                <div class="profile-display">
+                    <div class="profile-field">
+                        <span class="profile-field-name">Name:</span>
+                        <span class="profile-field-value missing" id="field-name">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Age:</span>
+                        <span class="profile-field-value missing" id="field-age">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Location:</span>
+                        <span class="profile-field-value missing" id="field-location">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Work:</span>
+                        <span class="profile-field-value missing" id="field-work">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Education:</span>
+                        <span class="profile-field-value missing" id="field-education">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Hobbies:</span>
+                        <span class="profile-field-value missing" id="field-hobbies">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Family:</span>
+                        <span class="profile-field-value missing" id="field-family">Not collected</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-name">Looking For:</span>
+                        <span class="profile-field-value missing" id="field-looking">Not collected</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Scenarios -->
+            <div class="control-section">
+                <h3>Test Scenarios</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-info" onclick="runTestScenario('intro')">Basic Introduction</button>
+                    <button class="btn btn-info" onclick="runTestScenario('deep')">Deep Conversation</button>
+                    <button class="btn btn-info" onclick="runTestScenario('image')">Image Sharing</button>
+                    <button class="btn btn-info" onclick="runTestScenario('values')">Values & Goals</button>
+                    <button class="btn btn-info" onclick="runTestScenario('family')">Family & Background</button>
+                </div>
+            </div>
+
+            <!-- History Management -->
+            <div class="control-section">
+                <h3>Conversation History</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-secondary" onclick="saveConversationHistory()">Save History</button>
+                    <button class="btn btn-secondary" onclick="loadConversationHistory()">Load History</button>
+                    <input type="file" id="history-file" style="display: none;" accept=".json" onchange="handleHistoryLoad(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Console -->
+        <div class="console-container">
+            <div class="console-header">
+                <div class="console-title">Console Output</div>
+                <button class="btn btn-secondary" onclick="clearConsole()">Clear</button>
+            </div>
+            <div class="console-output" id="console-output"></div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="image-modal" id="image-modal" onclick="closeImageModal()">
+        <img id="modal-image" src="">
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:3001/api/chat';
+
+        // Realistic personas for dating app simulation
+        const PERSONAS = [
+            {
+                id: 'sarah_tech',
+                name: 'Sarah Chen',
+                age: 28,
+                location: 'San Francisco',
+                occupation: 'Product Manager at Google',
+                personality: 'Analytical, ambitious, loves hiking',
+                prompt: `You are Sarah, 28, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be casual and natural - use "lol", "haha", occasional typos
+- NO scene descriptions, NO internal thoughts, just what you'd actually type
+- REMEMBER the conversation - don't repeat questions already answered
+- Build on what's been discussed, don't restart topics
+- If asked if you're AI, you're Sarah, a real person
+
+About you: PM at Google, love hiking on weekends, foodie, originally from Portland. Looking for someone ambitious but knows how to relax.
+
+Example messages:
+"hey! I'm Sarah :)"
+"haha yeah google can be intense but i love it"
+"what about you, what do you do?"
+"omg yes love that hiking trail!"
+"originally from portland but been in sf for 3 years now"`
+            },
+            {
+                id: 'mike_creative',
+                name: 'Mike Rodriguez',
+                age: 32,
+                location: 'Brooklyn, NY',
+                occupation: 'Freelance Graphic Designer',
+                personality: 'Creative, spontaneous, music lover',
+                prompt: `You are Mike, 32, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be casual and natural
+- NO scene descriptions, NO internal thoughts
+- Just type what a real person would text
+- REMEMBER the conversation - don't repeat questions
+- Build on what's been discussed
+- If asked if you're AI, you're a real person
+
+About you: Freelance designer, into indie music, coffee snob, Brooklyn for 5 years. Want someone creative and genuine.
+
+Example messages:
+"hey what's up"
+"freelance graphic design, mostly branding stuff"
+"brooklyn is great, expensive but worth it"
+"you into music at all?"
+"coffee is basically my personality at this point lol"`
+            },
+            {
+                id: 'emily_student',
+                name: 'Emily Watson',
+                age: 24,
+                location: 'Boston',
+                occupation: 'PhD student in Biology',
+                personality: 'Intellectual, curious, introverted',
+                prompt: `You are Emily, 24, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be casual but thoughtful
+- NO scene descriptions or internal monologue
+- Just normal texting
+
+About you: PhD student at MIT, biology research, bit nerdy, love board games and reading. Looking for intellectual connection.
+
+Example messages:
+"hi! nice to meet you"
+"PhD in biology at MIT, it's pretty intense"
+"honestly the lab hours are killing me haha"
+"are you into science at all?"
+"board games are my weekend thing, super nerdy i know"`
+            },
+            {
+                id: 'raj_entrepreneur',
+                name: 'Raj Patel',
+                age: 35,
+                location: 'Austin, TX',
+                occupation: 'Startup Founder',
+                personality: 'Driven, optimistic, adventurous',
+                prompt: `You are Raj, 35, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be casual and confident
+- NO scene descriptions or thoughts
+- Real texting only
+
+About you: Founded a fintech startup, love traveling and cooking, moved from India 10 years ago. Want someone who gets the startup life.
+
+Example messages:
+"hey there!"
+"running a fintech startup here in austin"
+"the hours are crazy but i love building something"
+"you ever been to austin?"
+"i'm big into cooking, helps me decompress"`
+            },
+            {
+                id: 'lisa_healthcare',
+                name: 'Lisa Thompson',
+                age: 29,
+                location: 'Chicago',
+                occupation: 'Pediatric Nurse',
+                personality: 'Compassionate, resilient, family-oriented',
+                prompt: `You are Lisa, 29, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be warm and casual
+- NO scene descriptions or thoughts
+- Just regular texting
+
+About you: Pediatric nurse, love yoga and true crime podcasts, have a rescue dog named Max. Want someone emotionally available.
+
+Example messages:
+"hi! how's your day going?"
+"pediatric nurse at children's hospital"
+"it's rewarding but exhausting honestly"
+"do you like dogs? i have a rescue"
+"what are you looking for on here?"`
+            },
+            {
+                id: 'david_teacher',
+                name: 'David Kim',
+                age: 27,
+                location: 'Seattle',
+                occupation: 'High School Teacher',
+                personality: 'Patient, humorous, socially conscious',
+                prompt: `You are David, 27, texting on a dating app. CRITICAL RULES:
+- Write like you're texting, not writing essays
+- Keep messages SHORT (5-30 words typical, max 50)
+- Be friendly with dry humor
+- NO scene descriptions or thoughts
+- Normal texting only
+
+About you: High school history teacher, into hiking and board games, care about social issues. Want someone with similar values.
+
+Example messages:
+"hey how's it going?"
+"high school history teacher"
+"teenagers are interesting to say the least haha"
+"seattle's great if you don't mind rain"
+"you into hiking at all?"`
+            }
+        ];
+
+        // State
+        let isSimulating = false;
+        let isPaused = false;
+        let currentMode = 'auto';
+        let currentPersona = PERSONAS[0];
+        let messages = [];
+        let conversationHistory = [];
+        let selectedImage = null;
+        let stats = {
+            messageCount: 0,
+            userCount: 0,
+            botCount: 0,
+            lastResponseTime: 0
+        };
+        let collectedProfile = {
+            name: false,
+            age: false,
+            location: false,
+            work: false,
+            education: false,
+            hobbies: false,
+            family: false,
+            looking: false
+        };
+
+        // Initialize
+        function init() {
+            const input = document.getElementById('message-input');
+            const sendBtn = document.getElementById('send-button');
+
+            input.addEventListener('input', function() {
+                const hasText = this.value.trim().length > 0;
+                sendBtn.disabled = !hasText;
+                const svg = sendBtn.querySelector('svg');
+                svg.setAttribute('stroke', hasText ? '#007AFF' : '#C0C0C0');
+            });
+
+            logToConsole('Simulator initialized', 'system');
+            updateStats();
+            updatePersonaDetails();
+        }
+
+        // Mode Management
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            logToConsole(`Mode changed to: ${mode}`, 'system');
+        }
+
+        // Persona Management
+        function selectPersona() {
+            const select = document.getElementById('persona-select');
+            const personaId = select.value;
+            currentPersona = PERSONAS.find(p => p.id === personaId);
+            logToConsole(`Persona changed to: ${currentPersona.name}`, 'system');
+            updatePersonaDetails();
+        }
+
+        function updatePersonaDetails() {
+            const detailsDiv = document.getElementById('persona-details');
+            if (detailsDiv && currentPersona) {
+                detailsDiv.innerHTML = `
+                    <div><strong>${currentPersona.name}</strong></div>
+                    <div>Age: ${currentPersona.age} | Location: ${currentPersona.location}</div>
+                    <div>Occupation: ${currentPersona.occupation}</div>
+                    <div style="margin-top: 5px; color: #999; font-style: italic;">${currentPersona.personality}</div>
+                `;
+            }
+        }
+
+        // Message Management
+        function addMessage(text, isBot, imageUri = null, isManual = false) {
+            const container = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-container ${isBot ? 'bot' : 'user'}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            if (imageUri) {
+                const img = document.createElement('img');
+                img.src = imageUri;
+                img.className = 'message-image';
+                img.onclick = () => showImageModal(imageUri);
+                bubble.appendChild(img);
+            }
+
+            if (text) {
+                const textEl = document.createElement('p');
+                textEl.className = 'message-text';
+                textEl.textContent = text;
+                bubble.appendChild(textEl);
+            }
+
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(timestamp);
+            container.appendChild(messageDiv);
+
+            container.scrollTop = container.scrollHeight;
+
+            // Update stats
+            stats.messageCount++;
+            if (isBot) {
+                stats.botCount++;
+            } else {
+                stats.userCount++;
+            }
+            updateStats();
+
+            // Check for profile collection
+            if (isBot) {
+                checkProfileCollection(text);
+            }
+
+            const source = isManual ? 'manual' : (isBot ? 'cupido' : 'user-sim');
+            logToConsole(`${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`, source);
+        }
+
+        // Profile Collection Tracking
+        function checkProfileCollection(text) {
+            const lowerText = text.toLowerCase();
+
+            if (lowerText.includes('what\'s your name') || lowerText.includes('may i ask your name')) {
+                updateProfileField('name', 'Asking...');
+            }
+            if (lowerText.includes('how old') || lowerText.includes('your age')) {
+                updateProfileField('age', 'Asking...');
+            }
+            if (lowerText.includes('where do you live') || lowerText.includes('located')) {
+                updateProfileField('location', 'Asking...');
+            }
+            if (lowerText.includes('what do you do') || lowerText.includes('your work')) {
+                updateProfileField('work', 'Asking...');
+            }
+            if (lowerText.includes('education') || lowerText.includes('studied')) {
+                updateProfileField('education', 'Asking...');
+            }
+            if (lowerText.includes('hobbies') || lowerText.includes('free time')) {
+                updateProfileField('hobbies', 'Asking...');
+            }
+            if (lowerText.includes('family') || lowerText.includes('siblings')) {
+                updateProfileField('family', 'Asking...');
+            }
+            if (lowerText.includes('looking for') || lowerText.includes('ideal partner')) {
+                updateProfileField('looking', 'Asking...');
+            }
+        }
+
+        function updateProfileField(field, value) {
+            const element = document.getElementById(`field-${field}`);
+            if (element) {
+                element.textContent = value;
+                element.className = value === 'Not collected' ? 'profile-field-value missing' : 'profile-field-value collected';
+                collectedProfile[field] = value !== 'Not collected';
+            }
+        }
+
+        // Typing Indicator
+        function showTyping() {
+            document.getElementById('typing-indicator').style.display = 'block';
+        }
+
+        function hideTyping() {
+            document.getElementById('typing-indicator').style.display = 'none';
+        }
+
+        // API Interaction
+        async function getCupidoResponse(userMessage) {
+            const startTime = Date.now();
+            showTyping();
+
+            try {
+                // Limit conversation history to prevent payload too large errors
+                const historyWindow = parseInt(document.getElementById('history-window').value) || 10;
+                const limitedHistory = conversationHistory.slice(-historyWindow);
+
+                // Use the same format as the actual app
+                const messages = [
+                    { role: 'system', content: "You are Cupido, an AI companion focused on meaningful self-discovery and relationships. Engage naturally and help users explore their thoughts and feelings." },
+                    ...limitedHistory.filter(msg => msg.text).map(msg => ({
+                        role: msg.sender === 'user' ? 'user' : 'assistant',
+                        content: msg.text || ''
+                    })),
+                    { role: 'user', content: userMessage || 'Hello' }
+                ];
+
+                const requestBody = {
+                    messages: messages,
+                    modelType: 'sonnet'
+                };
+
+                if (selectedImage) {
+                    requestBody.imageData = selectedImage;
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                stats.lastResponseTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                updateStats();
+
+                return data.message || data.response;
+            } catch (error) {
+                logToConsole(`Error: ${error.message}`, 'error');
+                return "I'm having trouble connecting right now. Let me try to help you anyway - tell me more about yourself!";
+            } finally {
+                hideTyping();
+                selectedImage = null;
+            }
+        }
+
+        async function getSimulatedUserResponse(botMessage) {
+            showTyping();
+
+            try {
+                // Keep reasonable history for context
+                const historyWindow = parseInt(document.getElementById('history-window').value) || 10;
+                const limitedHistory = conversationHistory.slice(-historyWindow);
+
+                // Build messages with proper conversation context
+                const messages = [
+                    { role: 'system', content: currentPersona.prompt || "You are a user engaging with Cupido." },
+                    // Include the conversation history properly
+                    ...limitedHistory.map(msg => ({
+                        role: msg.role === 'user' ? 'assistant' : 'user',  // Reverse roles for persona perspective
+                        content: msg.content || ''
+                    }))
+                ];
+
+                // Don't add botMessage again if it's already in history
+                if (!limitedHistory.length || limitedHistory[limitedHistory.length - 1].content !== botMessage) {
+                    messages.push({ role: 'user', content: botMessage || 'Hello' });
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messages,
+                        modelType: 'sonnet'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Update profile tracking based on user response
+                const responseText = (data.message || '').toLowerCase();
+                if (responseText && currentPersona) {
+                    if (responseText.includes('my name is') || responseText.includes('i\'m ')) {
+                        updateProfileField('name', currentPersona.name);
+                    }
+                    if (responseText.includes('i\'m ') && responseText.match(/\d+/)) {
+                        updateProfileField('age', currentPersona.age);
+                    }
+                    if (currentPersona.location && responseText.includes(currentPersona.location.toLowerCase())) {
+                        updateProfileField('location', currentPersona.location);
+                    }
+                    if (currentPersona.occupation && responseText.includes(currentPersona.occupation.toLowerCase())) {
+                        updateProfileField('work', currentPersona.occupation);
+                    }
+                }
+
+                return data.message || data.response;
+            } catch (error) {
+                logToConsole(`Error: ${error.message}`, 'error');
+                return "That's interesting! Tell me more about that.";
+            } finally {
+                hideTyping();
+            }
+        }
+
+        // Realistic test scenarios for dating app conversations
+        const TEST_SCENARIOS = {
+            intro: {
+                title: 'Basic Introduction',
+                initialMessages: [
+                    { text: "hey!", isBot: false }
+                ]
+            },
+            deep: {
+                title: 'Relationship Talk',
+                initialMessages: [
+                    { text: "been single for a while now", isBot: false }
+                ]
+            },
+            image: {
+                title: 'Image Sharing',
+                initialMessages: [
+                    { text: "check this out", isBot: false, includeImage: true }
+                ]
+            },
+            values: {
+                title: 'What You Want',
+                initialMessages: [
+                    { text: "what are you looking for on here?", isBot: false }
+                ]
+            },
+            family: {
+                title: 'Background Chat',
+                initialMessages: [
+                    { text: "where you from?", isBot: false }
+                ]
+            }
+        };
+
+        function runTestScenario(scenarioId) {
+            const scenario = TEST_SCENARIOS[scenarioId];
+            if (!scenario) return;
+
+            logToConsole(`Running test scenario: ${scenario.title}`, 'system');
+            clearChat();
+
+            // Start simulation first
+            isSimulating = true;
+            isPaused = false;
+            updateSimulationButtons('running');
+
+            // Add Cupido's greeting (short and casual)
+            const greeting = "Hey! I'm Cupido. What brings you here?";
+            addMessage(greeting, true);
+            conversationHistory.push({ role: 'assistant', content: greeting });
+
+            // Run scenario messages after a delay
+            setTimeout(async () => {
+                for (const msg of scenario.initialMessages) {
+                    if (msg.includeImage) {
+                        // Simulate image upload
+                        const demoImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                        addMessage(msg.text, msg.isBot, demoImage);
+                    } else {
+                        addMessage(msg.text, msg.isBot);
+                    }
+                    conversationHistory.push({ role: msg.isBot ? 'assistant' : 'user', content: msg.text });
+
+                    if (!msg.isBot) {
+                        const response = await getCupidoResponse(msg.text);
+                        addMessage(response, true);
+                        conversationHistory.push({ role: 'assistant', content: response });
+                    }
+
+                    await sleep(1500);
+                }
+
+                // Continue with normal simulation
+                if (currentMode !== 'manual') {
+                    simulateConversation();
+                }
+            }, 1000);
+        }
+
+        // Simulation Control
+        async function startSimulation() {
+            if (isSimulating) return;
+
+            isSimulating = true;
+            isPaused = false;
+            updateSimulationButtons('running');
+
+            logToConsole(`Starting simulation with ${currentPersona.name} in ${currentMode} mode`, 'system');
+
+            // Start with Cupido's greeting
+            const greeting = "Hi! I'm Cupido, your AI companion for self-discovery and reflection. I'm here to learn about you, understand what makes you unique, and help you explore what you're looking for in meaningful connections. What's been on your mind lately?";
+            addMessage(greeting, true);
+            conversationHistory.push({ role: 'assistant', content: greeting });
+
+            if (currentMode === 'manual') {
+                // Manual mode - user controls everything
+                logToConsole('Manual mode: Use input field to send messages', 'system');
+                return;
+            }
+
+            // Continue with simulation
+            await simulateConversation();
+        }
+
+        async function simulateConversation() {
+            while (isSimulating && !isPaused) {
+                // Check max messages limit
+                const maxMessages = parseInt(document.getElementById('max-messages').value) || 20;
+                if (stats.messageCount >= maxMessages) {
+                    logToConsole(`Reached max messages limit (${maxMessages})`, 'system');
+                    stopSimulation();
+                    break;
+                }
+
+                // Get response delay setting
+                const responseDelay = parseInt(document.getElementById('response-delay').value) || 2000;
+
+                // Simulate user response
+                const lastBotMessage = conversationHistory[conversationHistory.length - 1]?.content || '';
+                await sleep(responseDelay);
+
+                if (!isSimulating || isPaused) break;
+
+                const userResponse = await getSimulatedUserResponse(lastBotMessage);
+                addMessage(userResponse, false);
+                conversationHistory.push({ role: 'user', content: userResponse });
+
+                // Randomly add images if auto-images is enabled
+                const autoImages = document.getElementById('auto-images').checked;
+                if (autoImages && Math.random() < 0.1) { // 10% chance
+                    const demoImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    addMessage('Here\'s something I wanted to share', false, demoImage);
+                    conversationHistory.push({ role: 'user', content: '[Shared an image]' });
+                }
+
+                await sleep(responseDelay / 2);
+                if (!isSimulating || isPaused) break;
+
+                // Get Cupido's response
+                const cupidoResponse = await getCupidoResponse(userResponse);
+                addMessage(cupidoResponse, true);
+                conversationHistory.push({ role: 'assistant', content: cupidoResponse });
+
+                // Check mode for next iteration
+                if (currentMode === 'semi') {
+                    isPaused = true;
+                    updateSimulationButtons('paused');
+                    logToConsole('Semi-auto: Click Continue for next exchange', 'system');
+                    break;
+                }
+
+                await sleep(responseDelay);
+            }
+        }
+
+        function pauseSimulation() {
+            if (!isSimulating) return;
+            isPaused = true;
+            updateSimulationButtons('paused');
+            logToConsole('Simulation paused', 'system');
+        }
+
+        function continueSimulation() {
+            if (!isSimulating || !isPaused) return;
+            isPaused = false;
+            updateSimulationButtons('running');
+            logToConsole('Simulation resumed', 'system');
+            simulateConversation();
+        }
+
+        function stopSimulation() {
+            isSimulating = false;
+            isPaused = false;
+            updateSimulationButtons('stopped');
+            logToConsole('Simulation stopped', 'system');
+        }
+
+        // Manual Message Sending
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            input.value = '';
+            input.dispatchEvent(new Event('input'));
+
+            addMessage(text, false, null, true);
+            conversationHistory.push({ role: 'user', content: text });
+
+            const response = await getCupidoResponse(text);
+            addMessage(response, true);
+            conversationHistory.push({ role: 'assistant', content: response });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Image Handling
+        function selectImage() {
+            document.getElementById('image-input').click();
+        }
+
+        async function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                selectedImage = {
+                    base64: base64,
+                    mimeType: file.type
+                };
+
+                // Add image message
+                const imageUri = e.target.result;
+                addMessage('', false, imageUri, true);
+                conversationHistory.push({ role: 'user', content: '[Shared an image]' });
+
+                // Get response
+                const response = await getCupidoResponse('[User shared an image]');
+                addMessage(response, true);
+                conversationHistory.push({ role: 'assistant', content: response });
+            };
+            reader.readAsDataURL(file);
+
+            event.target.value = '';
+        }
+
+        function showImageModal(src) {
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('modal-image');
+            img.src = src;
+            modal.style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').style.display = 'none';
+        }
+
+        // UI Updates
+        function updateSimulationButtons(state) {
+            const startBtn = document.getElementById('start-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const continueBtn = document.getElementById('continue-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const statusBadge = document.getElementById('status-badge');
+
+            if (state === 'running') {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                continueBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusBadge.textContent = 'Active';
+                statusBadge.style.background = '#4CAF50';
+            } else if (state === 'paused') {
+                startBtn.disabled = true;
+                pauseBtn.disabled = true;
+                continueBtn.disabled = false;
+                stopBtn.disabled = false;
+                statusBadge.textContent = 'Paused';
+                statusBadge.style.background = '#FF9800';
+            } else {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                continueBtn.disabled = true;
+                stopBtn.disabled = true;
+                statusBadge.textContent = 'Ready';
+                statusBadge.style.background = '#9E9E9E';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('message-count').textContent = stats.messageCount;
+            document.getElementById('user-count').textContent = stats.userCount;
+            document.getElementById('bot-count').textContent = stats.botCount;
+            document.getElementById('response-time').textContent = stats.lastResponseTime + 's';
+        }
+
+        // Console
+        function logToConsole(message, type = 'info') {
+            const console = document.getElementById('console-output');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+
+            const timestamp = document.createElement('span');
+            timestamp.className = 'console-timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString();
+
+            const typeEl = document.createElement('span');
+            typeEl.className = `console-type ${type}`;
+            typeEl.textContent = type.toUpperCase();
+
+            const messageEl = document.createElement('span');
+            messageEl.className = 'console-message';
+            messageEl.textContent = message;
+
+            line.appendChild(timestamp);
+            line.appendChild(typeEl);
+            line.appendChild(messageEl);
+            console.appendChild(line);
+
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+            logToConsole('Console cleared', 'system');
+        }
+
+        // Clear Functions
+        function clearChat() {
+            document.getElementById('messages-container').innerHTML = '';
+            messages = [];
+            conversationHistory = [];
+            stats = {
+                messageCount: 0,
+                userCount: 0,
+                botCount: 0,
+                lastResponseTime: 0
+            };
+            updateStats();
+
+            // Reset profile collection
+            Object.keys(collectedProfile).forEach(field => {
+                updateProfileField(field, 'Not collected');
+                collectedProfile[field] = false;
+            });
+
+            logToConsole('Chat cleared', 'system');
+        }
+
+        // History Management
+        function saveConversationHistory() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                persona: currentPersona,
+                mode: currentMode,
+                stats: stats,
+                profileCollected: collectedProfile,
+                messages: messages,
+                conversationHistory: conversationHistory
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-history-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            logToConsole('Conversation history saved', 'system');
+        }
+
+        function loadConversationHistory() {
+            document.getElementById('history-file').click();
+        }
+
+        function handleHistoryLoad(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    // Clear current conversation
+                    clearChat();
+
+                    // Load conversation history
+                    if (data.conversationHistory) {
+                        conversationHistory = data.conversationHistory;
+                    }
+
+                    // Load messages
+                    if (data.messages) {
+                        data.messages.forEach(msg => {
+                            addMessage(msg.text, msg.isBot, msg.imageUri);
+                        });
+                    } else if (data.conversationHistory) {
+                        // Reconstruct messages from conversation history if messages not saved
+                        data.conversationHistory.forEach(msg => {
+                            addMessage(msg.content, msg.role === 'assistant');
+                        });
+                    }
+
+                    // Update stats
+                    if (data.stats) {
+                        stats = data.stats;
+                        updateStats();
+                    }
+
+                    // Update profile collection
+                    if (data.profileCollected) {
+                        Object.keys(data.profileCollected).forEach(field => {
+                            if (data.profileCollected[field]) {
+                                updateProfileField(field, 'Collected');
+                            }
+                        });
+                    }
+
+                    logToConsole('Conversation history loaded', 'system');
+                } catch (error) {
+                    logToConsole(`Error loading history: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // Export Function
+        function exportConversation() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                persona: currentPersona,
+                mode: currentMode,
+                stats: stats,
+                profileCollected: collectedProfile,
+                conversation: conversationHistory
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cupido-chat-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            logToConsole('Conversation exported', 'system');
+        }
+
+        // Utility
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+[
+  {
+    "type": "category",
+    "name": "Archive",
+    "label": "Archive",
+    "children": [
+      {
+        "type": "folder",
+        "name": "Codex_musing",
+        "label": "Codex musing",
+        "children": [
+          {
+            "type": "file",
+            "name": "1_Current_Product_Spec.md",
+            "label": "Current Product Spec",
+            "path": "Archive/Codex_musing/1_Current_Product_Spec.md"
+          },
+          {
+            "type": "file",
+            "name": "2_Version_History.md",
+            "label": "Version History",
+            "path": "Archive/Codex_musing/2_Version_History.md"
+          },
+          {
+            "type": "file",
+            "name": "3_Product_Vision_and_Roadmap.md",
+            "label": "Product Vision and Roadmap",
+            "path": "Archive/Codex_musing/3_Product_Vision_and_Roadmap.md"
+          },
+          {
+            "type": "file",
+            "name": "4_Archive_Candidates.md",
+            "label": "Archive Candidates",
+            "path": "Archive/Codex_musing/4_Archive_Candidates.md"
+          },
+          {
+            "type": "file",
+            "name": "5_Functional_Gaps_and_Fixes.md",
+            "label": "Functional Gaps and Suggested Fixes",
+            "path": "Archive/Codex_musing/5_Functional_Gaps_and_Fixes.md"
+          },
+          {
+            "type": "file",
+            "name": "6_Code_Gaps_and_Restructure.md",
+            "label": "Code Gaps and Restructure Plan",
+            "path": "Archive/Codex_musing/6_Code_Gaps_and_Restructure.md"
+          },
+          {
+            "type": "file",
+            "name": "index.md",
+            "label": "index",
+            "path": "Archive/Codex_musing/index.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "category",
+    "name": "Guides",
+    "label": "Guides",
+    "children": [
+      {
+        "type": "file",
+        "name": "code.md",
+        "label": "Cupido Code Guide",
+        "path": "Guides/code.md"
+      },
+      {
+        "type": "file",
+        "name": "product.md",
+        "label": "Cupido Product Guide",
+        "path": "Guides/product.md"
+      }
+    ]
+  },
+  {
+    "type": "category",
+    "name": "Other files",
+    "label": "Other files",
+    "children": [
+      {
+        "type": "folder",
+        "name": ".expo",
+        "label": ".expo",
+        "children": [
+          {
+            "type": "file",
+            "name": "README.md",
+            "label": "README",
+            "path": "Other files/.expo/README.md"
+          }
+        ]
+      },
+      {
+        "type": "folder",
+        "name": "backups",
+        "label": "backups",
+        "children": [
+          {
+            "type": "file",
+            "name": "BACKUP_README.md",
+            "label": "Cupido Backup Information",
+            "path": "Other files/backups/BACKUP_README.md"
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": "CONTRIBUTING.md",
+        "label": "Contributing to Cupido",
+        "path": "Other files/CONTRIBUTING.md"
+      },
+      {
+        "type": "file",
+        "name": "README.md",
+        "label": "Cupido - Privacy-First Dating App",
+        "path": "Other files/README.md"
+      }
+    ]
+  }
+]
