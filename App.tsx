@@ -27,7 +27,9 @@ import { PixelPerfectMessagesScreen } from './src/screens/PixelPerfectMessagesSc
 import { VersionDisplay } from './src/components/VersionDisplay';
 import { ModeProvider, useAppMode } from './src/contexts/AppModeContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { OnboardingProvider, useOnboarding } from './src/contexts/OnboardingContext';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { OnboardingFlow } from './src/screens/OnboardingFlow';
 import { CalmLoadingScreen } from './src/components/CalmLoadingScreen';
 import { TestBridge } from './src/components/TestBridge';
 import { promptService } from './src/services/promptService';
@@ -162,14 +164,16 @@ const AppShell = () => {
 export default function App() {
   return (
     <ModeProvider>
-      <AuthProvider>
-        <AppStateProvider>
-          <FeedbackProvider>
-            <TestBridge />
-            <Root />
-          </FeedbackProvider>
-        </AppStateProvider>
-      </AuthProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <AppStateProvider>
+            <FeedbackProvider>
+              <TestBridge />
+              <Root />
+            </FeedbackProvider>
+          </AppStateProvider>
+        </AuthProvider>
+      </OnboardingProvider>
     </ModeProvider>
   );
 }
@@ -177,11 +181,12 @@ export default function App() {
 const Root = () => {
   const { user, loading } = useAuth();
   const { mode } = useAppMode();
+  const { hasCompletedOnboarding } = useOnboarding();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   React.useEffect(() => {
-    console.log('[Root] Loading state:', loading, 'User:', user ? 'exists' : 'null');
-  }, [loading, user]);
+    console.log('[Root] Loading state:', loading, 'User:', user ? 'exists' : 'null', 'Onboarding:', hasCompletedOnboarding);
+  }, [loading, user, hasCompletedOnboarding]);
 
   React.useEffect(() => {
     console.log('[Root] Initializing promptService...');
@@ -204,6 +209,22 @@ const Root = () => {
     return () => clearTimeout(timer);
   }, [loading]);
 
+  // In demo mode, bypass everything (onboarding + auth)
+  if (mode === 'demo') {
+    return <AppShell />;
+  }
+
+  // Show loading while onboarding state is being read from AsyncStorage
+  if (hasCompletedOnboarding === null) {
+    return <CalmLoadingScreen message="Loading your reflection space" />;
+  }
+
+  // Show onboarding flow for new users
+  if (!hasCompletedOnboarding) {
+    return <OnboardingFlow />;
+  }
+
+  // Auth loading state (onboarding is complete)
   if (loading && !loadingTimeout) {
     console.log('[Root] Rendering CalmLoadingScreen...');
     return <CalmLoadingScreen message="Loading your reflection space" />;
@@ -231,11 +252,6 @@ const Root = () => {
         </View>
       </SafeAreaView>
     );
-  }
-
-  // In demo mode, bypass authentication entirely
-  if (mode === 'demo') {
-    return <AppShell />;
   }
 
   // In local mode, require authentication

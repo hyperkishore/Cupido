@@ -1,6 +1,6 @@
 {
   "name": "cupido",
-  "version": "1.2.44",
+  "version": "1.2.45",
   "main": "index.ts",
   "scripts": {
     "docs:manifest": "node scripts/generate-docs-manifest.js",

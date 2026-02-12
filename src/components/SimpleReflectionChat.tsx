@@ -733,14 +733,24 @@ export const SimpleReflectionChat: React.FC<SimpleReflectionChatProps> = ({ onKe
         if (DEBUG) console.log('✅ Loaded messages from database:', history.length, 'messages');
       } else {
         // Start with a greeting if no history
-        const greetings = [
+        // First-ever session gets a curated reflection prompt; returning users get casual greetings
+        const isFirstSession = conversationCount === 0;
+
+        const firstSessionGreetings = [
+          "Welcome to your reflection space! Let\u2019s start \u2014 what\u2019s one thing about you that people are always surprised to learn?",
+          "Hey, welcome! Here\u2019s your first reflection: what\u2019s something you believe deeply that most people around you don\u2019t?",
+          "Welcome! Let\u2019s dive in \u2014 if you could have dinner with anyone, living or not, who would it be and why?",
+        ];
+
+        const returningGreetings = [
           "Hey! How's your day going?",
           "Hi there! What's been happening with you lately?",
           "Hey! Good to see you here. What's on your mind?",
           "Hi! How are you feeling today?",
           "Hey! What's been the best part of your week so far?",
         ];
-        
+
+        const greetings = isFirstSession ? firstSessionGreetings : returningGreetings;
         const greetingText = greetings[Math.floor(Math.random() * greetings.length)];
         
         // Save greeting to database
