@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   loadingContainer: {
-    padding: 40,
+    padding: 24,
     alignItems: 'center',
   },
   loadingText: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   emptyContainer: {
-    padding: 40,
+    padding: 24,
     alignItems: 'center',
     marginHorizontal: 16,
   },

@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     paddingHorizontal: 0,
     minWidth: 270, // iOS alert minimum width
-    maxWidth: 320, // iOS alert maximum width
+    maxWidth: '85%', // Responsive: adapts to screen width
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,

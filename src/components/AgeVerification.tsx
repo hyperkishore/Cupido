@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     textAlign: 'center',
     marginBottom: 24,
-    maxWidth: 320,
+    maxWidth: '85%',
   },
   requirements: {
     alignSelf: 'stretch',
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
     textAlign: 'center',
-    maxWidth: 280,
+    maxWidth: '75%',
   },
 });
 

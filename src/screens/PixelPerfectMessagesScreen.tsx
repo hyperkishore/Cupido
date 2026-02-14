@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   headerSpacer: {
-    width: 50,
+    width: 44,
   },
   messagesList: {
     flex: 1,

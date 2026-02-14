@@ -161,6 +161,15 @@ const AppShell = () => {
   }
 };
 
+// Phone-sized frame: constrains app to 480px max width on wide screens
+const PhoneFrame = ({ children }: { children: React.ReactNode }) => (
+  <View style={styles.phoneFrameOuter}>
+    <View style={styles.phoneFrameInner}>
+      {children}
+    </View>
+  </View>
+);
+
 export default function App() {
   return (
     <ModeProvider>
@@ -169,7 +178,9 @@ export default function App() {
           <AppStateProvider>
             <FeedbackProvider>
               <TestBridge />
-              <Root />
+              <PhoneFrame>
+                <Root />
+              </PhoneFrame>
             </FeedbackProvider>
           </AppStateProvider>
         </AuthProvider>
@@ -271,6 +282,17 @@ const Root = () => {
 };
 
 const styles = StyleSheet.create({
+  phoneFrameOuter: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+  },
+  phoneFrameInner: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
