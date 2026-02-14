@@ -29,7 +29,7 @@ if (typeof globalThis.fetch !== 'function') {
 }
 
 const app = express();
-const PORT = Number(process.env.PORT || process.env.AI_PROXY_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.AI_PROXY_PORT || 8081);
 const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const CLAUDE_API_URL = process.env.ANTHROPIC_API_URL || 'https://api.anthropic.com/v1/messages';
 
@@ -392,50 +392,58 @@ function createHtmlInjector(baseUrl) {
 }
 
 // ============================================
-// REVERSE PROXY FOR EXPO DEV SERVER
+// REVERSE PROXY FOR EXPO DEV SERVER (local dev only)
 // ============================================
 // Proxy /app/* to localhost:8081 to achieve same-origin for DOM testing
 // This eliminates CORS restrictions when test dashboard accesses app iframe
-app.use('/app', createProxyMiddleware({
-  target: 'http://localhost:8081',
-  changeOrigin: true,
-  ws: true, // Enable WebSocket proxying for Expo hot reload
-  pathRewrite: {
-    '^/app': '', // Remove /app prefix when forwarding to Expo
-  },
-  logLevel: 'debug',
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(`🔀 Proxying: ${req.method} ${req.url} → http://localhost:8081${req.url.replace('/app', '')}`);
-  },
-  onError: (err, req, res) => {
-    console.error('❌ Proxy error:', err.message);
-    res.status(502).json({ error: 'Proxy error - ensure Expo dev server is running on port 8081' });
-  }
-}));
-
-// Proxy bundle files and assets at root level to Expo
-// This handles cases where base tag doesn't work with absolute paths
-app.use('/', createProxyMiddleware({
-  target: 'http://localhost:8081',
-  changeOrigin: true,
-  // Only proxy specific file types (bundles, maps, assets)
-  filter: (pathname, req) => {
-    const shouldProxy = pathname.match(/\.(bundle|map|js|ts)(\?.*)?$/) ||
-                       pathname.match(/^\/_expo/) ||
-                       pathname === '/';
-    if (shouldProxy && pathname !== '/') {
-      console.log(`📦 Proxying asset: ${pathname} → http://localhost:8081${pathname}`);
+// Disabled in production (Railway) since there's no Expo dev server
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/app', createProxyMiddleware({
+    target: 'http://localhost:8081',
+    changeOrigin: true,
+    ws: true, // Enable WebSocket proxying for Expo hot reload
+    pathRewrite: {
+      '^/app': '', // Remove /app prefix when forwarding to Expo
+    },
+    logLevel: 'debug',
+    onProxyReq: (proxyReq, req, res) => {
+      console.log(`🔀 Proxying: ${req.method} ${req.url} → http://localhost:8081${req.url.replace('/app', '')}`);
+    },
+    onError: (err, req, res) => {
+      console.error('❌ Proxy error:', err.message);
+      res.status(502).json({ error: 'Proxy error - ensure Expo dev server is running on port 8081' });
     }
-    return shouldProxy;
-  },
-  logLevel: 'silent', // Reduce noise
-  onError: (err, req, res) => {
-    console.error(`❌ Asset proxy error for ${req.url}:`, err.message);
-    res.status(502).json({ error: 'Failed to load asset from Expo dev server' });
-  }
-}));
+  }));
 
-app.listen(PORT, () => {
+  // Proxy bundle files and assets at root level to Expo
+  // This handles cases where base tag doesn't work with absolute paths
+  app.use('/', createProxyMiddleware({
+    target: 'http://localhost:8081',
+    changeOrigin: true,
+    // Only proxy specific file types (bundles, maps, assets)
+    filter: (pathname, req) => {
+      const shouldProxy = pathname.match(/\.(bundle|map|js|ts)(\?.*)?$/) ||
+                         pathname.match(/^\/_expo/) ||
+                         pathname === '/';
+      if (shouldProxy && pathname !== '/') {
+        console.log(`📦 Proxying asset: ${pathname} → http://localhost:8081${pathname}`);
+      }
+      return shouldProxy;
+    },
+    logLevel: 'silent', // Reduce noise
+    onError: (err, req, res) => {
+      console.error(`❌ Asset proxy error for ${req.url}:`, err.message);
+      res.status(502).json({ error: 'Failed to load asset from Expo dev server' });
+    }
+  }));
+} else {
+  // In production, serve a simple status page at root
+  app.get('/', (req, res) => {
+    res.json({ status: 'ok', service: 'Cupido API', version: '1.2.1' });
+  });
+}
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log('\n' + '='.repeat(80));
   console.log('🚀 SERVER STARTED SUCCESSFULLY');
   console.log('='.repeat(80));
