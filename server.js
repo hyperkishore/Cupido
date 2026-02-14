@@ -29,7 +29,7 @@ if (typeof globalThis.fetch !== 'function') {
 }
 
 const app = express();
-const PORT = Number(process.env.AI_PROXY_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.AI_PROXY_PORT || 3001);
 const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const CLAUDE_API_URL = process.env.ANTHROPIC_API_URL || 'https://api.anthropic.com/v1/messages';
 
